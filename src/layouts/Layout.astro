@@ -19,7 +19,7 @@ const { title, description = 'I Simposio sobre Memorias Participativas - Univers
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
-    <script src="https://identity.netlify.com/v1/netlify.js"></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   </head>
   <body class="min-h-screen flex flex-col">
     <Header />
@@ -31,7 +31,8 @@ const { title, description = 'I Simposio sobre Memorias Participativas - Univers
       if (window.netlifyIdentity) {
         window.netlifyIdentity.on('init', (user) => {
           const hash = window.location.hash;
-          // Si hay token de invitación o recuperación, abrir el modal
+          // Si hay token de invitación o recuperación, abrir el modal para que
+          // el widget complete la aceptación de la invitación o el reseteo.
           if (hash && (hash.includes('invite_token=') || hash.includes('recovery_token='))) {
             window.netlifyIdentity.open();
             return;
