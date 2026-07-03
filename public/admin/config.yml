@@ -23,4 +23,13 @@ collections:
       - { label: "Descripción corta (para tarjetas)", name: "description", widget: "text", required: false, default: "" }
       - { label: "Texto completo (Markdown)", name: "body", widget: "markdown", required: false }
 
-
+  - name: "noticias"
+    label: "noticias"
+    folder: "src/content/noticias"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Imagen", name: "image", widget: "image", required: false }
+      - { label: "Descripción", name: "description", widget: "text", required: false }
+      - { label: "Contenido", name: "body", widget: "markdown", required: false }
