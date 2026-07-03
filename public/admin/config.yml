@@ -11,6 +11,8 @@ collections:
     folder: "src/content/proyectos"
     create: true
     slug: "{{number}}-{{slug}}"
+    # Roles de Netlify Identity que pueden ver y editar esta colección.
+    roles: ["admin", "editor"]
     fields:
       - { label: "Número", name: "number", widget: "number", value_type: "int" }
       - { label: "Título", name: "title", widget: "string" }

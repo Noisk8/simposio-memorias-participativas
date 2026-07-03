@@ -193,9 +193,23 @@
     updateUserUI(identity.currentUser());
   }
 
-  if (window.netlifyIdentity) {
-    setupIdentity();
-  } else {
-    window.addEventListener('netlifyIdentityLoaded', setupIdentity);
+  function waitForIdentity(callback) {
+    if (window.netlifyIdentity) {
+      callback();
+      return;
+    }
+    let attempts = 0;
+    const maxAttempts = 50;
+    const interval = setInterval(() => {
+      attempts++;
+      if (window.netlifyIdentity) {
+        clearInterval(interval);
+        callback();
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 100);
   }
+
+  waitForIdentity(setupIdentity);
 </script>

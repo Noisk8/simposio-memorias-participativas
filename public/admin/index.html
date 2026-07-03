@@ -8,5 +8,115 @@
 <body>
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <style>
+    .cms-user-name {
+      margin-right: 0.5rem;
+      color: #1f2937;
+      font-size: 0.875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
+    @media (max-width: 640px) {
+      .cms-user-name {
+        max-width: 100px;
+      }
+    }
+  </style>
+  <script>
+    (function () {
+      function waitForIdentity(callback) {
+        if (window.netlifyIdentity) {
+          callback(window.netlifyIdentity);
+          return;
+        }
+        let attempts = 0;
+        const maxAttempts = 50;
+        const interval = setInterval(function () {
+          attempts++;
+          if (window.netlifyIdentity) {
+            clearInterval(interval);
+            callback(window.netlifyIdentity);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(interval);
+          }
+        }, 100);
+      }
+
+      function getUserName(user) {
+        if (!user) return null;
+        var metadata = user.user_metadata || {};
+        return metadata.full_name || metadata.name || user.email || 'Usuario';
+      }
+
+      function findAvatarButton() {
+        var selectors = [
+          '[data-testid="user-menu"]',
+          '[data-testid="avatar-menu"]',
+          'header button img[src*="gravatar"]',
+          'header button img[src^="data:"]',
+          'nav button img[src*="gravatar"]',
+          'nav button img[src^="data:"]',
+          'header button img[alt*="avatar" i]',
+          'nav button img[alt*="avatar" i]',
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+          var img = document.querySelector(selectors[i]);
+          if (img) {
+            var button = img.closest('button');
+            if (button) return { button: button, img: img };
+          }
+        }
+        return null;
+      }
+
+      function injectUserName(user) {
+        var name = getUserName(user);
+        if (!name) return false;
+
+        var found = findAvatarButton();
+        if (!found) return false;
+
+        var button = found.button;
+        if (button.querySelector('.cms-user-name')) return true;
+
+        var span = document.createElement('span');
+        span.className = 'cms-user-name';
+        span.textContent = name;
+        span.title = name;
+        button.insertBefore(span, found.img.nextSibling);
+        return true;
+      }
+
+      function watchAndInject(user) {
+        if (injectUserName(user)) return;
+        var observer = new MutationObserver(function () {
+          if (injectUserName(user)) {
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+
+      waitForIdentity(function (identity) {
+        var user = identity.currentUser();
+        if (user) {
+          watchAndInject(user);
+        }
+        identity.on('login', function (u) {
+          watchAndInject(u);
+        });
+        identity.on('logout', function () {
+          var existing = document.querySelector('.cms-user-name');
+          if (existing) existing.remove();
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
