@@ -125,6 +125,174 @@
       flex-shrink: 0;
       color: #6b7280;
     }
+    /* ===== Panel de administración integrado ===== */
+    .cms-admin-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.55);
+      z-index: 100000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 1rem;
+      overflow-y: auto;
+      font-family: inherit;
+    }
+    .cms-admin-panel {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 760px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 6rem);
+    }
+    .cms-admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .cms-admin-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #111827;
+    }
+    .cms-admin-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+    }
+    .cms-admin-close:hover { background: #f3f4f6; color: #111827; }
+    .cms-admin-tabs {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    .cms-admin-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+    }
+    .cms-admin-tab.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+    .cms-admin-tab:hover { color: #111827; }
+    .cms-admin-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+    .cms-admin-body h3 {
+      margin: 0 0 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+    }
+    .cms-admin-list a {
+      display: block;
+      padding: 0.85rem 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      text-decoration: none;
+      color: #111827;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      cursor: pointer;
+    }
+    .cms-admin-list a:hover { border-color: #2563eb; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .cms-admin-list a span { display: block; font-weight: 400; font-size: 0.78rem; color: #6b7280; margin-top: 0.15rem; }
+    .cms-admin-form label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #374151;
+      margin: 0.9rem 0 0.3rem;
+    }
+    .cms-admin-form input, .cms-admin-form textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+    .cms-admin-form textarea { font-family: monospace; font-size: 0.8rem; }
+    .cms-admin-form input:focus, .cms-admin-form textarea:focus {
+      outline: 2px solid #93c5fd;
+      border-color: #2563eb;
+    }
+    .cms-admin-hint { font-size: 0.72rem; color: #6b7280; margin-top: 0.25rem; }
+    .cms-admin-submit {
+      margin-top: 1.25rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 0.375rem;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cms-admin-submit:hover { background: #1d4ed8; }
+    .cms-admin-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .cms-admin-status { display: inline-block; margin-left: 0.75rem; font-size: 0.82rem; font-weight: 600; }
+    .cms-admin-status.ok { color: #16a34a; }
+    .cms-admin-status.err { color: #dc2626; }
+    .cms-admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .cms-admin-table th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      background: #f9fafb;
+      color: #374151;
+      font-weight: 700;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .cms-admin-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .cms-admin-role {
+      display: inline-block;
+      padding: 0.1rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-right: 0.25rem;
+    }
+    .cms-admin-role.admin { background: #dcfce7; color: #166534; }
+    .cms-admin-role.editor { background: #dbeafe; color: #1e40af; }
+    .cms-admin-role.none { background: #f3f4f6; color: #6b7280; font-weight: 400; font-style: italic; }
+    .cms-admin-rolebtn {
+      font-size: 0.72rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.375rem;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+      cursor: pointer;
+      margin-right: 0.35rem;
+      font-weight: 600;
+    }
+    .cms-admin-rolebtn:hover { border-color: #2563eb; color: #2563eb; }
+    .cms-admin-rolebtn.danger:hover { border-color: #dc2626; color: #dc2626; }
+    .cms-admin-muted { color: #6b7280; font-size: 0.82rem; }
   </style>
   <script>
     (function () {
@@ -283,19 +451,297 @@
 
       function createActionsHtml() {
         return (
-          '<a href="/admin/gestion-colecciones" target="_blank" rel="noopener noreferrer">' +
+          '<a href="#" data-cms-admin-tab="colecciones">' +
           '  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
           '    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />' +
           '  </svg>' +
           '  Gestionar colecciones' +
           '</a>' +
-          '<a href="/admin/gestion-colecciones#nueva" target="_blank" rel="noopener noreferrer">' +
+          '<a href="#" data-cms-admin-tab="nueva">' +
           '  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
           '    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
           '  </svg>' +
           '  Crear nueva colección' +
+          '</a>' +
+          '<a href="#" data-cms-admin-tab="usuarios">' +
+          '  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+          '    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" />' +
+          '  </svg>' +
+          '  Usuarios y roles' +
           '</a>'
         );
+      }
+
+      function bindActionClicks(container) {
+        var links = container.querySelectorAll('[data-cms-admin-tab]');
+        for (var i = 0; i < links.length; i++) {
+          (function (link) {
+            link.addEventListener('click', function (e) {
+              e.preventDefault();
+              openAdminPanel(link.getAttribute('data-cms-admin-tab'));
+            });
+          })(links[i]);
+        }
+      }
+
+      /* ===== Panel de administración integrado en el CMS ===== */
+
+      function getToken() {
+        var u = window.netlifyIdentity && window.netlifyIdentity.currentUser && window.netlifyIdentity.currentUser();
+        return (u && u.token && u.token.access_token) || null;
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+
+      function closeAdminPanel() {
+        var overlay = document.querySelector('.cms-admin-overlay');
+        if (overlay) overlay.remove();
+      }
+
+      function openAdminPanel(tab) {
+        closeAdminPanel();
+
+        var overlay = document.createElement('div');
+        overlay.className = 'cms-admin-overlay';
+        overlay.innerHTML =
+          '<div class="cms-admin-panel">' +
+          '  <div class="cms-admin-header">' +
+          '    <h2>Administración del sitio</h2>' +
+          '    <button class="cms-admin-close" title="Cerrar">×</button>' +
+          '  </div>' +
+          '  <div class="cms-admin-tabs">' +
+          '    <button class="cms-admin-tab" data-tab="colecciones">Colecciones</button>' +
+          '    <button class="cms-admin-tab" data-tab="nueva">Nueva colección</button>' +
+          '    <button class="cms-admin-tab" data-tab="usuarios">Usuarios y roles</button>' +
+          '  </div>' +
+          '  <div class="cms-admin-body"></div>' +
+          '</div>';
+
+        overlay.addEventListener('click', function (e) {
+          if (e.target === overlay) closeAdminPanel();
+        });
+        overlay.querySelector('.cms-admin-close').addEventListener('click', closeAdminPanel);
+
+        var tabs = overlay.querySelectorAll('.cms-admin-tab');
+        for (var i = 0; i < tabs.length; i++) {
+          (function (btn) {
+            btn.addEventListener('click', function () {
+              renderAdminTab(overlay, btn.getAttribute('data-tab'));
+            });
+          })(tabs[i]);
+        }
+
+        document.body.appendChild(overlay);
+        renderAdminTab(overlay, tab || 'colecciones');
+      }
+
+      function renderAdminTab(overlay, tab) {
+        var tabs = overlay.querySelectorAll('.cms-admin-tab');
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tab);
+        }
+        var body = overlay.querySelector('.cms-admin-body');
+        if (tab === 'colecciones') renderColecciones(body);
+        else if (tab === 'nueva') renderNuevaColeccion(body);
+        else if (tab === 'usuarios') renderUsuarios(body);
+      }
+
+      /* --- Tab: Colecciones --- */
+      function renderColecciones(body) {
+        body.innerHTML = '<h3>Colecciones activas</h3><p class="cms-admin-muted">Cargando...</p>';
+        fetch('/admin/config.yml?_=' + Date.now())
+          .then(function (res) { return res.text(); })
+          .then(function (yaml) {
+            var regex = /-\s+name:\s*"?([\w-]+)"?[\s\S]*?label:\s*"([^"]+)"/g;
+            var items = [];
+            var m;
+            while ((m = regex.exec(yaml)) !== null) {
+              items.push({ name: m[1], label: m[2] });
+            }
+            if (items.length === 0) {
+              body.innerHTML = '<h3>Colecciones activas</h3><p class="cms-admin-muted">No se encontraron colecciones.</p>';
+              return;
+            }
+            var html = '<h3>Colecciones activas</h3><div class="cms-admin-list">';
+            items.forEach(function (c) {
+              html += '<a data-collection="' + escapeHtml(c.name) + '">' + escapeHtml(c.label) + '<span>Abrir en el CMS</span></a>';
+            });
+            html += '</div>';
+            body.innerHTML = html;
+            var links = body.querySelectorAll('[data-collection]');
+            for (var i = 0; i < links.length; i++) {
+              (function (link) {
+                link.addEventListener('click', function () {
+                  window.location.hash = '#/collections/' + link.getAttribute('data-collection');
+                  closeAdminPanel();
+                });
+              })(links[i]);
+            }
+          })
+          .catch(function (err) {
+            body.innerHTML = '<h3>Colecciones activas</h3><p class="cms-admin-status err">Error: ' + escapeHtml(err.message) + '</p>';
+          });
+      }
+
+      /* --- Tab: Nueva colección --- */
+      function renderNuevaColeccion(body) {
+        body.innerHTML =
+          '<h3>Crear nueva colección</h3>' +
+          '<form class="cms-admin-form" id="cms-nueva-coleccion">' +
+          '  <label for="cms-col-name">Nombre interno</label>' +
+          '  <input id="cms-col-name" required placeholder="ponentes" />' +
+          '  <p class="cms-admin-hint">Solo letras, números y guiones.</p>' +
+          '  <label for="cms-col-label">Etiqueta visible</label>' +
+          '  <input id="cms-col-label" required placeholder="Ponentes del simposio" />' +
+          '  <label for="cms-col-folder">Carpeta</label>' +
+          '  <input id="cms-col-folder" required placeholder="src/content/ponentes" />' +
+          '  <label for="cms-col-slug">Slug</label>' +
+          '  <input id="cms-col-slug" required value="{{slug}}" />' +
+          '  <label for="cms-col-fields">Campos (YAML)</label>' +
+          '  <textarea id="cms-col-fields" rows="6">fields:\n  - { label: "Título", name: "title", widget: "string" }\n  - { label: "Imagen", name: "image", widget: "image", required: false }\n  - { label: "Descripción", name: "description", widget: "text", required: false }\n  - { label: "Contenido", name: "body", widget: "markdown", required: false }</textarea>' +
+          '  <div>' +
+          '    <button type="submit" class="cms-admin-submit">Crear colección</button>' +
+          '    <span class="cms-admin-status" id="cms-col-status"></span>' +
+          '  </div>' +
+          '</form>';
+
+        var form = body.querySelector('#cms-nueva-coleccion');
+        var status = body.querySelector('#cms-col-status');
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var token = getToken();
+          if (!token) {
+            status.textContent = 'No hay sesión activa.';
+            status.className = 'cms-admin-status err';
+            return;
+          }
+          status.textContent = 'Creando...';
+          status.className = 'cms-admin-status';
+          var btn = form.querySelector('.cms-admin-submit');
+          btn.disabled = true;
+
+          fetch('/.netlify/functions/create-coleccion', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token,
+            },
+            body: JSON.stringify({
+              name: body.querySelector('#cms-col-name').value.trim(),
+              label: body.querySelector('#cms-col-label').value.trim(),
+              folder: body.querySelector('#cms-col-folder').value.trim(),
+              slug: body.querySelector('#cms-col-slug').value.trim(),
+              fields: body.querySelector('#cms-col-fields').value,
+            }),
+          })
+            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+            .then(function (r) {
+              btn.disabled = false;
+              if (r.ok) {
+                status.textContent = 'Colección creada. El sitio se redesplegará en unos minutos.';
+                status.className = 'cms-admin-status ok';
+                form.reset();
+              } else {
+                status.textContent = r.data.error || 'Error al crear la colección.';
+                status.className = 'cms-admin-status err';
+              }
+            })
+            .catch(function (err) {
+              btn.disabled = false;
+              status.textContent = 'Error de red: ' + err.message;
+              status.className = 'cms-admin-status err';
+            });
+        });
+      }
+
+      /* --- Tab: Usuarios y roles --- */
+      function renderUsuarios(body) {
+        body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-muted">Cargando usuarios...</p>';
+        var token = getToken();
+        if (!token) {
+          body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-status err">No hay sesión activa.</p>';
+          return;
+        }
+
+        fetch('/.netlify/functions/manage-users', {
+          headers: { 'Authorization': 'Bearer ' + token },
+        })
+          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (r) {
+            if (!r.ok) {
+              body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-status err">' + escapeHtml(r.data.error || 'Error al cargar usuarios.') + '</p>';
+              return;
+            }
+            var users = r.data.users || [];
+            var html = '<h3>Usuarios registrados</h3>' +
+              '<table class="cms-admin-table"><thead><tr><th>Usuario</th><th>Roles</th><th>Acciones</th></tr></thead><tbody>';
+            users.forEach(function (u, idx) {
+              var rolesHtml = u.roles.length
+                ? u.roles.map(function (role) { return '<span class="cms-admin-role ' + escapeHtml(role) + '">' + escapeHtml(role) + '</span>'; }).join('')
+                : '<span class="cms-admin-role none">sin rol</span>';
+              html += '<tr>' +
+                '<td><strong>' + escapeHtml(u.name || u.email) + '</strong><br /><span class="cms-admin-muted">' + escapeHtml(u.email) + '</span></td>' +
+                '<td>' + rolesHtml + '</td>' +
+                '<td>' +
+                '<button class="cms-admin-rolebtn' + (u.roles.indexOf('admin') !== -1 ? ' danger' : '') + '" data-idx="' + idx + '" data-role="admin">' + (u.roles.indexOf('admin') !== -1 ? 'Quitar admin' : 'Hacer admin') + '</button>' +
+                '<button class="cms-admin-rolebtn' + (u.roles.indexOf('editor') !== -1 ? ' danger' : '') + '" data-idx="' + idx + '" data-role="editor">' + (u.roles.indexOf('editor') !== -1 ? 'Quitar editor' : 'Hacer editor') + '</button>' +
+                '</td>' +
+                '</tr>';
+            });
+            html += '</tbody></table><p class="cms-admin-status" id="cms-users-status"></p>' +
+              '<p class="cms-admin-muted">Tras cambiar un rol, el usuario debe cerrar sesión y volver a entrar.</p>';
+            body.innerHTML = html;
+
+            var statusEl = body.querySelector('#cms-users-status');
+            var buttons = body.querySelectorAll('.cms-admin-rolebtn');
+            for (var i = 0; i < buttons.length; i++) {
+              (function (btn) {
+                btn.addEventListener('click', function () {
+                  var u = users[parseInt(btn.getAttribute('data-idx'), 10)];
+                  var role = btn.getAttribute('data-role');
+                  var hasRole = u.roles.indexOf(role) !== -1;
+                  var newRoles = hasRole
+                    ? u.roles.filter(function (roleName) { return roleName !== role; })
+                    : u.roles.concat([role]);
+
+                  statusEl.textContent = 'Actualizando ' + u.email + '...';
+                  statusEl.className = 'cms-admin-status';
+
+                  fetch('/.netlify/functions/manage-users', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer ' + getToken(),
+                    },
+                    body: JSON.stringify({ userId: u.id, roles: newRoles }),
+                  })
+                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                    .then(function (r2) {
+                      if (r2.ok) {
+                        statusEl.textContent = 'Roles actualizados.';
+                        statusEl.className = 'cms-admin-status ok';
+                        renderUsuarios(body);
+                      } else {
+                        statusEl.textContent = r2.data.error || 'Error al actualizar.';
+                        statusEl.className = 'cms-admin-status err';
+                      }
+                    })
+                    .catch(function (err) {
+                      statusEl.textContent = 'Error de red: ' + err.message;
+                      statusEl.className = 'cms-admin-status err';
+                    });
+                });
+              })(buttons[i]);
+            }
+          })
+          .catch(function (err) {
+            body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-status err">Error de red: ' + escapeHtml(err.message) + '</p>';
+          });
       }
 
       function injectSidebarActions() {
@@ -310,6 +756,7 @@
         var container = document.createElement('div');
         container.className = 'cms-sidebar-actions';
         container.innerHTML = createActionsHtml();
+        bindActionClicks(container);
         sidebar.appendChild(container);
         log('acciones de sidebar inyectadas');
         return true;
@@ -320,6 +767,7 @@
         var container = document.createElement('div');
         container.className = 'cms-floating-actions';
         container.innerHTML = createActionsHtml();
+        bindActionClicks(container);
         document.body.appendChild(container);
         log('acciones flotantes añadidas');
       }
@@ -371,6 +819,7 @@
           log('logout');
           removeUserName();
           stopSidebarWatcher();
+          closeAdminPanel();
           var sidebarActions = document.querySelector('.cms-sidebar-actions');
           if (sidebarActions) sidebarActions.remove();
           var floatingActions = document.querySelector('.cms-floating-actions');
