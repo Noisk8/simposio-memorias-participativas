@@ -27,12 +27,63 @@
         max-width: 100px;
       }
     }
+    .cms-user-name-fallback {
+      position: fixed;
+      top: 0.75rem;
+      right: 3.5rem;
+      z-index: 9999;
+      color: #1f2937;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      pointer-events: none;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cms-sidebar-actions {
+      padding: 0.75rem;
+      border-top: 1px solid #e5e7eb;
+      margin-top: 0.5rem;
+    }
+    .cms-sidebar-actions a,
+    .cms-sidebar-actions button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      text-decoration: none;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+    .cms-sidebar-actions a:hover,
+    .cms-sidebar-actions button:hover {
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+    .cms-sidebar-actions svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+      color: #6b7280;
+    }
   </style>
   <script>
     (function () {
       var DEBUG = true;
       function log() {
-        if (DEBUG) console.log.apply(console, ['[CMS User Name]'].concat(Array.prototype.slice.call(arguments)));
+        if (DEBUG) console.log.apply(console, ['[CMS UI]'].concat(Array.prototype.slice.call(arguments)));
       }
 
       function waitForIdentity(callback) {
@@ -41,7 +92,7 @@
           return;
         }
         var attempts = 0;
-        var maxAttempts = 60;
+        var maxAttempts = 80;
         var interval = setInterval(function () {
           attempts++;
           if (window.netlifyIdentity) {
@@ -61,8 +112,32 @@
         return metadata.full_name || metadata.name || user.email || 'Usuario';
       }
 
+      function isAdmin(user) {
+        if (!user) return false;
+        var metadata = user.app_metadata || user.user_metadata || {};
+        var roles = metadata.roles || user.roles || [];
+        return roles.indexOf('admin') !== -1;
+      }
+
+      function findHeader() {
+        var selectors = [
+          'header',
+          'nav',
+          '[class*="header" i]',
+          '[class*="topbar" i]',
+          '[class*="appBar" i]',
+          '[class*="AppBar" i]',
+          '[class*="navbar" i]',
+          '[class*="Navbar" i]',
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+          var el = document.querySelector(selectors[i]);
+          if (el) return el;
+        }
+        return null;
+      }
+
       function findAvatarButton() {
-        // Selectores ordenados de más específico a más genérico.
         var selectors = [
           '[data-testid="user-menu"]',
           '[data-testid="avatar-menu"]',
@@ -79,6 +154,8 @@
           'nav button img[alt*="avatar" i]',
           'header button svg + img',
           'nav button svg + img',
+          'button img[src*="gravatar"]',
+          'button img[src^="data:"]',
         ];
         for (var i = 0; i < selectors.length; i++) {
           var target = document.querySelector(selectors[i]);
@@ -91,14 +168,16 @@
           }
         }
 
-        // Fallback: último botón dentro del header o nav visible.
-        var header = document.querySelector('header, nav, [class*="header" i], [class*="topbar" i]');
+        var header = findHeader();
         if (header) {
           var buttons = header.querySelectorAll('button');
-          if (buttons.length) {
-            var lastButton = buttons[buttons.length - 1];
-            log('usando último botón del header como fallback');
-            return { button: lastButton, img: lastButton.querySelector('img') };
+          for (var j = buttons.length - 1; j >= 0; j--) {
+            var btn = buttons[j];
+            var rect = btn.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && rect.top < 80) {
+              log('usando último botón visible del header como fallback');
+              return { button: btn, img: btn.querySelector('img') };
+            }
           }
         }
 
@@ -112,48 +191,141 @@
           log('no hay nombre para mostrar');
           return false;
         }
-        log('intentando inyectar nombre:', name);
 
         var found = findAvatarButton();
-        if (!found) return false;
+        if (found) {
+          var button = found.button;
+          if (button.querySelector('.cms-user-name')) return true;
 
-        var button = found.button;
-        if (button.querySelector('.cms-user-name')) {
-          log('nombre ya inyectado');
+          button.style.display = 'inline-flex';
+          button.style.alignItems = 'center';
+
+          var span = document.createElement('span');
+          span.className = 'cms-user-name';
+          span.textContent = name;
+          span.title = name;
+
+          if (found.img && found.img.nextSibling) {
+            button.insertBefore(span, found.img.nextSibling);
+          } else if (found.img) {
+            button.appendChild(span);
+          } else {
+            button.insertBefore(span, button.firstChild);
+          }
+          log('nombre inyectado junto al avatar');
           return true;
         }
 
-        // Asegurar que el botón disponga sus hijos en horizontal.
-        button.style.display = 'inline-flex';
-        button.style.alignItems = 'center';
-
-        var span = document.createElement('span');
-        span.className = 'cms-user-name';
-        span.textContent = name;
-        span.title = name;
-
-        if (found.img && found.img.nextSibling) {
-          button.insertBefore(span, found.img.nextSibling);
-        } else if (found.img) {
-          button.appendChild(span);
-        } else {
-          button.insertBefore(span, button.firstChild);
+        // Fallback: insertar un badge flotante en el header si no hay avatar.
+        var header = findHeader();
+        if (header && !document.querySelector('.cms-user-name-fallback')) {
+          var badge = document.createElement('span');
+          badge.className = 'cms-user-name-fallback';
+          badge.textContent = name;
+          badge.title = name;
+          document.body.appendChild(badge);
+          log('nombre inyectado como badge flotante');
+          return true;
         }
-        log('nombre inyectado con éxito');
-        return true;
+
+        return false;
       }
 
-      function watchAndInject(user) {
+      function removeUserName() {
+        var existing = document.querySelector('.cms-user-name');
+        if (existing) existing.remove();
+        var fallback = document.querySelector('.cms-user-name-fallback');
+        if (fallback) fallback.remove();
+      }
+
+      function watchUserName(user) {
         if (injectUserName(user)) return;
         var attempts = 0;
         var observer = new MutationObserver(function () {
           attempts++;
           if (injectUserName(user)) {
             observer.disconnect();
-            log('inyectado tras observar ' + attempts + ' mutaciones');
-          } else if (attempts > 200) {
+            log('nombre inyectado tras observar ' + attempts + ' mutaciones');
+          } else if (attempts > 400) {
             observer.disconnect();
             log('se detuvo el observador sin encontrar el avatar');
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+
+      function findSidebar() {
+        var selectors = [
+          'aside',
+          'nav',
+          '[class*="sidebar" i]',
+          '[class*="Sidebar" i]',
+          '[class*="sidenav" i]',
+          '[class*="Sidenav" i]',
+          '[class*="collection" i]',
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+          var el = document.querySelector(selectors[i]);
+          if (el) {
+            var rect = el.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 100) return el;
+          }
+        }
+
+        // Fallback: buscar el contenedor que contenga el texto "Collections" y sea alto.
+        var all = document.querySelectorAll('div, aside, nav, section');
+        for (var j = 0; j < all.length; j++) {
+          var node = all[j];
+          var rect = node.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 250 && node.textContent && /collections?/i.test(node.textContent)) {
+            return node;
+          }
+        }
+
+        return null;
+      }
+
+      function injectSidebarActions() {
+        if (document.querySelector('.cms-sidebar-actions')) return;
+
+        var sidebar = findSidebar();
+        if (!sidebar) {
+          log('no se encontró sidebar');
+          return false;
+        }
+
+        var container = document.createElement('div');
+        container.className = 'cms-sidebar-actions';
+        container.innerHTML =
+          '<a href="/admin/gestion-colecciones" target="_blank" rel="noopener noreferrer">' +
+          '  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+          '    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />' +
+          '  </svg>' +
+          '  Gestionar colecciones' +
+          '</a>' +
+          '<a href="/admin/gestion-colecciones#nueva" target="_blank" rel="noopener noreferrer">' +
+          '  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+          '    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
+          '  </svg>' +
+          '  Crear nueva colección' +
+          '</a>';
+
+        sidebar.appendChild(container);
+        log('acciones de sidebar inyectadas');
+        return true;
+      }
+
+      function watchSidebar() {
+        if (injectSidebarActions()) return;
+        var attempts = 0;
+        var observer = new MutationObserver(function () {
+          attempts++;
+          if (injectSidebarActions()) {
+            observer.disconnect();
+            log('sidebar inyectado tras observar ' + attempts + ' mutaciones');
+          } else if (attempts > 300) {
+            observer.disconnect();
+            log('se detuvo el observador sin encontrar sidebar');
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -165,7 +337,10 @@
         function onUserReady(user) {
           if (user) {
             log('usuario listo:', user.email);
-            watchAndInject(user);
+            watchUserName(user);
+            if (isAdmin(user)) {
+              watchSidebar();
+            }
           }
         }
 
@@ -173,8 +348,9 @@
         identity.on('login', onUserReady);
         identity.on('logout', function () {
           log('logout');
-          var existing = document.querySelector('.cms-user-name');
-          if (existing) existing.remove();
+          removeUserName();
+          var sidebarActions = document.querySelector('.cms-sidebar-actions');
+          if (sidebarActions) sidebarActions.remove();
         });
 
         onUserReady(identity.currentUser());
