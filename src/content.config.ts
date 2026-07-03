@@ -15,4 +15,13 @@ const proyectos = defineCollection({
   }),
 });
 
-export const collections = { proyectos };
+const noticias = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/noticias' }),
+  schema: z.object({
+    title: z.string(),
+    image: z.string().optional().default(''),
+    description: z.string().optional().default(''),
+  }),
+});
+
+export const collections = { proyectos, noticias };
