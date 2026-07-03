@@ -163,127 +163,37 @@
         if (!user) return false;
         var metadata = user.app_metadata || user.user_metadata || {};
         var roles = metadata.roles || user.roles || [];
+        log('roles del usuario:', JSON.stringify(roles));
         return roles.indexOf('admin') !== -1;
-      }
-
-      function getAvatarContainer() {
-        // 1. Selectores específicos.
-        var selectors = [
-          '[data-testid="user-menu"]',
-          '[data-testid="avatar-menu"]',
-          '[data-testid="user-button"]',
-          '[data-testid="account-menu"]',
-          '[aria-label*="user" i]',
-          '[aria-label*="usuario" i]',
-          '[aria-label*="account" i]',
-          '[aria-label*="perfil" i]',
-          '[aria-label*="profile" i]',
-          'header button img[src*="gravatar"]',
-          'header button img[src^="data:"]',
-          'nav button img[src*="gravatar"]',
-          'nav button img[src^="data:"]',
-          'button img[src*="gravatar"]',
-          'button img[src^="data:"]',
-          'button img[alt*="avatar" i]',
-          '[role="button"] img[src*="gravatar"]',
-          '[role="button"] img[src^="data:"]',
-        ];
-        for (var i = 0; i < selectors.length; i++) {
-          var target = document.querySelector(selectors[i]);
-          if (target) {
-            var container = target.closest('button, [role="button"], a');
-            if (container) {
-              log('avatar encontrado con selector:', selectors[i]);
-              return { container: container, img: target.tagName === 'IMG' ? target : target.querySelector('img') };
-            }
-          }
-        }
-
-        // 2. Buscar el elemento interactivo más a la derecha en la parte superior.
-        var candidates = document.querySelectorAll('button, [role="button"], a');
-        var best = null;
-        var bestRight = -1;
-        for (var j = 0; j < candidates.length; j++) {
-          var c = candidates[j];
-          var rect = c.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0 && rect.top < 80 && rect.right > bestRight) {
-            best = c;
-            bestRight = rect.right;
-          }
-        }
-        if (best) {
-          log('usando elemento más a la derecha del header como avatar');
-          return { container: best, img: best.querySelector('img') };
-        }
-
-        log('no se encontró avatar');
-        return null;
-      }
-
-      function injectUserName(user) {
-        var name = getUserName(user);
-        if (!name) return false;
-
-        var found = getAvatarContainer();
-        if (found) {
-          var container = found.container;
-          var parent = container.parentElement;
-          if (!parent) return false;
-          if (parent.querySelector('.cms-user-name')) return true;
-
-          var span = document.createElement('span');
-          span.className = 'cms-user-name';
-          span.textContent = name;
-          span.title = name;
-
-          // Insertar el nombre antes del avatar, manteniendo el avatar en su lugar.
-          parent.insertBefore(span, container);
-          log('nombre insertado junto al avatar');
-          return true;
-        }
-
-        return false;
       }
 
       function ensureFloatingUserName(user) {
         var name = getUserName(user);
         if (!name) return;
-        if (document.querySelector('.cms-user-name-floating')) return;
+        var existing = document.querySelector('.cms-user-name-floating');
+        if (existing) {
+          existing.textContent = name;
+          return;
+        }
         var badge = document.createElement('span');
         badge.className = 'cms-user-name-floating';
         badge.textContent = name;
         badge.title = name;
         document.body.appendChild(badge);
-        log('badge flotante de nombre añadido');
+        log('badge de nombre añadido:', name);
       }
 
       function removeUserName() {
-        var existing = document.querySelector('.cms-user-name');
-        if (existing) existing.remove();
         var floating = document.querySelector('.cms-user-name-floating');
         if (floating) floating.remove();
       }
 
-      function watchUserName(user) {
-        var attempts = 0;
-        var interval = setInterval(function () {
-          attempts++;
-          if (injectUserName(user)) {
-            clearInterval(interval);
-            log('nombre inyectado tras ' + attempts + ' intentos');
-          } else if (attempts > 40) {
-            clearInterval(interval);
-            log('no se encontró avatar; usando badge flotante');
-            ensureFloatingUserName(user);
-          }
-        }, 500);
-      }
-
       function findCollectionsHeading() {
-        var headings = document.querySelectorAll('h2, h3, h4, h5, h6, p, div, span, li, a');
+        var headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div, span, li, a');
         for (var i = 0; i < headings.length; i++) {
           var h = headings[i];
-          if (h.textContent && h.textContent.trim().toLowerCase() === 'collections') {
+          var text = h.textContent ? h.textContent.trim().toLowerCase() : '';
+          if ((text === 'collections' || text === 'colecciones') && h.children.length === 0) {
             return h;
           }
         }
@@ -291,33 +201,33 @@
       }
 
       function findSidebar() {
-        var selectors = [
-          'aside',
-          'nav',
-          '[class*="sidebar" i]',
-          '[class*="Sidebar" i]',
-          '[class*="sidenav" i]',
-          '[class*="Sidenav" i]',
-          '[class*="collection" i]',
-        ];
-        for (var i = 0; i < selectors.length; i++) {
-          var el = document.querySelector(selectors[i]);
-          if (el) {
-            var rect = el.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 100 && rect.left < window.innerWidth / 2) return el;
-          }
-        }
-
+        // Buscar el heading exacto "Collections" y subir hasta el panel lateral.
         var heading = findCollectionsHeading();
         if (heading) {
           var parent = heading.parentElement;
           while (parent && parent !== document.body) {
             var rect = parent.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 200 && rect.left < window.innerWidth / 2) {
+            // Panel lateral: pegado a la izquierda, angosto y con algo de altura.
+            if (rect.left < 100 && rect.width > 100 && rect.width < 450 && rect.height > 80) {
               log('sidebar encontrado mediante heading Collections');
               return parent;
             }
             parent = parent.parentElement;
+          }
+        }
+
+        var selectors = [
+          'aside',
+          '[class*="sidebar" i]',
+          '[class*="Sidebar" i]',
+          '[class*="sidenav" i]',
+          '[class*="Sidenav" i]',
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+          var el = document.querySelector(selectors[i]);
+          if (el) {
+            var rect = el.getBoundingClientRect();
+            if (rect.left < 100 && rect.width > 100 && rect.width < 450 && rect.height > 80) return el;
           }
         }
 
@@ -367,19 +277,32 @@
         log('acciones flotantes añadidas');
       }
 
+      var sidebarWatcher = null;
       function watchSidebar() {
+        if (sidebarWatcher) return;
         var attempts = 0;
-        var interval = setInterval(function () {
+        var sidebarFound = false;
+        sidebarWatcher = setInterval(function () {
           attempts++;
+          // Si el CMS re-renderiza y borra los botones, volver a inyectarlos.
+          if (document.querySelector('.cms-sidebar-actions') || document.querySelector('.cms-floating-actions')) {
+            return;
+          }
           if (injectSidebarActions()) {
-            clearInterval(interval);
+            sidebarFound = true;
             log('sidebar inyectado tras ' + attempts + ' intentos');
-          } else if (attempts > 30) {
-            clearInterval(interval);
+          } else if (!sidebarFound && attempts > 20) {
             log('no se encontró sidebar; usando botones flotantes');
             injectFloatingActions();
           }
-        }, 500);
+        }, 750);
+      }
+
+      function stopSidebarWatcher() {
+        if (sidebarWatcher) {
+          clearInterval(sidebarWatcher);
+          sidebarWatcher = null;
+        }
       }
 
       waitForIdentity(function (identity) {
@@ -387,11 +310,11 @@
 
         function onUserReady(user) {
           if (user) {
-            log('usuario listo:', user.email);
-            watchUserName(user);
-            if (isAdmin(user)) {
-              watchSidebar();
-            }
+            log('usuario listo:', user.email, '| admin:', isAdmin(user));
+            ensureFloatingUserName(user);
+            // Los botones se muestran a todo usuario logueado; la página
+            // /admin/gestion-colecciones y la Netlify Function validan el rol admin.
+            watchSidebar();
           }
         }
 
@@ -400,6 +323,7 @@
         identity.on('logout', function () {
           log('logout');
           removeUserName();
+          stopSidebarWatcher();
           var sidebarActions = document.querySelector('.cms-sidebar-actions');
           if (sidebarActions) sidebarActions.remove();
           var floatingActions = document.querySelector('.cms-floating-actions');
