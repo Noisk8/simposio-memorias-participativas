@@ -58,6 +58,33 @@
       background: #22c55e;
       flex-shrink: 0;
     }
+    .cms-user-name-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #1f2937;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background: #ffffff;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      border: 1px solid #e5e7eb;
+      margin-right: 0.75rem;
+      white-space: nowrap;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+    .cms-user-name-inline .cms-user-name-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 999px;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
     .cms-sidebar-actions {
       padding: 0.75rem 1rem;
       border-top: 1px solid #e5e7eb;
@@ -375,32 +402,56 @@
       function ensureFloatingUserName(user) {
         var name = getUserName(user);
         if (!name) return;
-        var existing = document.querySelector('.cms-user-name-floating');
-        if (existing) {
-          existing.textContent = name;
+
+        var existingInline = document.querySelector('.cms-user-name-inline');
+        var existingFloating = document.querySelector('.cms-user-name-floating');
+        if (existingInline) {
+          var text = existingInline.querySelector('.cms-user-name-text');
+          if (text) text.textContent = name;
+          existingInline.title = name;
           return;
         }
-        var badge = document.createElement('span');
-        badge.className = 'cms-user-name-floating';
-        badge.textContent = name;
-        badge.title = name;
-        document.body.appendChild(badge);
-
-        // Colocar el badge justo a la izquierda del avatar para evitar superposición.
-        var avatar = getAvatarContainer();
-        if (avatar) {
-          var rect = avatar.container.getBoundingClientRect();
-          var offset = window.innerWidth - rect.left + 8;
-          badge.style.right = offset + 'px';
-        } else {
-          badge.style.right = '4.5rem';
+        if (existingFloating) {
+          existingFloating.textContent = name;
+          existingFloating.title = name;
+          return;
         }
-        log('badge de nombre añadido:', name);
+
+        var avatar = getAvatarContainer();
+        if (avatar && avatar.container.parentElement) {
+          // Insertar el badge como un elemento real antes del avatar para empujarlo a la izquierda.
+          var wrapper = document.createElement('span');
+          wrapper.className = 'cms-user-name-inline';
+          wrapper.title = name;
+
+          var dot = document.createElement('span');
+          dot.className = 'cms-user-name-dot';
+
+          var text = document.createElement('span');
+          text.className = 'cms-user-name-text';
+          text.textContent = name;
+
+          wrapper.appendChild(dot);
+          wrapper.appendChild(text);
+          avatar.container.parentElement.insertBefore(wrapper, avatar.container);
+          log('badge inline añadido:', name);
+        } else {
+          // Fallback: badge flotante a la izquierda del avatar.
+          var badge = document.createElement('span');
+          badge.className = 'cms-user-name-floating';
+          badge.textContent = name;
+          badge.title = name;
+          document.body.appendChild(badge);
+          badge.style.right = '6.5rem';
+          log('badge flotante añadido:', name);
+        }
       }
 
       function removeUserName() {
         var floating = document.querySelector('.cms-user-name-floating');
         if (floating) floating.remove();
+        var inline = document.querySelector('.cms-user-name-inline');
+        if (inline) inline.remove();
       }
 
       function findCollectionsHeading() {
@@ -800,6 +851,27 @@
         }
       }
 
+      var userNameWatcher = null;
+      function watchUserName(user) {
+        if (userNameWatcher) return;
+        userNameWatcher = setInterval(function () {
+          if (!window.netlifyIdentity || !window.netlifyIdentity.currentUser()) {
+            stopUserNameWatcher();
+            return;
+          }
+          if (!document.querySelector('.cms-user-name-floating') && !document.querySelector('.cms-user-name-inline')) {
+            ensureFloatingUserName(user);
+          }
+        }, 1500);
+      }
+
+      function stopUserNameWatcher() {
+        if (userNameWatcher) {
+          clearInterval(userNameWatcher);
+          userNameWatcher = null;
+        }
+      }
+
       waitForIdentity(function (identity) {
         log('configurando identity events');
 
@@ -807,6 +879,7 @@
           if (user) {
             log('usuario listo:', user.email, '| admin:', isAdmin(user));
             ensureFloatingUserName(user);
+            watchUserName(user);
             // Los botones se muestran a todo usuario logueado; la página
             // /admin/gestion-colecciones y la Netlify Function validan el rol admin.
             watchSidebar();
@@ -818,6 +891,7 @@
         identity.on('logout', function () {
           log('logout');
           removeUserName();
+          stopUserNameWatcher();
           stopSidebarWatcher();
           closeAdminPanel();
           var sidebarActions = document.querySelector('.cms-sidebar-actions');
