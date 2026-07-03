@@ -55,6 +55,9 @@
             </svg>
           </div>
           <span id="user-name" class="text-sm font-medium text-ugr-text max-w-[150px] truncate hidden md:block"></span>
+          <a id="admin-link" href="/admin/crear-proyecto" class="hidden text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-2 py-1 rounded-md transition-all duration-200">
+            Admin
+          </a>
         </div>
         <button id="login-btn" class="text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
           Entrar
@@ -159,23 +162,37 @@
 
   const userInfo = document.getElementById('user-info');
   const userName = document.getElementById('user-name');
+  const adminLink = document.getElementById('admin-link');
   const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
 
+  function isAdmin(user) {
+    if (!user) return false;
+    const metadata = user.app_metadata || user.user_metadata || {};
+    const roles = metadata.roles || user.roles || [];
+    return roles.includes('admin');
+  }
+
   function updateUserUI(user) {
     if (user && userName) {
-      const metadata = user.user_metadata || {};
+      const metadata = user.user_metadata || user.app_metadata || {};
       const displayName = metadata.full_name || metadata.name || user.email;
       userName.textContent = displayName;
       userInfo?.classList.remove('hidden');
       userInfo?.classList.add('flex');
       loginBtn?.classList.add('hidden');
       logoutBtn?.classList.remove('hidden');
+      if (isAdmin(user)) {
+        adminLink?.classList.remove('hidden');
+      } else {
+        adminLink?.classList.add('hidden');
+      }
     } else {
       userInfo?.classList.add('hidden');
       userInfo?.classList.remove('flex');
       loginBtn?.classList.remove('hidden');
       logoutBtn?.classList.add('hidden');
+      adminLink?.classList.add('hidden');
     }
   }
 

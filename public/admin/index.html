@@ -30,91 +30,154 @@
   </style>
   <script>
     (function () {
+      var DEBUG = true;
+      function log() {
+        if (DEBUG) console.log.apply(console, ['[CMS User Name]'].concat(Array.prototype.slice.call(arguments)));
+      }
+
       function waitForIdentity(callback) {
         if (window.netlifyIdentity) {
           callback(window.netlifyIdentity);
           return;
         }
-        let attempts = 0;
-        const maxAttempts = 50;
-        const interval = setInterval(function () {
+        var attempts = 0;
+        var maxAttempts = 60;
+        var interval = setInterval(function () {
           attempts++;
           if (window.netlifyIdentity) {
             clearInterval(interval);
+            log('netlifyIdentity encontrado después de ' + attempts + ' intentos');
             callback(window.netlifyIdentity);
           } else if (attempts >= maxAttempts) {
             clearInterval(interval);
+            log('netlifyIdentity no se encontró tras esperar');
           }
         }, 100);
       }
 
       function getUserName(user) {
         if (!user) return null;
-        var metadata = user.user_metadata || {};
+        var metadata = user.user_metadata || user.app_metadata || {};
         return metadata.full_name || metadata.name || user.email || 'Usuario';
       }
 
       function findAvatarButton() {
+        // Selectores ordenados de más específico a más genérico.
         var selectors = [
           '[data-testid="user-menu"]',
           '[data-testid="avatar-menu"]',
+          '[data-testid="user-button"]',
+          '[aria-label*="user" i]',
+          '[aria-label*="usuario" i]',
+          '[aria-label*="account" i]',
+          '[aria-label*="perfil" i]',
           'header button img[src*="gravatar"]',
           'header button img[src^="data:"]',
           'nav button img[src*="gravatar"]',
           'nav button img[src^="data:"]',
           'header button img[alt*="avatar" i]',
           'nav button img[alt*="avatar" i]',
+          'header button svg + img',
+          'nav button svg + img',
         ];
         for (var i = 0; i < selectors.length; i++) {
-          var img = document.querySelector(selectors[i]);
-          if (img) {
-            var button = img.closest('button');
-            if (button) return { button: button, img: img };
+          var target = document.querySelector(selectors[i]);
+          if (target) {
+            var button = target.closest('button');
+            if (button) {
+              log('avatar encontrado con selector:', selectors[i]);
+              return { button: button, img: target.tagName === 'IMG' ? target : target.querySelector('img') };
+            }
           }
         }
+
+        // Fallback: último botón dentro del header o nav visible.
+        var header = document.querySelector('header, nav, [class*="header" i], [class*="topbar" i]');
+        if (header) {
+          var buttons = header.querySelectorAll('button');
+          if (buttons.length) {
+            var lastButton = buttons[buttons.length - 1];
+            log('usando último botón del header como fallback');
+            return { button: lastButton, img: lastButton.querySelector('img') };
+          }
+        }
+
+        log('no se encontró botón de avatar');
         return null;
       }
 
       function injectUserName(user) {
         var name = getUserName(user);
-        if (!name) return false;
+        if (!name) {
+          log('no hay nombre para mostrar');
+          return false;
+        }
+        log('intentando inyectar nombre:', name);
 
         var found = findAvatarButton();
         if (!found) return false;
 
         var button = found.button;
-        if (button.querySelector('.cms-user-name')) return true;
+        if (button.querySelector('.cms-user-name')) {
+          log('nombre ya inyectado');
+          return true;
+        }
+
+        // Asegurar que el botón disponga sus hijos en horizontal.
+        button.style.display = 'inline-flex';
+        button.style.alignItems = 'center';
 
         var span = document.createElement('span');
         span.className = 'cms-user-name';
         span.textContent = name;
         span.title = name;
-        button.insertBefore(span, found.img.nextSibling);
+
+        if (found.img && found.img.nextSibling) {
+          button.insertBefore(span, found.img.nextSibling);
+        } else if (found.img) {
+          button.appendChild(span);
+        } else {
+          button.insertBefore(span, button.firstChild);
+        }
+        log('nombre inyectado con éxito');
         return true;
       }
 
       function watchAndInject(user) {
         if (injectUserName(user)) return;
+        var attempts = 0;
         var observer = new MutationObserver(function () {
+          attempts++;
           if (injectUserName(user)) {
             observer.disconnect();
+            log('inyectado tras observar ' + attempts + ' mutaciones');
+          } else if (attempts > 200) {
+            observer.disconnect();
+            log('se detuvo el observador sin encontrar el avatar');
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
       }
 
       waitForIdentity(function (identity) {
-        var user = identity.currentUser();
-        if (user) {
-          watchAndInject(user);
+        log('configurando identity events');
+
+        function onUserReady(user) {
+          if (user) {
+            log('usuario listo:', user.email);
+            watchAndInject(user);
+          }
         }
-        identity.on('login', function (u) {
-          watchAndInject(u);
-        });
+
+        identity.on('init', onUserReady);
+        identity.on('login', onUserReady);
         identity.on('logout', function () {
+          log('logout');
           var existing = document.querySelector('.cms-user-name');
           if (existing) existing.remove();
         });
+
+        onUserReady(identity.currentUser());
       });
     })();
   </script>
