@@ -132,24 +132,34 @@ const colecciones = [
   }
 
   waitForIdentity(function (identity) {
-    var user = identity.currentUser();
+    function checkUser(user) {
+      if (!user) {
+        loading.classList.add('hidden');
+        adminPanel.classList.add('hidden');
+        notAllowed.classList.remove('hidden');
+        notAllowed.textContent = 'Debes iniciar sesión para acceder.';
+        return;
+      }
 
-    if (!user) {
+      if (!isAdmin(user)) {
+        loading.classList.add('hidden');
+        adminPanel.classList.add('hidden');
+        notAllowed.classList.remove('hidden');
+        notAllowed.textContent = 'Hola ' + getUserName(user) + '. No tienes rol de administrador.';
+        return;
+      }
+
       loading.classList.add('hidden');
-      notAllowed.classList.remove('hidden');
-      notAllowed.textContent = 'Debes iniciar sesión para acceder.';
-      return;
+      notAllowed.classList.add('hidden');
+      adminPanel.classList.remove('hidden');
     }
 
-    if (!isAdmin(user)) {
-      loading.classList.add('hidden');
-      notAllowed.classList.remove('hidden');
-      notAllowed.textContent = 'Hola ' + getUserName(user) + '. No tienes rol de administrador.';
-      return;
-    }
-
-    loading.classList.add('hidden');
-    adminPanel.classList.remove('hidden');
+    // Esperar a que Netlify Identity termine de inicializar la sesión.
+    identity.on('init', checkUser);
+    identity.on('login', checkUser);
+    identity.on('logout', function () {
+      checkUser(null);
+    });
   });
 
   form?.addEventListener('submit', async function (e) {
