@@ -384,19 +384,39 @@
             if (container) return { container: container };
           }
         }
-        // Último botón en la zona superior derecha.
-        var candidates = document.querySelectorAll('button, [role="button"]');
-        var best = null;
-        var bestRight = -1;
-        for (var j = 0; j < candidates.length; j++) {
-          var c = candidates[j];
-          var rect = c.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0 && rect.top < 80 && rect.right > bestRight) {
-            best = c;
-            bestRight = rect.right;
-          }
+
+        // Fallback: buscar el elemento circular más a la derecha en el header (el avatar).
+        var all = Array.prototype.slice.call(document.querySelectorAll('header *'));
+        var circular = all.filter(function (el) {
+          var rect = el.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0 || rect.top >= 80) return false;
+          var ratio = rect.width / rect.height;
+          return ratio > 0.85 && ratio < 1.15 && rect.width > 30 && rect.width < 70 && !!el.querySelector('img, svg, i');
+        });
+
+        if (circular.length > 0) {
+          circular.sort(function (a, b) {
+            return b.getBoundingClientRect().right - a.getBoundingClientRect().right;
+          });
+          var target = circular[0];
+          var container = target.closest('button, [role="button"]') || target;
+          return { container: container };
         }
-        return best ? { container: best } : null;
+
+        // Último botón en la zona superior derecha.
+        var buttons = Array.prototype.slice.call(document.querySelectorAll('header button, header [role="button"]'));
+        buttons = buttons.filter(function (b) {
+          var rect = b.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && rect.top < 80;
+        });
+        if (buttons.length > 0) {
+          buttons.sort(function (a, b) {
+            return b.getBoundingClientRect().right - a.getBoundingClientRect().right;
+          });
+          return { container: buttons[0] };
+        }
+
+        return null;
       }
 
       function ensureFloatingUserName(user) {
