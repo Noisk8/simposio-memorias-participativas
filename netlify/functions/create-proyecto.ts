@@ -16,8 +16,13 @@ export const handler = async (event: any, context: any) => {
 
   const { user } = context.clientContext || {};
   const roles = user?.app_metadata?.roles || user?.roles || [];
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = roles.includes('admin') || adminEmails.includes((user?.email || '').toLowerCase());
 
-  if (!roles.includes('admin')) {
+  if (!isAdmin) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear proyectos.' }) };
   }
 

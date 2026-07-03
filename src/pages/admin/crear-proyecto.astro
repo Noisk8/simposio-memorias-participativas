@@ -124,17 +124,17 @@ import Layout from '../../layouts/Layout.astro';
         return;
       }
 
-      if (!isAdmin(user)) {
-        loading.classList.add('hidden');
-        form.classList.add('hidden');
-        notAllowed.classList.remove('hidden');
-        notAllowed.textContent = 'Hola ' + getUserName(user) + '. No tienes rol de administrador.';
-        return;
-      }
-
       loading.classList.add('hidden');
-      notAllowed.classList.add('hidden');
       form.classList.remove('hidden');
+
+      // Si el rol admin no está en el token, mostrar aviso sin bloquear:
+      // la Netlify Function valida el permiso real (rol o ADMIN_EMAILS).
+      if (!isAdmin(user)) {
+        notAllowed.classList.remove('hidden');
+        notAllowed.textContent = 'Hola ' + getUserName(user) + '. Tu token no incluye el rol admin; si eres administrador (ADMIN_EMAILS), las acciones funcionarán igualmente.';
+      } else {
+        notAllowed.classList.add('hidden');
+      }
     }
 
     // Esperar a que Netlify Identity termine de inicializar la sesión.
@@ -152,8 +152,8 @@ import Layout from '../../layouts/Layout.astro';
 
     var identity = window.netlifyIdentity;
     var user = identity?.currentUser?.();
-    if (!user || !isAdmin(user)) {
-      status.textContent = 'No tienes permiso.';
+    if (!user) {
+      status.textContent = 'Debes iniciar sesión.';
       status.className = 'text-sm font-medium text-red-600';
       return;
     }

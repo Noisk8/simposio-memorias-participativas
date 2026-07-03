@@ -1,0 +1,238 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Gestionar usuarios - Admin">
+  <section class="py-16 bg-white min-h-[60vh]">
+    <div class="max-w-4xl mx-auto px-4">
+      <h1 class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+        Gestionar usuarios y roles
+      </h1>
+      <p class="text-ugr-text-light mb-8">
+        Asigna los roles <strong>admin</strong> o <strong>editor</strong> a los usuarios registrados. Solo los administradores pueden acceder a esta página.
+      </p>
+
+      <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6"></div>
+
+      <div id="loading" class="text-ugr-text-light mb-6">Verificando sesión...</div>
+
+      <div id="admin-panel" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold text-ugr-text">Usuarios registrados</h2>
+          <button id="refresh-btn" class="text-sm text-ugr-green hover:underline">Actualizar lista</button>
+        </div>
+
+        <div id="users-loading" class="text-ugr-text-light mb-4">Cargando usuarios...</div>
+        <div id="users-error" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-4"></div>
+
+        <div class="overflow-x-auto">
+          <table id="users-table" class="hidden w-full text-sm border border-gray-200 rounded-lg">
+            <thead>
+              <tr class="bg-gray-50 text-left">
+                <th class="px-4 py-3 font-semibold text-ugr-text">Usuario</th>
+                <th class="px-4 py-3 font-semibold text-ugr-text">Roles actuales</th>
+                <th class="px-4 py-3 font-semibold text-ugr-text">Asignar rol</th>
+              </tr>
+            </thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+
+        <p id="action-status" class="mt-4 text-sm font-medium"></p>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script is:inline>
+  // @ts-nocheck
+  const notAllowed = document.getElementById('not-allowed');
+  const loading = document.getElementById('loading');
+  const adminPanel = document.getElementById('admin-panel');
+  const usersLoading = document.getElementById('users-loading');
+  const usersError = document.getElementById('users-error');
+  const usersTable = document.getElementById('users-table');
+  const usersBody = document.getElementById('users-body');
+  const actionStatus = document.getElementById('action-status');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  function waitForIdentity(callback) {
+    if (window.netlifyIdentity) {
+      callback(window.netlifyIdentity);
+      return;
+    }
+    var attempts = 0;
+    var interval = setInterval(function () {
+      attempts++;
+      if (window.netlifyIdentity) {
+        clearInterval(interval);
+        callback(window.netlifyIdentity);
+      } else if (attempts > 60) {
+        clearInterval(interval);
+        loading.textContent = 'No se pudo cargar la autenticación.';
+      }
+    }, 100);
+  }
+
+  function getToken() {
+    var user = window.netlifyIdentity?.currentUser?.();
+    return user?.token?.access_token || null;
+  }
+
+  async function loadUsers() {
+    usersLoading.classList.remove('hidden');
+    usersError.classList.add('hidden');
+    usersTable.classList.add('hidden');
+
+    var token = getToken();
+    if (!token) {
+      usersError.textContent = 'No se encontró el token de sesión.';
+      usersError.classList.remove('hidden');
+      usersLoading.classList.add('hidden');
+      return;
+    }
+
+    try {
+      var res = await fetch('/.netlify/functions/manage-users', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      var data = await res.json();
+
+      usersLoading.classList.add('hidden');
+
+      if (!res.ok) {
+        usersError.textContent = data.error || 'Error al cargar los usuarios.';
+        usersError.classList.remove('hidden');
+        return;
+      }
+
+      renderUsers(data.users || []);
+      usersTable.classList.remove('hidden');
+    } catch (err) {
+      usersLoading.classList.add('hidden');
+      usersError.textContent = 'Error de red: ' + err.message;
+      usersError.classList.remove('hidden');
+    }
+  }
+
+  function renderUsers(users) {
+    usersBody.innerHTML = '';
+    users.forEach(function (u) {
+      var tr = document.createElement('tr');
+      tr.className = 'border-t border-gray-200';
+
+      var tdUser = document.createElement('td');
+      tdUser.className = 'px-4 py-3';
+      tdUser.innerHTML =
+        '<div class="font-medium text-ugr-text">' + escapeHtml(u.name || u.email) + '</div>' +
+        '<div class="text-xs text-ugr-text-light">' + escapeHtml(u.email) + '</div>';
+
+      var tdRoles = document.createElement('td');
+      tdRoles.className = 'px-4 py-3';
+      if (u.roles.length > 0) {
+        tdRoles.innerHTML = u.roles
+          .map(function (r) {
+            var color = r === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+            return '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mr-1 ' + color + '">' + escapeHtml(r) + '</span>';
+          })
+          .join('');
+      } else {
+        tdRoles.innerHTML = '<span class="text-xs text-ugr-text-light italic">Sin rol</span>';
+      }
+
+      var tdActions = document.createElement('td');
+      tdActions.className = 'px-4 py-3';
+      tdActions.appendChild(roleButton(u, 'admin'));
+      tdActions.appendChild(roleButton(u, 'editor'));
+
+      tr.appendChild(tdUser);
+      tr.appendChild(tdRoles);
+      tr.appendChild(tdActions);
+      usersBody.appendChild(tr);
+    });
+  }
+
+  function roleButton(user, role) {
+    var btn = document.createElement('button');
+    var hasRole = user.roles.indexOf(role) !== -1;
+    btn.textContent = hasRole ? 'Quitar ' + role : 'Hacer ' + role;
+    btn.className = hasRole
+      ? 'text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 mr-2 transition-colors'
+      : 'text-xs px-3 py-1.5 rounded-lg border border-ugr-green text-ugr-green hover:bg-green-50 mr-2 transition-colors';
+    btn.addEventListener('click', function () {
+      var newRoles = hasRole
+        ? user.roles.filter(function (r) { return r !== role; })
+        : user.roles.concat([role]);
+      setRoles(user, newRoles);
+    });
+    return btn;
+  }
+
+  async function setRoles(user, roles) {
+    actionStatus.textContent = 'Actualizando roles de ' + user.email + '...';
+    actionStatus.className = 'mt-4 text-sm font-medium text-ugr-text-light';
+
+    var token = getToken();
+    if (!token) {
+      actionStatus.textContent = 'No se encontró el token de sesión.';
+      actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
+      return;
+    }
+
+    try {
+      var res = await fetch('/.netlify/functions/manage-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({ userId: user.id, roles: roles }),
+      });
+      var data = await res.json();
+
+      if (res.ok) {
+        actionStatus.textContent = 'Roles actualizados para ' + user.email + '.';
+        actionStatus.className = 'mt-4 text-sm font-medium text-green-600';
+        loadUsers();
+      } else {
+        actionStatus.textContent = data.error || 'Error al actualizar los roles.';
+        actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
+      }
+    } catch (err) {
+      actionStatus.textContent = 'Error de red: ' + err.message;
+      actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
+    }
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+
+  waitForIdentity(function (identity) {
+    function checkUser(user) {
+      if (!user) {
+        loading.classList.add('hidden');
+        adminPanel.classList.add('hidden');
+        notAllowed.classList.remove('hidden');
+        notAllowed.textContent = 'Debes iniciar sesión para acceder.';
+        return;
+      }
+
+      // El acceso real lo valida la Netlify Function; aquí solo mostramos el panel.
+      loading.classList.add('hidden');
+      notAllowed.classList.add('hidden');
+      adminPanel.classList.remove('hidden');
+      loadUsers();
+    }
+
+    identity.on('init', checkUser);
+    identity.on('login', checkUser);
+    identity.on('logout', function () {
+      checkUser(null);
+    });
+  });
+
+  refreshBtn?.addEventListener('click', loadUsers);
+</script>

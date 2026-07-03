@@ -16,8 +16,13 @@ export const handler = async (event: any, context: any) => {
 
   const { user } = context.clientContext || {};
   const roles = user?.app_metadata?.roles || user?.roles || [];
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = roles.includes('admin') || adminEmails.includes((user?.email || '').toLowerCase());
 
-  if (!roles.includes('admin')) {
+  if (!isAdmin) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear colecciones.' }) };
   }
 
@@ -90,10 +95,17 @@ export const handler = async (event: any, context: any) => {
     const configContent = configFile ? Buffer.from(configFile.content, 'base64').toString('utf-8') : '';
 
     // 2. Verificar que la colección no exista
-    const existingRegex = new RegExp(`name:\s*["']?${safeName}["']?`, 'i');
+    const existingRegex = new RegExp('name:\\s*["\']?' + safeName + '["\']?', 'i');
     if (existingRegex.test(configContent)) {
       return { statusCode: 409, headers, body: JSON.stringify({ error: 'La colección ya existe en config.yml.' }) };
     }
+
+    // Re-indentar los campos para que queden anidados bajo la colección (4 espacios).
+    const indentedFields = String(fields || '')
+      .trim()
+      .split('\n')
+      .map((line: string) => '    ' + line.replace(/\r$/, ''))
+      .join('\n');
 
     const newCollectionYaml = `
 collections:
@@ -102,7 +114,7 @@ collections:
     folder: "${folder}"
     create: true
     slug: "${slug}"
-    ${fields.trim()}
+${indentedFields}
 `;
 
     // Si ya existe la sección collections, eliminamos el duplicado del encabezado.

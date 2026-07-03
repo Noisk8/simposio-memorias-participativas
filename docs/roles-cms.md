@@ -15,12 +15,29 @@ Este proyecto maneja dos roles principales:
 
 ## 1. Asignar roles a un usuario
 
-1. Ve al panel de **Netlify Identity** en tu sitio.
-2. Selecciona el usuario al que quieres asignar un rol.
-3. En la sección **User metadata** o **Roles**, escribe o selecciona el rol:
-   - `admin`
-   - `editor`
-4. Guarda los cambios.
+El panel de Netlify ya no permite editar roles directamente, así que el proyecto incluye su propio sistema:
+
+### Opción A: Página de gestión de usuarios (recomendada)
+
+1. Configura la variable de entorno `ADMIN_EMAILS` en Netlify (**Site settings → Environment variables**) con tu email, por ejemplo: `ADMIN_EMAILS=tu-email@ejemplo.com`. Puedes poner varios separados por coma.
+2. Redeploya el sitio para que la variable se aplique a las funciones.
+3. Inicia sesión y ve a `/admin/gestion-usuarios`.
+4. Verás la lista de usuarios registrados y podrás asignar o quitar los roles `admin` y `editor` con un clic.
+
+> La página usa la Netlify Function `manage-users`, que permite gestionar usuarios si tu email está en `ADMIN_EMAILS` o si ya tienes el rol `admin`.
+
+### Opción B: Asignación automática al registrarse
+
+La función `identity-signup` se ejecuta automáticamente cuando un usuario nuevo se registra:
+
+- Si su email está en `ADMIN_EMAILS`, recibe el rol `admin`.
+- En caso contrario, recibe el rol `editor`.
+
+> **Importante:** esto solo aplica a usuarios **nuevos**. Para usuarios ya registrados usa la Opción A.
+
+### Después de asignar un rol
+
+El usuario debe **cerrar sesión y volver a entrar** para que su token JWT incluya el nuevo rol.
 
 > Los roles se almacenan en el objeto de usuario (`app_metadata.roles`) y Decap CMS los lee para aplicar permisos.
 

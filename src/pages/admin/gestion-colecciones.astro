@@ -29,6 +29,11 @@ const colecciones = [
       </div>
 
       <div id="admin-panel" class="hidden space-y-12">
+        <div class="flex justify-end">
+          <a href="/admin/gestion-usuarios" class="text-sm text-ugr-green hover:underline font-medium">
+            Gestionar usuarios y roles →
+          </a>
+        </div>
         <section>
           <h2 class="text-xl font-semibold mb-4 text-ugr-text">Colecciones activas</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -141,17 +146,17 @@ const colecciones = [
         return;
       }
 
-      if (!isAdmin(user)) {
-        loading.classList.add('hidden');
-        adminPanel.classList.add('hidden');
-        notAllowed.classList.remove('hidden');
-        notAllowed.textContent = 'Hola ' + getUserName(user) + '. No tienes rol de administrador.';
-        return;
-      }
-
       loading.classList.add('hidden');
-      notAllowed.classList.add('hidden');
       adminPanel.classList.remove('hidden');
+
+      // Si el rol admin no está en el token, mostrar aviso sin bloquear:
+      // la Netlify Function valida el permiso real (rol o ADMIN_EMAILS).
+      if (!isAdmin(user)) {
+        notAllowed.classList.remove('hidden');
+        notAllowed.textContent = 'Hola ' + getUserName(user) + '. Tu token no incluye el rol admin; si eres administrador (ADMIN_EMAILS), las acciones funcionarán igualmente.';
+      } else {
+        notAllowed.classList.add('hidden');
+      }
     }
 
     // Esperar a que Netlify Identity termine de inicializar la sesión.
@@ -169,8 +174,8 @@ const colecciones = [
 
     var identity = window.netlifyIdentity;
     var user = identity?.currentUser?.();
-    if (!user || !isAdmin(user)) {
-      status.textContent = 'No tienes permiso.';
+    if (!user) {
+      status.textContent = 'Debes iniciar sesión.';
       status.className = 'text-sm font-medium text-red-600';
       return;
     }
