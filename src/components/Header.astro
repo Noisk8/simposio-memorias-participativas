@@ -46,8 +46,26 @@
         </h1>
       </a>
 
+      <!-- Usuario -->
+      <div class="flex items-center gap-2 flex-shrink-0 order-2 md:order-3">
+        <div id="user-info" class="hidden items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-ugr-green text-white flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <span id="user-name" class="text-sm font-medium text-ugr-text max-w-[150px] truncate hidden md:block"></span>
+        </div>
+        <button id="login-btn" class="text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
+          Entrar
+        </button>
+        <button id="logout-btn" class="hidden text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
+          Salir
+        </button>
+      </div>
+
       <!-- Navegación -->
-      <nav class="flex-1">
+      <nav class="flex-1 order-3 md:order-2">
         <!-- Botón menú móvil -->
         <button 
           id="mobile-menu-btn"
@@ -131,10 +149,53 @@
   </div>
 </header>
 
-<script>
+<script is:inline>
+  // @ts-nocheck
   const btn = document.getElementById('mobile-menu-btn');
   const nav = document.getElementById('mobile-nav');
   btn?.addEventListener('click', () => {
     nav?.classList.toggle('hidden');
   });
+
+  const userInfo = document.getElementById('user-info');
+  const userName = document.getElementById('user-name');
+  const loginBtn = document.getElementById('login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+
+  function updateUserUI(user) {
+    if (user && userName) {
+      const metadata = user.user_metadata || {};
+      const displayName = metadata.full_name || metadata.name || user.email;
+      userName.textContent = displayName;
+      userInfo?.classList.remove('hidden');
+      userInfo?.classList.add('flex');
+      loginBtn?.classList.add('hidden');
+      logoutBtn?.classList.remove('hidden');
+    } else {
+      userInfo?.classList.add('hidden');
+      userInfo?.classList.remove('flex');
+      loginBtn?.classList.remove('hidden');
+      logoutBtn?.classList.add('hidden');
+    }
+  }
+
+  function setupIdentity() {
+    const identity = window.netlifyIdentity;
+    if (!identity) return;
+
+    identity.on('init', (user) => updateUserUI(user));
+    identity.on('login', (user) => updateUserUI(user));
+    identity.on('logout', () => updateUserUI(null));
+
+    loginBtn?.addEventListener('click', () => identity.open('login'));
+    logoutBtn?.addEventListener('click', () => identity.logout());
+
+    updateUserUI(identity.currentUser());
+  }
+
+  if (window.netlifyIdentity) {
+    setupIdentity();
+  } else {
+    window.addEventListener('netlifyIdentityLoaded', setupIdentity);
+  }
 </script>
