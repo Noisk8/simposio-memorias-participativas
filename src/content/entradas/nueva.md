@@ -1,5 +1,5 @@
 ---
-draft: true
+draft: false
 title: "este si "
 date: 2026-07-03
 author: noisk8
