@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 1
 title: "Exposición de Arte Sacro-Social «San Miguel Harto»"
 place: "Granada, España"

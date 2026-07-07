@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 16
 title: "El territorio en las cosas"
 place: "Colombia"

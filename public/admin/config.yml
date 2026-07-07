@@ -5,31 +5,384 @@ backend:
 media_folder: "public/images"
 public_folder: "/images"
 
+# Colecciones taxonómicas globales (equivalentes a Categorías y Etiquetas de WordPress)
+# Deben declararse antes de las colecciones de contenido para que el widget relation
+# pueda referenciarlas correctamente en el editor.
 collections:
+  - name: "simposios"
+    label: "Ediciones de simposio"
+    label_singular: "Edición de simposio"
+    folder: "src/content/simposios"
+    create: true
+    slug: "{{slug}}"
+    description: "Cada edición de la Red Internacional de Memorias Participativas. Una edición puede ser la activa por defecto."
+    sortable_fields: ["year", "edition", "title"]
+    view_groups:
+      - label: "Estado"
+        field: status
+    fields:
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Slug", name: "slug", widget: "string", hint: "Identificador URL-friendly, ej: 2026 o 2028." }
+      - { label: "Edición (número)", name: "edition", widget: "number", value_type: "int" }
+      - { label: "Año", name: "year", widget: "number", value_type: "int" }
+      - { label: "Fecha", name: "date", widget: "datetime", format: "YYYY-MM-DD", date_format: "DD/MM/YYYY", time_format: false, required: false }
+      - { label: "Lugar", name: "place", widget: "string", required: false }
+      - label: "Estado"
+        name: "status"
+        widget: "select"
+        options: ["active", "archived", "upcoming"]
+        default: "active"
+      - { label: "Tema", name: "theme", widget: "string", required: false }
+      - { label: "Imagen de cabecera", name: "image", widget: "image", required: false }
+      - { label: "Cartel", name: "poster", widget: "image", required: false }
+      - { label: "URL del programa", name: "program_url", widget: "string", required: false }
+      - { label: "Edición por defecto", name: "is_default", widget: "boolean", default: false, hint: "Solo una edición debe estar marcada como por defecto." }
+      - { label: "Contenido", name: "body", widget: "markdown", required: false }
+
+  - name: "categorias"
+    label: "Categorías"
+    label_singular: "Categoría"
+    folder: "src/content/categorias"
+    create: true
+    slug: "{{slug}}"
+    description: "Taxonomía jerárquica para clasificar entradas y proyectos (equivalente a Categorías de WordPress)."
+    view_filters:
+      - label: "Raíces"
+        field: parent
+        pattern: "none"
+    fields:
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Slug (opcional)", name: "slug", widget: "string", required: false, hint: "Identificador URL-friendly. Si se deja vacío se usa el título." }
+      - { label: "Descripción", name: "description", widget: "text", required: false }
+      - label: "Categoría padre"
+        name: "parent"
+        widget: "relation"
+        collection: "categorias"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        required: false
+        hint: "Selecciona una categoría superior para crear jerarquía (equivalente a Categorías padre/hijo de WordPress)."
+
+  - name: "etiquetas"
+    label: "Etiquetas"
+    label_singular: "Etiqueta"
+    folder: "src/content/etiquetas"
+    create: true
+    slug: "{{slug}}"
+    description: "Taxonomía plana de palabras clave para entradas y proyectos (equivalente a Tags de WordPress)."
+    fields:
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Slug (opcional)", name: "slug", widget: "string", required: false, hint: "Identificador URL-friendly. Si se deja vacío se usa el título." }
+      - { label: "Descripción", name: "description", widget: "text", required: false }
+
+  # Custom Post Type: Proyectos del Museo de Memorias Vivas
   - name: "proyectos"
     label: "Proyectos del Museo de Memorias Vivas"
     folder: "src/content/proyectos"
     create: true
     slug: "{{number}}-{{slug}}"
-    # Roles de Netlify Identity que pueden ver y editar esta colección.
-    roles: ["admin", "editor"]
+    # Solo entradas publicadas: los borradores viven en su propia colección
+    filter: { field: draft, values: [false] }
+    sortable_fields: ["number", "title", "place", "author"]
+    view_groups:
+      - label: "Lugar"
+        field: place
+      - label: "Colectivo"
+        field: collective
     fields:
+      # Campo interno: se gestiona automáticamente con "Publish" (publica) y
+      # "Guardar como borrador" (borrador). No se muestra en el formulario.
+      - { name: "draft", widget: "hidden", default: false }
+      - label: "Simposio"
+        name: "simposio"
+        widget: "relation"
+        collection: "simposios"
+        search_fields: ["title", "year"]
+        value_field: "slug"
+        display_fields: ["title", "year"]
+        required: false
+        default: "2026"
+        hint: "Edición del simposio a la que pertenece este proyecto."
       - { label: "Número", name: "number", widget: "number", value_type: "int" }
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Lugar", name: "place", widget: "string" }
       - { label: "Autor/a", name: "author", widget: "string", required: false, default: "" }
       - { label: "Colectivo", name: "collective", widget: "string", required: false, default: "" }
+      - label: "Categorías"
+        name: "categories"
+        widget: "relation"
+        collection: "categorias"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+        hint: "Selecciona una o varias categorías para clasificar este proyecto."
+      - label: "Etiquetas"
+        name: "tags"
+        widget: "relation"
+        collection: "etiquetas"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+        hint: "Añade palabras clave relacionadas con este proyecto."
       - { label: "Imagen", name: "image", widget: "image" }
       - { label: "Descripción corta (para tarjetas)", name: "description", widget: "text", required: false, default: "" }
       - { label: "Texto completo (Markdown)", name: "body", widget: "markdown", required: false }
 
-  - name: "noticias"
-    label: "noticias"
-    folder: "src/content/noticias"
+  # Posts genéricos al estilo WordPress (antes "noticias")
+  - name: "entradas"
+    label: "Entradas"
+    label_singular: "Entrada"
+    folder: "src/content/entradas"
     create: true
     slug: "{{slug}}"
+    description: "Entradas o noticias del sitio (equivalente a Posts de WordPress). Solo se listan las publicadas; los borradores están en la colección Borradores."
+    # Solo entradas publicadas: los borradores viven en su propia colección
+    filter: { field: draft, values: [false] }
+    sortable_fields: ["date", "title", "author"]
+    view_groups:
+      - label: "Autor/a"
+        field: author
+      - label: "Mes de publicación"
+        field: date
+        pattern: "\\d{4}-\\d{2}"
     fields:
+      # Campo interno: se gestiona automáticamente con "Publish" (publica) y
+      # "Guardar como borrador" (borrador). No se muestra en el formulario.
+      - { name: "draft", widget: "hidden", default: false }
+      - label: "Simposio"
+        name: "simposio"
+        widget: "relation"
+        collection: "simposios"
+        search_fields: ["title", "year"]
+        value_field: "slug"
+        display_fields: ["title", "year"]
+        required: false
+        default: "2026"
+        hint: "Edición del simposio a la que pertenece esta entrada."
       - { label: "Título", name: "title", widget: "string" }
-      - { label: "Imagen", name: "image", widget: "image", required: false }
+      - { label: "Fecha de publicación", name: "date", widget: "datetime", format: "YYYY-MM-DD", date_format: "DD/MM/YYYY", time_format: false, required: false, hint: "Se rellena automáticamente con la fecha actual al crear la entrada. Determina el orden en el sitio." }
+      - { label: "Autor/a", name: "author", widget: "string", required: false, default: "" }
+      - label: "Categorías"
+        name: "categories"
+        widget: "relation"
+        collection: "categorias"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+        hint: "Selecciona una o varias categorías para clasificar esta entrada."
+      - label: "Etiquetas"
+        name: "tags"
+        widget: "relation"
+        collection: "etiquetas"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+        hint: "Añade palabras clave relacionadas con esta entrada."
+      - { label: "Imagen destacada", name: "image", widget: "image", required: false }
+      - { label: "Extracto", name: "description", widget: "text", required: false, hint: "Resumen corto que aparece en listados y tarjetas." }
+      - { label: "Contenido", name: "body", widget: "markdown", required: false }
+
+  # ===== Borradores (equivalente a "Drafts" de WordPress) =====
+  # Mismas carpetas que las colecciones publicadas, filtradas por draft: true.
+  # Para publicar un borrador: abrirlo, desactivar "Borrador" y guardar.
+  - name: "borradores-entradas"
+    label: "Borradores · Entradas"
+    label_singular: "Borrador de entrada"
+    folder: "src/content/entradas"
+    create: false
+    slug: "{{slug}}"
+    description: "Entradas guardadas como borrador. Para publicar: abre el borrador y pulsa Publish."
+    filter: { field: draft, values: [true] }
+    sortable_fields: ["date", "title", "author"]
+    fields:
+      # Campo interno: "Publish" publica el borrador automáticamente.
+      - { name: "draft", widget: "hidden", default: true }
+      - label: "Simposio"
+        name: "simposio"
+        widget: "relation"
+        collection: "simposios"
+        search_fields: ["title", "year"]
+        value_field: "slug"
+        display_fields: ["title", "year"]
+        required: false
+        default: "2026"
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Fecha de publicación", name: "date", widget: "datetime", format: "YYYY-MM-DD", date_format: "DD/MM/YYYY", time_format: false, required: false }
+      - { label: "Autor/a", name: "author", widget: "string", required: false, default: "" }
+      - label: "Categorías"
+        name: "categories"
+        widget: "relation"
+        collection: "categorias"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+      - label: "Etiquetas"
+        name: "tags"
+        widget: "relation"
+        collection: "etiquetas"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+      - { label: "Imagen destacada", name: "image", widget: "image", required: false }
+      - { label: "Extracto", name: "description", widget: "text", required: false }
+      - { label: "Contenido", name: "body", widget: "markdown", required: false }
+
+  - name: "borradores-proyectos"
+    label: "Borradores · Proyectos"
+    label_singular: "Borrador de proyecto"
+    folder: "src/content/proyectos"
+    create: false
+    slug: "{{number}}-{{slug}}"
+    description: "Proyectos guardados como borrador. Para publicar: abre el borrador y pulsa Publish."
+    filter: { field: draft, values: [true] }
+    sortable_fields: ["number", "title", "place"]
+    fields:
+      # Campo interno: "Publish" publica el borrador automáticamente.
+      - { name: "draft", widget: "hidden", default: true }
+      - label: "Simposio"
+        name: "simposio"
+        widget: "relation"
+        collection: "simposios"
+        search_fields: ["title", "year"]
+        value_field: "slug"
+        display_fields: ["title", "year"]
+        required: false
+        default: "2026"
+        hint: "Edición del simposio a la que pertenece este proyecto."
+      - { label: "Número", name: "number", widget: "number", value_type: "int" }
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Lugar", name: "place", widget: "string" }
+      - { label: "Autor/a", name: "author", widget: "string", required: false, default: "" }
+      - { label: "Colectivo", name: "collective", widget: "string", required: false, default: "" }
+      - label: "Categorías"
+        name: "categories"
+        widget: "relation"
+        collection: "categorias"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+      - label: "Etiquetas"
+        name: "tags"
+        widget: "relation"
+        collection: "etiquetas"
+        search_fields: ["title"]
+        value_field: "title"
+        display_fields: ["title"]
+        multiple: true
+        required: false
+      - { label: "Imagen", name: "image", widget: "image" }
+      - { label: "Descripción corta (para tarjetas)", name: "description", widget: "text", required: false, default: "" }
+      - { label: "Texto completo (Markdown)", name: "body", widget: "markdown", required: false }
+
+  # Páginas informativas de cada simposio
+  - name: "paginas"
+    label: "Páginas informativas"
+    label_singular: "Página informativa"
+    folder: "src/content/paginas"
+    create: true
+    slug: "{{slug}}"
+    description: "Páginas estáticas de cada simposio: El Simposio, Organización, Programa, Contacto, etc."
+    sortable_fields: ["order", "title", "simposio"]
+    view_groups:
+      - label: "Simposio"
+        field: simposio
+      - label: "Plantilla"
+        field: template
+    filter: { field: draft, values: [false] }
+    fields:
+      - { name: "draft", widget: "hidden", default: false }
+      - label: "Simposio"
+        name: "simposio"
+        widget: "relation"
+        collection: "simposios"
+        search_fields: ["title", "year"]
+        value_field: "slug"
+        display_fields: ["title", "year"]
+        required: false
+        default: "2026"
+      - label: "Plantilla"
+        name: "template"
+        widget: "select"
+        options: [
+          { label: "El Simposio", value: "el-simposio" },
+          { label: "Organización", value: "organizacion" },
+          { label: "Programa", value: "programa" },
+          { label: "Contacto", value: "contacto" },
+          { label: "Personalizada", value: "custom" }
+        ]
+        default: "custom"
+      - { label: "Título", name: "title", widget: "string" }
       - { label: "Descripción", name: "description", widget: "text", required: false }
+      - { label: "Imagen de cabecera", name: "image", widget: "image", required: false }
+      - { label: "Orden", name: "order", widget: "number", value_type: "int", required: false, default: 0 }
+      - { label: "Email", name: "email", widget: "string", required: false }
+      - { label: "Instagram (URL)", name: "instagram", widget: "string", required: false }
+      - { label: "Instagram (usuario)", name: "instagram_handle", widget: "string", required: false }
+      - label: "Organizadores"
+        name: "organizadores"
+        widget: "list"
+        required: false
+        field: { label: "Organizador", name: "organizador", widget: "string" }
+      - { label: "Imagen de instituciones", name: "instituciones_image", widget: "image", required: false }
+      - { label: "Contenido", name: "body", widget: "markdown", required: false }
+
+  - name: "borradores-paginas"
+    label: "Borradores · Páginas"
+    label_singular: "Borrador de página"
+    folder: "src/content/paginas"
+    create: false
+    slug: "{{slug}}"
+    description: "Páginas guardadas como borrador. Para publicar: abre el borrador y pulsa Publish."
+    filter: { field: draft, values: [true] }
+    sortable_fields: ["order", "title", "simposio"]
+    fields:
+      - { name: "draft", widget: "hidden", default: true }
+      - label: "Simposio"
+        name: "simposio"
+        widget: "relation"
+        collection: "simposios"
+        search_fields: ["title", "year"]
+        value_field: "slug"
+        display_fields: ["title", "year"]
+        required: false
+        default: "2026"
+      - label: "Plantilla"
+        name: "template"
+        widget: "select"
+        options: [
+          { label: "El Simposio", value: "el-simposio" },
+          { label: "Organización", value: "organizacion" },
+          { label: "Programa", value: "programa" },
+          { label: "Contacto", value: "contacto" },
+          { label: "Personalizada", value: "custom" }
+        ]
+        default: "custom"
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Descripción", name: "description", widget: "text", required: false }
+      - { label: "Imagen de cabecera", name: "image", widget: "image", required: false }
+      - { label: "Orden", name: "order", widget: "number", value_type: "int", required: false, default: 0 }
+      - { label: "Email", name: "email", widget: "string", required: false }
+      - { label: "Instagram (URL)", name: "instagram", widget: "string", required: false }
+      - { label: "Instagram (usuario)", name: "instagram_handle", widget: "string", required: false }
+      - label: "Organizadores"
+        name: "organizadores"
+        widget: "list"
+        required: false
+        field: { label: "Organizador", name: "organizador", widget: "string" }
+      - { label: "Imagen de instituciones", name: "instituciones_image", widget: "image", required: false }
       - { label: "Contenido", name: "body", widget: "markdown", required: false }

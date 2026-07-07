@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 27
 title: "Políticas culturales de memoria en la Dirección de Patrimonio y Memoria"
 place: "Colombia"

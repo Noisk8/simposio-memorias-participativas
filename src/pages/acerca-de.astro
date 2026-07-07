@@ -1,0 +1,121 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getSimposios } from '../lib/simposios';
+
+const simposios = await getSimposios();
+const edicionesActivas = simposios.filter((s) => s.data.status === 'active').length;
+---
+
+<Layout title="Acerca de · Red Internacional de Memorias Participativas" description="Conoce la Red Internacional de Memorias Participativas: un espacio de encuentro, investigación y acción sobre memorias en territorio.">
+  <!-- Hero -->
+  <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
+    <div class="absolute inset-0">
+      <img src="/images/hero-bg.jpg" alt="Red Internacional de Memorias Participativas" class="w-full h-full object-cover" />
+      <div class="absolute inset-0 bg-black/60"></div>
+    </div>
+    <div class="relative z-10 text-center px-4">
+      <nav class="text-white/70 text-sm mb-4">
+        <a href="/" class="hover:text-white transition-colors">Inicio</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">Acerca de</span>
+      </nav>
+      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
+        Acerca de la Red
+      </h1>
+    </div>
+  </section>
+
+  <!-- Introducción -->
+  <section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-4">
+      <p class="text-xl md:text-2xl text-ugr-text leading-relaxed text-center mb-12">
+        La <strong class="text-ugr-green-dark">Red Internacional de Memorias Participativas</strong> es un espacio de encuentro, investigación y acción que promueve la memoria como práctica viva, colectiva y transformadora.
+      </p>
+
+      <div class="grid gap-8 md:grid-cols-2">
+        <div class="card-shadow bg-ugr-cream rounded-xl p-6">
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-4 font-[family-name:var(--font-heading)]">¿Qué hacemos?</h2>
+          <p class="text-ugr-text leading-relaxed">
+            Articulamos procesos de memoria desde lo comunitario, lo académico y lo institucional. Organizamos simposios, talleres, exposiciones y publicaciones que visibilizan experiencias de memoria participativa en diferentes territorios.
+          </p>
+        </div>
+        <div class="card-shadow bg-ugr-cream rounded-xl p-6">
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-4 font-[family-name:var(--font-heading)]">¿Cómo trabajamos?</h2>
+          <p class="text-ugr-text leading-relaxed">
+            Entendemos la participación como una ética: construir memoria con las otras, y no sobre ellas. Apostamos por la creación colectiva como forma de conocimiento, resistencia y reparación simbólica.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Principios -->
+  <section class="py-16 bg-ugr-cream">
+    <div class="max-w-5xl mx-auto px-4">
+      <h2 class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center">
+        Principios que nos guían
+      </h2>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="card-shadow bg-white rounded-xl p-6 border-l-4 border-ugr-green">
+          <h3 class="text-xl font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Memoria situada</h3>
+          <p class="text-ugr-text">La memoria se piensa desde los cuerpos, los territorios y las relaciones que los sostienen.</p>
+        </div>
+        <div class="card-shadow bg-white rounded-xl p-6 border-l-4 border-ugr-green">
+          <h3 class="text-xl font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Participación</h3>
+          <p class="text-ugr-text">Construir memoria con las otras, fortaleciendo procesos de co-creación y autonomía comunitaria.</p>
+        </div>
+        <div class="card-shadow bg-white rounded-xl p-6 border-l-4 border-ugr-green">
+          <h3 class="text-xl font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Diálogo de saberes</h3>
+          <p class="text-ugr-text">Propiciar el encuentro entre academia, comunidades, políticas públicas y prácticas territoriales.</p>
+        </div>
+        <div class="card-shadow bg-white rounded-xl p-6 border-l-4 border-ugr-green">
+          <h3 class="text-xl font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Vínculos internacionales</h3>
+          <p class="text-ugr-text">Tejer redes transnacionales de colaboración entre experiencias de distintos contextos.</p>
+        </div>
+        <div class="card-shadow bg-white rounded-xl p-6 border-l-4 border-ugr-green">
+          <h3 class="text-xl font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Incidencia</h3>
+          <p class="text-ugr-text">Elaborar recomendaciones para políticas públicas inclusivas sobre memorias participativas.</p>
+        </div>
+        <div class="card-shadow bg-white rounded-xl p-6 border-l-4 border-ugr-green">
+          <h3 class="text-xl font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Archivo vivo</h3>
+          <p class="text-ugr-text">Acumular y compartir proyectos, documentos y reflexiones a través del Museo de Memorias Vivas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Simposios -->
+  <section class="py-16 bg-ugr-green text-white">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h2 class="text-3xl font-bold mb-6 font-[family-name:var(--font-heading)]">
+        Nuestras ediciones
+      </h2>
+      <p class="text-lg text-white/90 mb-8">
+        Cada simposio es una instancia de encuentro que aporta proyectos, debates y documentos al archivo de la Red. Hoy contamos con {edicionesActivas} edición{edicionesActivas !== 1 ? 'es' : ''} activa{edicionesActivas !== 1 ? 's' : ''}.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/simposios" class="bg-white text-ugr-green px-6 py-3 rounded-lg font-semibold hover:bg-ugr-cream transition-colors">
+          Ver ediciones
+        </a>
+        <a href="/" class="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-ugr-green transition-colors">
+          Simposio actual
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contacto -->
+  <section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h2 class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+        ¿Querés sumarte?
+      </h2>
+      <p class="text-lg text-ugr-text mb-8 max-w-2xl mx-auto">
+        La Red está abierta a investigadoras, colectivos, instituciones y personas interesadas en construir memorias participativas. Escribinos para conocer más o proponer colaboraciones.
+      </p>
+      <a href="/contacto" class="btn-green inline-block px-6 py-3">
+        Contacto
+      </a>
+    </div>
+  </section>
+</Layout>

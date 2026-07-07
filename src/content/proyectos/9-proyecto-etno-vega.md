@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 9
 title: "Proyecto Etno Vega (s)"
 place: "Vegas del Genil, Granada, España"

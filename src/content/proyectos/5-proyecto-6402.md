@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 5
 title: "Proyecto 6402+"
 place: "Colombia"

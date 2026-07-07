@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 14
 title: "¡Reproduzca Expansivamente!"
 place: "Colombia"

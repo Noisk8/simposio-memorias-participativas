@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 20
 title: "Encuentro Intergeneracional de Memoria(s) en el parque de la Memoria de Sartaguda"
 place: "Navarra, España"

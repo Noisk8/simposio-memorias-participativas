@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 31
 title: "prueba "
 place: "medellín "

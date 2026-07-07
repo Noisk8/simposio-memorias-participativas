@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 8
 title: "Historias Inconclusas"
 place: "Colombia"

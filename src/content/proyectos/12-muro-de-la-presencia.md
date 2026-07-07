@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 12
 title: "Muro de la Presencia"
 place: "Bogotá, Colombia"

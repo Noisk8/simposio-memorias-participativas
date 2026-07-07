@@ -5,7 +5,7 @@
 - **Framework**: Astro 7
 - **UI**: React 19
 - **Estilos**: Tailwind CSS 4
-- **CMS**: Decap CMS (antes Netlify CMS)
+- **CMS**: Decap CMS (antes Netlify CMS) con Netlify Identity
 - **Hosting**: Netlify (gratuito)
 
 ## Estructura del Proyecto
@@ -14,92 +14,61 @@
 simposio-memorias/
 ├── public/
 │   └── admin/
-│       ├── index.html          # Interfaz del CMS
+│       ├── index.html          # Interfaz del CMS (previews, borradores, admin overlay)
 │       └── config.yml          # Configuración Decap CMS
+├── netlify/functions/          # Funciones serverless
+│   ├── create-coleccion.ts
+│   ├── create-proyecto.ts
+│   ├── identity-signup.ts
+│   └── manage-users.ts
+├── scripts/
+│   └── sync-collections.mjs    # Sincroniza carpetas de src/content con config.yml
 ├── src/
-│   ├── components/             # Componentes React
-│   │   ├── Header.tsx          # Navegación
-│   │   ├── Footer.tsx          # Pie de página
-│   │   ├── Hero.tsx            # Sección principal
-│   │   ├── Programa.tsx        # Programa del simposio
-│   │   ├── Organizacion.tsx    # Equipo organizador
-│   │   ├── Contacto.tsx        # Formulario de contacto
-│   │   └── InstagramFeed.tsx   # Feed de Instagram
+│   ├── components/             # Componentes Astro/React
+│   │   ├── Header.astro
+│   │   ├── Footer.astro
+│   │   ├── TermPills.astro
+│   │   └── ...
 │   ├── layouts/
 │   │   └── Layout.astro        # Layout principal
-│   ├── pages/
-│   │   ├── index.astro         # Inicio
-│   │   ├── el-simposio.astro   # Sobre el simposio
-│   │   ├── organizacion.astro  # Organización
-│   │   ├── programa.astro      # Programa
-│   │   └── contacto.astro      # Contacto
-│   ├── content/
-│   │   ├── blog/               # Contenido del CMS (noticias)
-│   │   └── pages/              # Páginas estáticas del CMS
-│   └── styles/
-│       └── global.css          # Estilos globales + Tailwind
+│   ├── pages/                  # Páginas y rutas dinámicas
+│   │   ├── index.astro
+│   │   ├── entradas/           # Listado y detalle de entradas
+│   │   ├── categorias/         # Archivos de categorías
+│   │   ├── etiquetas/          # Archivos de etiquetas
+│   │   ├── museo-memorias/     # Proyectos del Museo
+│   │   └── admin/              # Páginas de gestión de admin
+│   ├── content/                # Colecciones de contenido Markdown
+│   │   ├── entradas/
+│   │   ├── proyectos/
+│   │   ├── categorias/
+│   │   ├── etiquetas/
+│   │   └── pages/
+│   ├── lib/                    # Utilidades (taxonomías, fechas)
+│   └── styles/                 # Estilos globales + Tailwind
 ├── astro.config.mjs
-├── netlify.toml                # Configuración de Netlify
+├── netlify.toml
 └── package.json
 ```
 
+## Colecciones de contenido (CMS)
+
+El CMS está organizado como en WordPress:
+
+| Colección | Tipo | Descripción |
+|-----------|------|-------------|
+| **Entradas** | Posts | Noticias y artículos con fecha, autor, categorías y etiquetas. |
+| **Proyectos** | Custom post type | Proyectos del *Museo de Memorias Vivas*. |
+| **Categorías** | Taxonomía jerárquica | Clasificación en árbol padre/hijo. |
+| **Etiquetas** | Taxonomía plana | Palabras clave. |
+| **Borradores · Entradas** | Filtro | Entradas con `draft: true`. |
+| **Borradores · Proyectos** | Filtro | Proyectos con `draft: true`. |
+
+Los borradores usan el mismo almacenamiento que el contenido publicado, pero se filtran por el campo `draft`. El panel de *Borradores recientes* en `/admin/` permite accesos rápidos.
+
 ## Instrucciones de Despliegue
 
-### 1. Preparar el Repositorio
-
-```bash
-# Navegar al directorio del proyecto
-cd simposio-memorias
-
-# Inicializar repositorio Git
-git init
-git add .
-git commit -m "Initial commit: Simposio Memorias Participativas"
-
-# Crear repositorio en GitHub y subir
-git remote add origin https://github.com/TU_USUARIO/simposio-memorias.git
-git push -u origin main
-```
-
-### 2. Configurar Netlify
-
-1. Ir a [app.netlify.com](https://app.netlify.com)
-2. Hacer clic en **"New site from Git"**
-3. Seleccionar **GitHub** y autorizar la conexión
-4. Seleccionar el repositorio `simposio-memorias`
-5. Configurar:
-   - **Build command**: `npm run build`
-   - **Publish directory**: `dist`
-6. Hacer clic en **"Deploy site"**
-
-### 3. Configurar Netlify Identity (para el CMS)
-
-1. En el dashboard de Netlify, ir a **Site Settings > Identity**
-2. Hacer clic en **"Enable Identity"**
-3. En **Registration preferences**, seleccionar **"Invite only"**
-4. Activar **Git Gateway**:
-   - Ir a **Site Settings > Identity > Git Gateway**
-   - Hacer clic en **"Enable Git Gateway"**
-   - Seleccionar **GitHub** como proveedor
-
-### 4. Configurar OAuth (para acceso al CMS)
-
-1. Ir a [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers)
-2. Hacer clic en **"New OAuth App"**
-3. Configurar:
-   - **Application name**: `Simposio Memorias CMS`
-   - **Homepage URL**: `https://TU-SITIO.netlify.app`
-   - **Authorization callback URL**: `https://api.netlify.com/auth/done`
-4. Guardar el **Client ID** y generar un **Client Secret**
-5. En Netlify, ir a **Site Settings > Access control > OAuth**
-6. Hacer clic en **"Install provider"** y seleccionar **GitHub**
-7. Introducir el Client ID y Client Secret
-
-### 5. Acceder al CMS
-
-1. Ir a `https://TU-SITIO.netlify.app/admin/`
-2. Iniciar sesión con GitHub
-3. ¡Ya puedes editar el contenido!
+Ver [`GUIA-DESPLIEGUE.md`](./GUIA-DESPLIEGUE.md) para el despliegue paso a paso en Netlify.
 
 ## Comandos Útiles
 
@@ -112,36 +81,38 @@ npm run build
 
 # Vista previa del sitio construido
 npm run preview
+
+# Calidad de código
+npm run check        # astro check
+npm run lint         # ESLint
+npm run lint:fix     # ESLint con auto-fix
+npm run format       # Prettier
+npm run format:check # Prettier sin escribir
 ```
 
 ## Personalización
 
 ### Cambiar Colores
 
-Los colores principales se pueden cambiar en los componentes React:
-- Azul principal: `blue-900`, `blue-800`, `blue-700`
-- Texto: `text-white`, `text-gray-600`
+Los colores principales se definen en `src/styles/global.css`:
+
+```css
+--ugr-green: #2f680c;
+--ugr-green-light: #70a87a;
+--ugr-green-dark: #1e4a08;
+--ugr-cream: #f5f0e8;
+```
 
 ### Agregar Contenido
 
-1. Acceder al CMS en `/admin/`
-2. Seleccionar la colección (Blog o Páginas)
-3. Crear nueva entrada
-4. Publicar
+1. Acceder al CMS en `/admin/`.
+2. Seleccionar la colección (Entradas, Proyectos, Categorías, Etiquetas).
+3. Crear nueva entrada.
+4. Pulsar **Publish** para publicar o **Guardar como borrador** para guardar como borrador.
 
-### Agregar Nuevas Páginas
+### Fecha automática
 
-1. Crear archivo `.astro` en `src/pages/`
-2. Usar el layout existente:
-```astro
----
-import Layout from '../layouts/Layout.astro';
----
-
-<Layout title="Título de la Página">
-  <!-- Contenido aquí -->
-</Layout>
-```
+El CMS rellena automáticamente la fecha de publicación (`date`) con la fecha actual si se deja vacía.
 
 ## Soporte
 

@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 19
 title: "Las Otras Memorias"
 place: "Cartagena de Indias, Colombia"

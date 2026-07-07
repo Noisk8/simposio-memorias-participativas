@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 21
 title: "Lorca con orgullo VR"
 place: "Granada, España"

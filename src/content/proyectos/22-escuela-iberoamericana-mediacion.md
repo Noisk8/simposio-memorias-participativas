@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 22
 title: "Escuela Iberoamericana de Mediación en sitios y Museos de Memoria"
 place: "Chile, Argentina, México y España"

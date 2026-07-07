@@ -1,0 +1,105 @@
+---
+/**
+ * /colecciones/[coleccion]/[slug]
+ * Detalle de una entrada de cualquier colección genérica.
+ */
+import Layout from '../../../layouts/Layout.astro';
+import TermPills from '../../../components/TermPills.astro';
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import fs from 'node:fs';
+import path from 'node:path';
+import { getCategorias, getEtiquetas, termSlugMap, formatDate } from '../../../lib/taxonomies';
+
+type Props = {
+  entry: any;
+  coleccion: string;
+};
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const SPECIAL = ['simposios', 'paginas', 'proyectos', 'categorias', 'etiquetas'];
+  const contentDir = path.resolve('src/content');
+  const folders = fs
+    .readdirSync(contentDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !SPECIAL.includes(d.name))
+    .map((d) => d.name);
+
+  const paths = [];
+  for (const coleccion of folders) {
+    const entries = (await getCollection(
+      coleccion as any,
+      ({ data }: any) => !data.draft
+    )) as any[];
+    for (const entry of entries) {
+      paths.push({
+        params: { coleccion, slug: entry.id },
+        props: { entry, coleccion },
+      });
+    }
+  }
+  return paths;
+};
+
+const { entry, coleccion } = Astro.props;
+const { Content } = await render(entry);
+const data = entry.data;
+const label = coleccion.charAt(0).toUpperCase() + coleccion.slice(1);
+const catSlugs = termSlugMap(await getCategorias());
+const tagSlugs = termSlugMap(await getEtiquetas());
+---
+
+<Layout title={`${data.title} - ${label}`}>
+  <!-- Hero -->
+  <section class="bg-ugr-green py-14 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <nav class="text-white/70 text-sm mb-4">
+        <a href="/" class="hover:text-white transition-colors">Inicio</a>
+        <span class="mx-2">/</span>
+        <a href={`/colecciones/${coleccion}/`} class="hover:text-white transition-colors">{label}</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">{data.title}</span>
+      </nav>
+      <h1 class="text-3xl md:text-4xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg max-w-4xl mx-auto">
+        {data.title}
+      </h1>
+      {data.date && (
+        <p class="mt-3 text-white/80 text-sm">{formatDate(data.date)}</p>
+      )}
+    </div>
+  </section>
+
+  <!-- Contenido -->
+  <section class="py-12 bg-white">
+    <div class="max-w-3xl mx-auto px-4">
+      {data.image && (
+        <div class="mb-8">
+          <img
+            src={data.image}
+            alt={data.title}
+            class="w-full rounded-xl shadow-lg"
+          />
+        </div>
+      )}
+
+      <div class="mb-6">
+        <TermPills categories={data.categories} tags={data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} />
+      </div>
+
+      {data.description && (
+        <p class="text-lg text-ugr-text leading-relaxed mb-8 font-medium border-l-4 border-ugr-green pl-4">
+          {data.description}
+        </p>
+      )}
+
+      <div class="prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
+        <Content />
+      </div>
+
+      <div class="mt-12 text-center">
+        <a href={`/colecciones/${coleccion}/`} class="btn-green inline-block px-6 py-3">
+          ← Volver a {label}
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>

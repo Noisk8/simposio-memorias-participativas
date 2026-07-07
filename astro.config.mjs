@@ -12,6 +12,10 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://simposio-memorias.netlify.app',
   integrations: [mdx(), sitemap(), react()],
+  redirects: {
+    '/noticias': '/entradas',
+    '/noticias/[slug]': '/entradas/[slug]',
+  },
 
   fonts: [
       {

@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 28
 title: "Retratos y objetos de los patrimonios de memoria y construcción de paz"
 place: "Colombia"

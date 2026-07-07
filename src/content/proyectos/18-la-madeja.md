@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 18
 title: "La Madeja: Exposición Fotográfica Mujer Rural"
 place: "Vegas de Genil, Granada, España"

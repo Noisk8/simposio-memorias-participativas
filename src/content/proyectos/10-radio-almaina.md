@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 10
 title: "Radio Almaina, 15 Años de Radio Libre en Granada"
 place: "Granada, España"

@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 6
 title: "Proyecto de Memoria Juvenil «Ruta al Exilio»"
 place: "Andalucía, Euskal Herria, Catalunya, Madrid, Occitania. España"

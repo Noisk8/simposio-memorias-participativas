@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 29
 title: "Cartografías de Memorias de las luchas vecinales de Entrevías, El Pozo y Palomeras Bajas"
 place: "Madrid, Estado español"

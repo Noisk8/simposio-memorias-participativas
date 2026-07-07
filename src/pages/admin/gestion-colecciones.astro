@@ -3,9 +3,24 @@ import Layout from '../../layouts/Layout.astro';
 
 const colecciones = [
   {
+    name: 'simposios',
+    label: 'Ediciones de simposio',
+    path: '/admin/#/collections/simposios',
+  },
+  {
+    name: 'paginas',
+    label: 'Páginas informativas',
+    path: '/admin/#/collections/paginas',
+  },
+  {
     name: 'proyectos',
     label: 'Proyectos del Museo de Memorias Vivas',
     path: '/admin/#/collections/proyectos',
+  },
+  {
+    name: 'entradas',
+    label: 'Entradas',
+    path: '/admin/#/collections/entradas',
   },
 ];
 ---
@@ -64,25 +79,22 @@ const colecciones = [
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-semibold text-ugr-text mb-1" for="folder">Carpeta</label>
-                <input type="text" id="folder" name="folder" required placeholder="src/content/ponentes" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green" />
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-ugr-text mb-1" for="slug">Slug</label>
-                <input type="text" id="slug" name="slug" required value="{{slug}}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green" />
-              </div>
-            </div>
-
             <div>
-              <label class="block text-sm font-semibold text-ugr-text mb-1" for="fields">Campos</label>
-              <textarea id="fields" name="fields" rows="6" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green font-mono text-sm">{`fields:
-  - { label: "Título", name: "title", widget: "string" }
-  - { label: "Imagen", name: "image", widget: "image", required: false }
-  - { label: "Descripción", name: "description", widget: "text", required: false }
-  - { label: "Contenido", name: "body", widget: "markdown", required: false }`}</textarea>
-              <p class="text-xs text-ugr-text-light mt-1">Define los campos en formato YAML. Puedes ajustarlos después en <code>public/admin/config.yml</code>.</p>
+              <label class="block text-sm font-semibold text-ugr-text mb-1" for="folder">Carpeta</label>
+              <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-ugr-green">
+                <span class="px-3 py-2 bg-gray-100 text-ugr-text-light text-sm font-mono border-r border-gray-300 select-none whitespace-nowrap">
+                  src/content/
+                </span>
+                <input
+                  type="text"
+                  id="folder"
+                  name="folder"
+                  required
+                  placeholder="ponentes"
+                  class="flex-1 px-3 py-2 focus:outline-none text-sm"
+                />
+              </div>
+              <p class="text-xs text-ugr-text-light mt-1">Solo el nombre de la carpeta. Ejemplo: <code>ponentes</code>.</p>
             </div>
 
             <div class="flex items-center gap-4">
@@ -187,12 +199,13 @@ const colecciones = [
       return;
     }
 
+    var folderName = document.getElementById('folder').value.trim().replace(/^src\/content\/?/, '');
     var data = {
       name: document.getElementById('name').value.trim(),
       label: document.getElementById('label').value.trim(),
-      folder: document.getElementById('folder').value.trim(),
-      slug: document.getElementById('slug').value.trim(),
-      fields: document.getElementById('fields').value,
+      folder: 'src/content/' + folderName,
+      slug: '{{slug}}',
+      fields: 'fields:\n  - label: "Simposio"\n    name: "simposio"\n    widget: "relation"\n    collection: "simposios"\n    search_fields: ["title", "year"]\n    value_field: "slug"\n    display_fields: ["title", "year"]\n    required: false\n    default: "2026"\n  - { label: "Título", name: "title", widget: "string" }\n  - { label: "Fecha", name: "date", widget: "string", required: false }\n  - { label: "Imagen", name: "image", widget: "image", required: false }\n  - { label: "Descripción", name: "description", widget: "text", required: false }\n  - { label: "Contenido", name: "body", widget: "markdown", required: false }',
     };
 
     try {

@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 4
 title: "PuebloAgua, Universo Anfibio"
 place: "Nueva Venecia, Magdalena, Colombia"

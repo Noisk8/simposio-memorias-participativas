@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 24
 title: "El elocuente silencio del paisaje"
 place: "Burgos, Estado español"

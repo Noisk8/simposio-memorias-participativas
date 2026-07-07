@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 15
 title: "Herstóricas: memorias desde lo colectivo"
 place: "Madrid, Granada (España)"

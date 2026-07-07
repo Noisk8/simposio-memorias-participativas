@@ -7,3 +7,10 @@ dist/
 # misc
 .DS_Store
 *.log
+.env
+
+# Local Netlify folder
+.netlify
+
+# Astro generated files
+.astro/

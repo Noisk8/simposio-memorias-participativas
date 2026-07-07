@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 13
 title: "Palimpsestos Paralelos: Barrios en Transformación a Través de la Mirada de Niñes"
 place: "Granada, España y Lisboa, Portugal"

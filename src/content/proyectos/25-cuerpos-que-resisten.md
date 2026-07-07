@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 25
 title: "Cuerpos que Resisten"
 place: "Granada, Estado español"

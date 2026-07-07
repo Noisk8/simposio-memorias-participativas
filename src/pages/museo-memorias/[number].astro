@@ -1,10 +1,18 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import TermPills from '../../components/TermPills.astro';
 import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
+import { getCategorias, getEtiquetas, termSlugMap } from '../../lib/taxonomies';
+import { getSimposioBySlug } from '../../lib/simposios';
+
+type Props = {
+  entry: CollectionEntry<'proyectos'>;
+};
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const proyectos = await getCollection('proyectos');
+  const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
   return proyectos.map((entry) => ({
     params: { number: entry.data.number.toString() },
     props: { entry },
@@ -16,11 +24,16 @@ const { Content } = await render(entry);
 const proyecto = entry.data;
 
 // Proyectos adyacentes para navegación
-const todos = await getCollection('proyectos');
+const todos = await getCollection('proyectos', ({ data }) => !data.draft);
 const ordenados = todos.sort((a, b) => b.data.number - a.data.number);
 const idx = ordenados.findIndex((e) => e.data.number === proyecto.number);
 const prevProject = idx < ordenados.length - 1 ? ordenados[idx + 1] : null;
 const nextProject = idx > 0 ? ordenados[idx - 1] : null;
+
+const catSlugs = termSlugMap(await getCategorias());
+const tagSlugs = termSlugMap(await getEtiquetas());
+const simposio = await getSimposioBySlug(proyecto.simposio || '2026');
+const simposioTitle = simposio?.data.title || proyecto.simposio;
 ---
 
 <Layout title={`${proyecto.title} - Museo de Memorias Vivas`}>
@@ -45,6 +58,9 @@ const nextProject = idx > 0 ? ordenados[idx - 1] : null;
       <h1 class="text-3xl md:text-4xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg max-w-4xl mx-auto">
         {proyecto.number}. {proyecto.title}
       </h1>
+      <p class="mt-3 text-white/80 text-sm">
+        {simposioTitle}
+      </p>
     </div>
   </section>
 
@@ -85,6 +101,10 @@ const nextProject = idx > 0 ? ordenados[idx - 1] : null;
             <span>{proyecto.collective}</span>
           </div>
         )}
+      </div>
+
+      <div class="mb-6">
+        <TermPills categories={proyecto.categories} tags={proyecto.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} />
       </div>
 
       <!-- Descripción corta -->

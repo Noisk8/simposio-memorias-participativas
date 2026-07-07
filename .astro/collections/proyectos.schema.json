@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
+    "draft": {
+      "default": false,
+      "type": "boolean"
+    },
+    "simposio": {
+      "default": "2026",
+      "type": "string"
+    },
     "number": {
       "type": "number"
     },
@@ -18,6 +26,20 @@
     "collective": {
       "default": "",
       "type": "string"
+    },
+    "categories": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tags": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "image": {
       "type": "string"

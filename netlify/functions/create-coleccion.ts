@@ -145,6 +145,7 @@ ${indentedFields}
     const newCollectionTs = `const ${safeName} = defineCollection({
   loader: glob({ pattern: '*.md', base: './${folder}' }),
   schema: z.object({
+    simposio: z.string().default('2026'),
     title: z.string(),
     image: z.string().optional().default(''),
     description: z.string().optional().default(''),

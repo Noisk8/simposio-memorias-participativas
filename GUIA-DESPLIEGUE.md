@@ -149,7 +149,7 @@ En **Identity** → **Settings**:
 
 ### Archivo de configuración
 
-El archivo `public/admin/config.yml` ya está creado. Revisar que esté correcto:
+El archivo `public/admin/config.yml` ya está creado. Revisa que esté correcto y apunte a la rama que uses (`main` por defecto):
 
 ```yaml
 backend:
@@ -158,57 +158,45 @@ backend:
 
 media_folder: "public/images"
 public_folder: "/images"
-
-collections:
-  - name: "proyectos"
-    label: "Proyectos del Museo de Memorias Vivas"
-    folder: "src/content/proyectos"
-    create: true
-    slug: "{{number}}-{{slug}}"
-    fields:
-      - { label: "Número", name: "number", widget: "number" }
-      - { label: "Título", name: "title", widget: "string" }
-      - { label: "Lugar", name: "place", widget: "string" }
-      - { label: "Colectivo/Autor", name: "author", widget: "string" }
-      - { label: "Descripción", name: "description", widget: "text", required: false }
-      - { label: "Imagen", name: "image", widget: "image" }
-      - { label: "Fecha", name: "date", widget: "datetime", format: "YYYY-MM-DD" }
-      - { label: "Cuerpo", name: "body", widget: "markdown", required: false }
-
-  - name: "pages"
-    label: "Páginas"
-    folder: "src/content/pages"
-    create: true
-    slug: "{{slug}}"
-    fields:
-      - { label: "Título", name: "title", widget: "string" }
-      - { label: "Descripción", name: "description", widget: "string" }
-      - { label: "Cuerpo", name: "body", widget: "markdown" }
 ```
+
+El CMS incluye las siguientes colecciones (equivalentes a WordPress):
+
+| Colección | Descripción |
+|-----------|-------------|
+| **Categorías** | Taxonomía jerárquica (padre/hijo). |
+| **Etiquetas** | Taxonomía plana de palabras clave. |
+| **Proyectos** | Custom post type del Museo de Memorias Vivas. |
+| **Entradas** | Posts genéricos del sitio. |
+| **Borradores · Entradas** | Filtro de entradas con `draft: true`. |
+| **Borradores · Proyectos** | Filtro de proyectos con `draft: true`. |
+
+> El campo `draft` es interno y se gestiona automáticamente con **Publish** (publica) y **Guardar como borrador** (borrador).
 
 ### Acceder al CMS
 
 1. Ir a `https://tusitio.com/admin/`
 2. Login con el email invitado en Netlify Identity
 3. Ver el panel con las colecciones:
+   - **Entradas**: crear/editar posts
    - **Proyectos del Museo de Memorias Vivas**: crear/editar proyectos
-   - **Páginas**: editar contenido de las páginas
+   - **Categorías/Etiquetas**: gestionar taxonomías
+   - **Borradores · Entradas/Proyectos**: gestionar borradores
 
-### Cómo crear un proyecto
+### Cómo crear contenido
 
-1. Click en **"Proyectos del Museo de Memorias Vivas"**
-2. Click en **"New Proyecto"**
+1. Click en la colección deseada (ej: **Entradas**).
+2. Click en **"New Entrada"**.
 3. Rellenar los campos:
-   - **Número**: número del proyecto (ej: 1, 2, 3...)
-   - **Título**: nombre del proyecto
-   - **Lugar**: ubicación
-   - **Colectivo/Autor**: quién lo creó
-   - **Descripción**: descripción corta
-   - **Imagen**: subir foto del proyecto
-   - **Fecha**: fecha del proyecto
-   - **Cuerpo**: descripción detallada (Markdown)
-4. Click **"Publish"** → los cambios se suben a GitHub automáticamente
-5. Netlify detecta el cambio y reconstruye el sitio (1-2 minutos)
+   - **Título**: título de la entrada
+   - **Fecha**: se rellena automáticamente con la fecha actual si se deja vacía
+   - **Autor/a**: opcional
+   - **Categorías/Etiquetas**: seleccionar o crear taxonomías
+   - **Imagen destacada**: opcional
+   - **Extracto**: resumen corto
+   - **Contenido**: cuerpo en Markdown
+4. Click **"Publish"** para publicar o **"Guardar como borrador"** para guardar como borrador.
+5. Los cambios se suben a GitHub automáticamente y Netlify reconstruye el sitio (1-2 minutos).
 
 ---
 
@@ -235,9 +223,15 @@ site_url: https://tusitio.com
 En **Site settings** → **Environment variables**:
 
 ```
-# No se necesitan variables especiales para este proyecto
-# Netlify Identity y Git Gateway se configuran desde la interfaz
+NODE_VERSION=22.12.0
+# Variables opcionales para funciones de admin:
+# ADMIN_EMAILS=admin@ejemplo.com,otro@ejemplo.com
+# GITHUB_TOKEN=...                # Solo si usas create-coleccion desde el frontend
+# GITHUB_REPO=usuario/repo
+# GITHUB_BRANCH=main
 ```
+
+Netlify Identity y Git Gateway se configuran desde la interfaz.
 
 ---
 
@@ -259,11 +253,13 @@ npm run build
 # Los archivos se generan en dist/
 ```
 
-### Verificar build
+### Verificar build y calidad de código
 
 ```bash
-npx astro build 2>&1 | tail -20
-# Debería decir "X page(s) built"
+npm run build
+npm run check     # astro check
+npm run lint      # ESLint
+npm run format    # Prettier
 ```
 
 ---

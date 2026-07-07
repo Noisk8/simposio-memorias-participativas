@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 3
 title: "Sal y Surco: Retrato y territorio"
 place: "La Habana, Cuba y Granada, España"

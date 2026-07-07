@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 7
 title: "Sabedores RA"
 place: "Región Caribe, Colombia"

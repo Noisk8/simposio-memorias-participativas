@@ -1,0 +1,65 @@
+---
+/**
+ * /etiquetas/ — Nube de etiquetas (estilo WordPress).
+ */
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { getEtiquetas, slugify } from '../../lib/taxonomies';
+
+const etiquetas = await getEtiquetas();
+const entradas = await getCollection('entradas', ({ data }) => !data.draft);
+const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
+
+// Unión de etiquetas definidas + usadas en contenido
+const usadas = new Set<string>();
+for (const e of entradas) (e.data.tags || []).forEach((t) => usadas.add(t));
+for (const p of proyectos) (p.data.tags || []).forEach((t) => usadas.add(t));
+
+const terms = new Map<string, { title: string; slug: string; count: number }>();
+function countFor(title: string) {
+  return (
+    entradas.filter((e) => e.data.tags?.includes(title)).length +
+    proyectos.filter((p) => p.data.tags?.includes(title)).length
+  );
+}
+for (const t of etiquetas) terms.set(t.slug, { title: t.title, slug: t.slug, count: countFor(t.title) });
+for (const titulo of usadas) {
+  const s = etiquetas.find((t) => t.title === titulo)?.slug || slugify(titulo);
+  if (!terms.has(s)) terms.set(s, { title: titulo, slug: s, count: countFor(titulo) });
+}
+const lista = Array.from(terms.values()).sort((a, b) => b.count - a.count);
+---
+
+<Layout title="Etiquetas - I Simposio sobre Memorias Participativas">
+  <section class="bg-ugr-green py-14 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <nav class="text-white/70 text-sm mb-4">
+        <a href="/" class="hover:text-white transition-colors">Inicio</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">Etiquetas</span>
+      </nav>
+      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
+        Etiquetas
+      </h1>
+    </div>
+  </section>
+
+  <section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-4">
+      {lista.length === 0 && (
+        <p class="text-center text-ugr-text-light py-16">No hay etiquetas creadas todavía.</p>
+      )}
+      <div class="flex flex-wrap gap-3 justify-center">
+        {lista.map((tag) => (
+          <a
+            href={`/etiquetas/${tag.slug}/`}
+            class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-ugr-text rounded-full font-semibold text-sm hover:bg-ugr-green hover:text-white transition-colors"
+          >
+            #{tag.title}
+            <span class="text-xs opacity-70">({tag.count})</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>

@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 30
 title: "LIBRE"
 place: "Estado español"

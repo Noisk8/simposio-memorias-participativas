@@ -8,6 +8,251 @@
 <body>
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    /* ===== Vistas previas con el estilo del sitio (equivalente a "Vista previa" de WordPress) ===== */
+    (function () {
+      if (!window.CMS) return;
+
+      var previewCss = [
+        ':root { --ugr-green: #2f680c; --ugr-green-dark: #1f4a08; --ugr-green-light: #4d8a22; --ugr-text: #333; --ugr-text-light: #666; --ugr-cream: #faf7f0; }',
+        'body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: #fff; color: var(--ugr-text); }',
+        '.pv-hero { background: var(--ugr-green); padding: 2.5rem 1rem; text-align: center; }',
+        '.pv-hero h1 { color: #fff; font-size: 1.8rem; margin: 0; line-height: 1.25; }',
+        '.pv-hero .pv-meta { color: rgba(255,255,255,0.8); font-size: 0.85rem; margin-top: 0.6rem; }',
+        '.pv-hero .pv-kicker { color: rgba(255,255,255,0.7); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; }',
+        '.pv-body { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem; }',
+        '.pv-image { width: 100%; border-radius: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin-bottom: 1.5rem; }',
+        '.pv-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }',
+        '.pv-pill-cat { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; background: rgba(47,104,12,0.1); color: var(--ugr-green); padding: 0.25rem 0.75rem; border-radius: 999px; }',
+        '.pv-pill-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; background: #f3f4f6; color: var(--ugr-text-light); padding: 0.25rem 0.75rem; border-radius: 999px; }',
+        '.pv-excerpt { font-size: 1.1rem; line-height: 1.6; font-weight: 500; border-left: 4px solid var(--ugr-green); padding-left: 1rem; margin-bottom: 1.5rem; color: var(--ugr-text); }',
+        '.pv-content { font-size: 1rem; line-height: 1.75; }',
+        '.pv-content h1, .pv-content h2, .pv-content h3 { color: var(--ugr-green-dark); }',
+        '.pv-content a { color: var(--ugr-green); }',
+        '.pv-content blockquote { border-left: 3px solid var(--ugr-green-light); margin-left: 0; padding-left: 1rem; color: var(--ugr-text-light); }',
+        '.pv-content img { max-width: 100%; border-radius: 0.5rem; }',
+        '.pv-draft-banner { background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; font-size: 0.8rem; font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-bottom: 1.25rem; text-align: center; }',
+        '.pv-project-meta { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem; color: var(--ugr-text-light); margin-bottom: 1.25rem; }',
+        '.pv-project-meta strong { color: var(--ugr-green); font-weight: 600; }'
+      ].join('\n');
+
+      CMS.registerPreviewStyle(previewCss, { raw: true });
+
+      var h = window.h;
+      var createClass = window.createClass;
+
+      function pills(entry) {
+        var cats = entry.getIn(['data', 'categories']);
+        var tags = entry.getIn(['data', 'tags']);
+        var items = [];
+        if (cats && cats.forEach) {
+          cats.forEach(function (c) { items.push(h('span', { className: 'pv-pill-cat', key: 'c-' + c }, c)); });
+        }
+        if (tags && tags.forEach) {
+          tags.forEach(function (t) { items.push(h('span', { className: 'pv-pill-tag', key: 't-' + t }, '#' + t)); });
+        }
+        if (items.length === 0) return null;
+        return h('div', { className: 'pv-pills' }, items);
+      }
+
+      function draftBanner(entry) {
+        if (entry.getIn(['data', 'draft'])) {
+          return h('div', { className: 'pv-draft-banner' }, 'BORRADOR — esta entrada no aparecerá en el sitio público');
+        }
+        return null;
+      }
+
+      function formatDateEs(dateStr) {
+        if (!dateStr) return '';
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      var EntradaPreview = createClass({
+        render: function () {
+          var entry = this.props.entry;
+          var title = entry.getIn(['data', 'title']) || 'Sin título';
+          var date = entry.getIn(['data', 'date']);
+          var author = entry.getIn(['data', 'author']);
+          var description = entry.getIn(['data', 'description']);
+          var image = this.props.getAsset(entry.getIn(['data', 'image']));
+          var meta = [formatDateEs(date), author].filter(Boolean).join(' · ');
+
+          return h('div', {},
+            h('div', { className: 'pv-hero' },
+              h('div', { className: 'pv-kicker' }, 'Entrada'),
+              h('h1', {}, title),
+              meta ? h('div', { className: 'pv-meta' }, meta) : null
+            ),
+            h('div', { className: 'pv-body' },
+              draftBanner(entry),
+              image && image.toString() ? h('img', { className: 'pv-image', src: image.toString() }) : null,
+              pills(entry),
+              description ? h('p', { className: 'pv-excerpt' }, description) : null,
+              h('div', { className: 'pv-content' }, this.props.widgetFor('body'))
+            )
+          );
+        }
+      });
+
+      var ProyectoPreview = createClass({
+        render: function () {
+          var entry = this.props.entry;
+          var number = entry.getIn(['data', 'number']);
+          var title = entry.getIn(['data', 'title']) || 'Sin título';
+          var place = entry.getIn(['data', 'place']);
+          var author = entry.getIn(['data', 'author']);
+          var collective = entry.getIn(['data', 'collective']);
+          var description = entry.getIn(['data', 'description']);
+          var image = this.props.getAsset(entry.getIn(['data', 'image']));
+
+          var metaItems = [];
+          if (place) metaItems.push(h('span', { key: 'place' }, h('strong', {}, 'Lugar: '), place));
+          if (author) metaItems.push(h('span', { key: 'author' }, h('strong', {}, 'Autor/a: '), author));
+          if (collective) metaItems.push(h('span', { key: 'col' }, h('strong', {}, 'Colectivo: '), collective));
+
+          return h('div', {},
+            h('div', { className: 'pv-hero' },
+              h('div', { className: 'pv-kicker' }, 'Museo de Memorias Vivas'),
+              h('h1', {}, (number ? number + '. ' : '') + title)
+            ),
+            h('div', { className: 'pv-body' },
+              draftBanner(entry),
+              image && image.toString() ? h('img', { className: 'pv-image', src: image.toString() }) : null,
+              metaItems.length ? h('div', { className: 'pv-project-meta' }, metaItems) : null,
+              pills(entry),
+              description ? h('p', { className: 'pv-excerpt' }, description) : null,
+              h('div', { className: 'pv-content' }, this.props.widgetFor('body'))
+            )
+          );
+        }
+      });
+
+      CMS.registerPreviewTemplate('entradas', EntradaPreview);
+      CMS.registerPreviewTemplate('proyectos', ProyectoPreview);
+      // Las colecciones de borradores comparten carpeta y campos, así que
+      // usan las mismas vistas previas que sus colecciones publicadas.
+      CMS.registerPreviewTemplate('borradores-entradas', EntradaPreview);
+      CMS.registerPreviewTemplate('borradores-proyectos', ProyectoPreview);
+
+      /* ===== Guardar como borrador (hook oficial de Decap) =====
+       * El estado se encapsula en window.__cmsDraftState con un ID de
+       * transacción único para evitar race conditions si el usuario pulsa
+       * varias veces o alterna entre "Guardar como borrador" y "Publish".
+       * El hook preSave también rellena la fecha automáticamente si el campo
+       * date existe y está vacío (como hace WordPress). */
+      window.__cmsDraftState = {
+        active: false,
+        transactionId: null,
+        timestamp: 0,
+        collection: null,
+        slug: null,
+      };
+
+      function generateId() {
+        return Math.random().toString(36).slice(2) + Date.now().toString(36);
+      }
+
+      function pad2(n) {
+        return n < 10 ? '0' + n : '' + n;
+      }
+
+      function todayIso() {
+        var d = new Date();
+        return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+      }
+
+      function setDraftState(active, meta) {
+        if (active) {
+          window.__cmsDraftState = {
+            active: true,
+            transactionId: (meta && meta.transactionId) || generateId(),
+            timestamp: Date.now(),
+            collection: (meta && meta.collection) || null,
+            slug: (meta && meta.slug) || null,
+          };
+        } else {
+          window.__cmsDraftState = {
+            active: false,
+            transactionId: null,
+            timestamp: 0,
+            collection: null,
+            slug: null,
+          };
+        }
+      }
+
+      function isDraftSaveActive() {
+        return window.__cmsDraftState && window.__cmsDraftState.active === true;
+      }
+
+      CMS.registerEventListener({
+        name: 'preSave',
+        handler: function (event) {
+          try {
+            var data = event.entry.get('data');
+            var active = isDraftSaveActive();
+
+            // Fecha automática: si el campo existe y está vacío, rellenar con hoy.
+            try {
+              if (data.has('date')) {
+                var dateVal = data.get('date');
+                if (dateVal === undefined || dateVal === null || dateVal === '') {
+                  data = data.set('date', todayIso());
+                }
+              }
+            } catch (dateErr) {
+              // Colección sin campo date: ignorar silenciosamente.
+            }
+
+            // El campo draft es oculto y se gestiona automáticamente:
+            //  - "Guardar como borrador" → draft: true
+            //  - "Publish" (guardado normal) → draft: false (publica, incluso
+            //    si la entrada era un borrador)
+            data = data.set('draft', active);
+            return data;
+          } catch (e) {
+            console.warn('[CMS Draft] preSave error:', e);
+          }
+        },
+      });
+
+      CMS.registerEventListener({
+        name: 'postSave',
+        handler: function (event) {
+          var details = null;
+          var isDraft = false;
+          var state = window.__cmsDraftState || {};
+          try {
+            var entry = event.entry;
+            details = {
+              slug: entry.get('slug') || '',
+              collection: entry.get('collection') || '',
+              title: entry.getIn(['data', 'title']) || '',
+            };
+            isDraft = entry.getIn(['data', 'draft']) === true;
+          } catch (e) {}
+
+          // Si el guardado se inició como "Guardar como borrador", notificar y
+          // limpiar el estado SIEMPRE para que no se quede pillado.
+          if (state.active) {
+            if (isDraft && typeof window.__cmsOnDraftSaved === 'function') {
+              window.__cmsOnDraftSaved(details);
+            }
+            setDraftState(false);
+          }
+
+          // Si se guardó como publicado, quitar de borradores recientes.
+          if (details && !isDraft) {
+            if (typeof window.__cmsOnEntryPublished === 'function') {
+              window.__cmsOnEntryPublished(details);
+            }
+          }
+        },
+      });
+    })();
+  </script>
   <style>
     .cms-user-name {
       margin-right: 0.5rem;
@@ -61,6 +306,8 @@
     .cms-user-name-inline {
       display: inline-flex;
       align-items: center;
+      align-self: center;
+      vertical-align: middle;
       gap: 0.5rem;
       color: #1f2937;
       font-size: 0.875rem;
@@ -70,7 +317,7 @@
       border-radius: 999px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.12);
       border: 1px solid #e5e7eb;
-      margin-right: 0.75rem;
+      margin: 0 0.75rem 0 0;
       white-space: nowrap;
       max-width: 180px;
       overflow: hidden;
@@ -320,6 +567,261 @@
     .cms-admin-rolebtn:hover { border-color: #2563eb; color: #2563eb; }
     .cms-admin-rolebtn.danger:hover { border-color: #dc2626; color: #dc2626; }
     .cms-admin-muted { color: #6b7280; font-size: 0.82rem; }
+
+    /* ===== Toast de notificación ===== */
+    .cms-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #1f2937;
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.625rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(0.5rem);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      font-family: inherit;
+      max-width: 360px;
+      line-height: 1.4;
+    }
+    .cms-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .cms-toast-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      flex-shrink: 0;
+      color: #4ade80;
+    }
+    .cms-toast-icon.warn { color: #facc15; }
+
+    /* ===== Opción "Guardar como borrador" en el dropdown de Publish ===== */
+    [data-cms-draft-item] {
+      border-top: 1px solid #e5e7eb;
+    }
+    [data-cms-draft-item]:hover {
+      background: #fffbeb !important;
+    }
+
+    /* ===== Panel de borradores (tarjeta flotante, esquina inferior derecha) ===== */
+    .cms-drafts-panel {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      width: 300px;
+      max-height: min(420px, calc(100vh - 120px));
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.875rem;
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      font-family: inherit;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(17, 24, 39, 0.14), 0 2px 8px rgba(17, 24, 39, 0.08);
+    }
+    .cms-drafts-panel.collapsed .cms-drafts-list,
+    .cms-drafts-panel.collapsed .cms-drafts-footer {
+      display: none;
+    }
+    .cms-drafts-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(180deg, #fffbeb 0%, #fef9ec 100%);
+      border-bottom: 1px solid #fde68a;
+      flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+    .cms-drafts-panel.collapsed .cms-drafts-header {
+      border-bottom: none;
+    }
+    .cms-drafts-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #92400e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .cms-drafts-title svg {
+      width: 0.95rem;
+      height: 0.95rem;
+      color: #d97706;
+      flex-shrink: 0;
+    }
+    .cms-drafts-badge {
+      background: #d97706;
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      min-width: 1.1rem;
+      text-align: center;
+    }
+    .cms-drafts-toggle {
+      background: none;
+      border: none;
+      color: #b45309;
+      cursor: pointer;
+      padding: 0.15rem;
+      border-radius: 0.3rem;
+      display: inline-flex;
+      align-items: center;
+      transition: transform 0.2s ease, background 0.12s;
+      flex-shrink: 0;
+    }
+    .cms-drafts-toggle:hover { background: rgba(217, 119, 6, 0.12); }
+    .cms-drafts-toggle svg { width: 1rem; height: 1rem; }
+    .cms-drafts-panel.collapsed .cms-drafts-toggle { transform: rotate(180deg); }
+    .cms-drafts-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+      scrollbar-width: thin;
+    }
+    .cms-drafts-empty {
+      text-align: center;
+      padding: 1.75rem 1rem;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+    .cms-draft-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.6rem 0.7rem;
+      border-radius: 0.5rem;
+      border: 1px solid #f3f4f6;
+      background: #fafafa;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+      text-decoration: none;
+      margin-bottom: 0.4rem;
+    }
+    .cms-draft-item:last-child { margin-bottom: 0; }
+    .cms-draft-item:hover {
+      background: #fffbeb;
+      border-color: #fcd34d;
+      box-shadow: 0 1px 4px rgba(217, 119, 6, 0.12);
+    }
+    .cms-draft-item-dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 999px;
+      background: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+      flex-shrink: 0;
+    }
+    .cms-draft-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .cms-draft-item-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .cms-draft-item-meta {
+      font-size: 0.68rem;
+      color: #9ca3af;
+      margin-top: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cms-draft-item-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #d1d5db;
+      width: 1.5rem;
+      height: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 1rem;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.12s, background 0.12s;
+    }
+    .cms-draft-item-del:hover { color: #dc2626; background: #fee2e2; }
+    .cms-draft-item-trash {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #d1d5db;
+      width: 1.5rem;
+      height: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      flex-shrink: 0;
+      transition: color 0.12s, background 0.12s;
+    }
+    .cms-draft-item-trash svg { width: 0.85rem; height: 0.85rem; }
+    .cms-draft-item-trash:hover { color: #dc2626; background: #fee2e2; }
+    .cms-draft-item-trash:disabled { opacity: 0.5; cursor: wait; }
+    .cms-drafts-footer {
+      padding: 0.6rem 0.75rem;
+      border-top: 1px solid #f3f4f6;
+      background: #fafafa;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .cms-drafts-goto {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #92400e;
+      text-decoration: none;
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .cms-drafts-goto:hover { background: #fef3c7; }
+    .cms-drafts-clear {
+      background: none;
+      border: none;
+      border-radius: 0.375rem;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.72rem;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+    @media (max-width: 900px) {
+      .cms-drafts-panel { width: 260px; }
+    }
+    .cms-drafts-clear:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
   </style>
   <script>
     (function () {
@@ -385,13 +887,54 @@
           }
         }
 
-        // Fallback: buscar el elemento circular más a la derecha en el header (el avatar).
-        var all = Array.prototype.slice.call(document.querySelectorAll('header *'));
+        function isQuickAdd(el) {
+          var label = (el.getAttribute('aria-label') || el.textContent || '').toLowerCase();
+          if (/\b(add|new|create|quick)\b/.test(label)) return true;
+          var svg = el.querySelector('svg');
+          if (svg) {
+            var paths = svg.querySelectorAll('path');
+            for (var k = 0; k < paths.length; k++) {
+              var d = (paths[k].getAttribute('d') || '').toLowerCase();
+              // Flecha desplegable: path corto con líneas rectas (sin curvas bezier).
+              if (d.length < 80 && d.indexOf('l') !== -1 && d.indexOf('c') === -1) return true;
+            }
+          }
+          return false;
+        }
+
+        var all = Array.prototype.slice.call(document.querySelectorAll('body *'));
+
+        // 1. Prioridad: elemento con imagen más a la derecha en la zona superior (gravatar/avatar).
+        var withImg = all.filter(function (el) {
+          var rect = el.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0 || rect.top >= 200) return false;
+          var img = el.querySelector('img[src]');
+          return !!img;
+        });
+        if (withImg.length > 0) {
+          withImg.sort(function (a, b) {
+            return b.getBoundingClientRect().right - a.getBoundingClientRect().right;
+          });
+          var target = withImg[0];
+          var container = target.closest('button, [role="button"]') || target;
+          if (!isQuickAdd(container)) {
+            log('avatar detectado por imagen:', container.tagName, container.className);
+            return { container: container };
+          }
+        }
+
+        // 2. Elemento circular más a la derecha, excluyendo quick-add.
         var circular = all.filter(function (el) {
           var rect = el.getBoundingClientRect();
-          if (rect.width <= 0 || rect.height <= 0 || rect.top >= 80) return false;
+          if (rect.width <= 0 || rect.height <= 0 || rect.top >= 200) return false;
+          var style = window.getComputedStyle(el);
+          var borderRadius = parseFloat(style.borderRadius);
+          var minDim = Math.min(rect.width, rect.height);
+          var isCircle = borderRadius >= minDim / 2;
           var ratio = rect.width / rect.height;
-          return ratio > 0.85 && ratio < 1.15 && rect.width > 30 && rect.width < 70 && !!el.querySelector('img, svg, i');
+          var isSquare = ratio > 0.8 && ratio < 1.25;
+          var hasIcon = !!el.querySelector('img, svg, i');
+          return (isCircle || isSquare) && rect.width > 20 && rect.width < 80 && hasIcon && !isQuickAdd(el);
         });
 
         if (circular.length > 0) {
@@ -400,22 +943,39 @@
           });
           var target = circular[0];
           var container = target.closest('button, [role="button"]') || target;
+          log('avatar detectado por forma circular:', container.tagName, container.className);
           return { container: container };
         }
 
-        // Último botón en la zona superior derecha.
-        var buttons = Array.prototype.slice.call(document.querySelectorAll('header button, header [role="button"]'));
+        // 3. Último botón en la zona superior derecha que no sea quick-add.
+        var buttons = Array.prototype.slice.call(document.querySelectorAll('button, [role="button"]'));
         buttons = buttons.filter(function (b) {
           var rect = b.getBoundingClientRect();
-          return rect.width > 0 && rect.height > 0 && rect.top < 80;
+          return rect.width > 0 && rect.height > 0 && rect.top < 200 && !isQuickAdd(b);
         });
         if (buttons.length > 0) {
           buttons.sort(function (a, b) {
             return b.getBoundingClientRect().right - a.getBoundingClientRect().right;
           });
+          log('avatar detectado como último botón no-quick-add:', buttons[0].tagName, buttons[0].className);
           return { container: buttons[0] };
         }
 
+        // 4. Fallback final: cualquier elemento interactivo más a la derecha en la zona superior.
+        var interactive = Array.prototype.slice.call(document.querySelectorAll('button, [role="button"], a, [onclick], [tabindex]:not([tabindex="-1"])'));
+        interactive = interactive.filter(function (el) {
+          var rect = el.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && rect.top < 200 && !isQuickAdd(el);
+        });
+        if (interactive.length > 0) {
+          interactive.sort(function (a, b) {
+            return b.getBoundingClientRect().right - a.getBoundingClientRect().right;
+          });
+          log('avatar detectado como último interactivo:', interactive[0].tagName, interactive[0].className);
+          return { container: interactive[0] };
+        }
+
+        log('no se detectó avatar');
         return null;
       }
 
@@ -454,17 +1014,25 @@
           wrapper.appendChild(dot);
           wrapper.appendChild(text);
           avatar.container.parentElement.insertBefore(wrapper, avatar.container);
+
+          // Ajustar posición vertical para alinear con el avatar
+          requestAnimationFrame(function () {
+            var avatarRect = avatar.container.getBoundingClientRect();
+            var badgeRect = wrapper.getBoundingClientRect();
+            var avatarCenterY = avatarRect.top + avatarRect.height / 2;
+            var badgeCenterY = badgeRect.top + badgeRect.height / 2;
+            var diff = avatarCenterY - badgeCenterY;
+            if (Math.abs(diff) > 1) {
+              wrapper.style.position = 'relative';
+              wrapper.style.top = diff + 'px';
+            }
+          });
+
           log('badge inline añadido:', name);
-        } else {
-          // Fallback: badge flotante a la izquierda del avatar.
-          var badge = document.createElement('span');
-          badge.className = 'cms-user-name-floating';
-          badge.textContent = name;
-          badge.title = name;
-          document.body.appendChild(badge);
-          badge.style.right = '6.5rem';
-          log('badge flotante añadido:', name);
+          return true;
         }
+        log('avatar no disponible, badge no insertado aún');
+        return false;
       }
 
       function removeUserName() {
@@ -669,11 +1237,13 @@
           '  <label for="cms-col-label">Etiqueta visible</label>' +
           '  <input id="cms-col-label" required placeholder="Ponentes del simposio" />' +
           '  <label for="cms-col-folder">Carpeta</label>' +
-          '  <input id="cms-col-folder" required placeholder="src/content/ponentes" />' +
-          '  <label for="cms-col-slug">Slug</label>' +
-          '  <input id="cms-col-slug" required value="{{slug}}" />' +
-          '  <label for="cms-col-fields">Campos (YAML)</label>' +
-          '  <textarea id="cms-col-fields" rows="6">fields:\n  - { label: "Título", name: "title", widget: "string" }\n  - { label: "Imagen", name: "image", widget: "image", required: false }\n  - { label: "Descripción", name: "description", widget: "text", required: false }\n  - { label: "Contenido", name: "body", widget: "markdown", required: false }</textarea>' +
+          '  <div style="display:flex;align-items:center;border:1px solid #d1d5db;border-radius:0.375rem;overflow:hidden;">' +
+          '    <span style="padding:0.55rem 0.75rem;background:#f3f4f6;color:#6b7280;font-size:0.8rem;font-family:monospace;white-space:nowrap;border-right:1px solid #d1d5db;">src/content/</span>' +
+          '    <input id="cms-col-folder" required placeholder="ponentes" style="flex:1;border:none;padding:0.55rem 0.75rem;font-size:0.875rem;outline:none;" />' +
+          '  </div>' +
+          '  <p class="cms-admin-hint">Solo el nombre de la carpeta. Ejemplo: <code>ponentes</code></p>' +
+
+
           '  <div>' +
           '    <button type="submit" class="cms-admin-submit">Crear colección</button>' +
           '    <span class="cms-admin-status" id="cms-col-status"></span>' +
@@ -705,9 +1275,9 @@
             body: JSON.stringify({
               name: body.querySelector('#cms-col-name').value.trim(),
               label: body.querySelector('#cms-col-label').value.trim(),
-              folder: body.querySelector('#cms-col-folder').value.trim(),
-              slug: body.querySelector('#cms-col-slug').value.trim(),
-              fields: body.querySelector('#cms-col-fields').value,
+              folder: 'src/content/' + body.querySelector('#cms-col-folder').value.trim().replace(/^src\/content\/?/, ''),
+              slug: '{{slug}}',
+              fields: 'fields:\n  - { label: "Título", name: "title", widget: "string" }\n  - { label: "Fecha", name: "date", widget: "string", required: false }\n  - { label: "Imagen", name: "image", widget: "image", required: false }\n  - { label: "Descripción", name: "description", widget: "text", required: false }\n  - { label: "Contenido", name: "body", widget: "markdown", required: false }',
             }),
           })
             .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
@@ -746,6 +1316,14 @@
           .then(function (r) {
             if (!r.ok) {
               body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-status err">' + escapeHtml(r.data.error || 'Error al cargar usuarios.') + '</p>';
+              return;
+            }
+            // Aviso en entorno local
+            if (r.data._dev_notice) {
+              body.innerHTML = '<h3>Usuarios registrados</h3>' +
+                '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:0.5rem;padding:1rem;color:#92400e;font-size:0.85rem;">' +
+                '<strong>⚠ Entorno local</strong><br>' + escapeHtml(r.data._dev_notice) +
+                '</div>';
               return;
             }
             var users = r.data.users || [];
@@ -874,13 +1452,35 @@
       var userNameWatcher = null;
       function watchUserName(user) {
         if (userNameWatcher) return;
+        var attempts = 0;
         userNameWatcher = setInterval(function () {
+          attempts++;
           if (!window.netlifyIdentity || !window.netlifyIdentity.currentUser()) {
             stopUserNameWatcher();
             return;
           }
-          if (!document.querySelector('.cms-user-name-floating') && !document.querySelector('.cms-user-name-inline')) {
+          var hasInline = document.querySelector('.cms-user-name-inline');
+          var hasFloating = document.querySelector('.cms-user-name-floating');
+
+          if (hasInline) return;
+
+          var avatar = getAvatarContainer();
+          if (avatar) {
+            // Insertar badge inline junto al avatar.
+            removeUserName();
             ensureFloatingUserName(user);
+            return;
+          }
+
+          // Si luego de varios intentos no hay avatar, usar badge flotante como fallback.
+          if (!hasFloating && attempts > 6) {
+            var badge = document.createElement('span');
+            badge.className = 'cms-user-name-floating';
+            badge.textContent = getUserName(user);
+            badge.title = getUserName(user);
+            document.body.appendChild(badge);
+            badge.style.right = '9rem';
+            log('badge flotante añadido tras espera:', getUserName(user));
           }
         }, 1500);
       }
@@ -891,6 +1491,612 @@
           userNameWatcher = null;
         }
       }
+
+      /* ===== Toast de notificación ===== */
+
+      var toastTimeout = null;
+
+      function showToast(msg, type) {
+        var existing = document.querySelector('.cms-toast');
+        if (existing) existing.remove();
+        if (toastTimeout) { clearTimeout(toastTimeout); toastTimeout = null; }
+
+        var iconOk = '<svg class="cms-toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        var iconWarn = '<svg class="cms-toast-icon warn" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
+
+        var toast = document.createElement('div');
+        toast.className = 'cms-toast';
+        toast.innerHTML = (type === 'warn' ? iconWarn : iconOk) + '<span>' + msg + '</span>';
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { toast.classList.add('show'); });
+        });
+
+        toastTimeout = setTimeout(function () {
+          toast.classList.remove('show');
+          setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+        }, 3500);
+      }
+
+      /* ===== Registro de borradores en localStorage ===== */
+
+      var DRAFTS_KEY = 'cms_drafts_v1';
+
+      function loadDrafts() {
+        try {
+          var raw = localStorage.getItem(DRAFTS_KEY) || '[]';
+          return JSON.parse(raw);
+        } catch (e) {
+          log('Error leyendo borradores de localStorage:', e.message);
+          return [];
+        }
+      }
+
+      function saveDrafts(list) {
+        try {
+          localStorage.setItem(DRAFTS_KEY, JSON.stringify(list));
+        } catch (e) {
+          log('Error guardando borradores en localStorage:', e.message);
+          // No bloquear el flujo, pero avisar al usuario si el almacenamiento
+          // está lleno o bloqueado (navegación privada, quota exceeded...).
+          showToast('No se pudo guardar el acceso rápido a borradores. Es posible que el almacenamiento esté lleno o bloqueado.', 'warn');
+        }
+      }
+
+      function findTitleInput() {
+        // 1. Buscar por label visible (más robusto que el primer input).
+        var labels = document.querySelectorAll('label');
+        for (var i = 0; i < labels.length; i++) {
+          var txt = (labels[i].textContent || '').trim();
+          if (/^título$/i.test(txt) || /^title$/i.test(txt)) {
+            var forAttr = labels[i].getAttribute('for');
+            if (forAttr) {
+              var input = document.getElementById(forAttr);
+              if (input && input.tagName === 'INPUT') return input;
+            }
+            var container = labels[i].parentElement;
+            if (container) {
+              var input = container.querySelector('input[type="text"], input:not([type])');
+              if (input) return input;
+            }
+          }
+        }
+        // 2. Fallback: primer input de texto visible.
+        var inputs = document.querySelectorAll('input[type="text"]');
+        for (var j = 0; j < inputs.length; j++) {
+          var rect = inputs[j].getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) return inputs[j];
+        }
+        return null;
+      }
+
+      function getCurrentEntryInfo() {
+        var titleInput = findTitleInput();
+        var title = (titleInput && titleInput.value) ? titleInput.value.trim() : 'Sin título';
+
+        // Leer colección y slug de la URL: /admin/#/collections/noticias/entries/slug
+        var hash = window.location.hash || '';
+        var m = hash.match(/#\/collections\/([^/]+)\/(?:entries\/([^/?]+)|new)/);
+        var collection = m ? m[1] : 'desconocida';
+        var slug = m ? (m[2] || 'nueva') : 'nueva';
+
+        return { title: title, collection: collection, slug: slug, time: Date.now() };
+      }
+
+      /** Normaliza el nombre de colección: borradores-entradas → entradas. */
+      function baseCollection(name) {
+        return (name || '').replace(/^borradores-/, '');
+      }
+
+      function registerDraft(overrides) {
+        var info = getCurrentEntryInfo();
+        // Datos reales del guardado (slug/colección/título del postSave de Decap)
+        if (overrides) {
+          if (overrides.slug) info.slug = overrides.slug;
+          if (overrides.collection) info.collection = overrides.collection;
+          if (overrides.title) info.title = overrides.title;
+        }
+        info.collection = baseCollection(info.collection);
+        var drafts = loadDrafts();
+        // Limpiar registros provisionales de entradas nuevas de la misma colección
+        if (info.slug !== 'nueva') {
+          drafts = drafts.filter(function (d) {
+            return !(d.collection === info.collection && d.slug === 'nueva');
+          });
+        }
+        // Actualizar si ya existe ese slug+collection
+        var idx = -1;
+        for (var i = 0; i < drafts.length; i++) {
+          if (drafts[i].collection === info.collection && drafts[i].slug === info.slug) { idx = i; break; }
+        }
+        if (idx >= 0) { drafts[idx] = info; } else { drafts.unshift(info); }
+        if (drafts.length > 30) drafts = drafts.slice(0, 30);
+        saveDrafts(drafts);
+        refreshDraftsPanel();
+      }
+
+      function removeDraft(collection, slug) {
+        var base = baseCollection(collection);
+        var drafts = loadDrafts().filter(function (d) {
+          return !(baseCollection(d.collection) === base && d.slug === slug);
+        });
+        saveDrafts(drafts);
+        refreshDraftsPanel();
+      }
+
+      /**
+       * Elimina el archivo real del borrador vía git-gateway (API de GitHub).
+       * Equivalente a "Mover a la papelera" de WordPress, pero definitivo.
+       */
+      function getRepoBranch() {
+        // Lee la rama desde la configuración de Decap CMS si está disponible.
+        // Fallback a 'main' para mantener compatibilidad con el despliegue actual.
+        try {
+          if (window.CMS && window.CMS.config && window.CMS.config.backend && window.CMS.config.backend.branch) {
+            return window.CMS.config.backend.branch;
+          }
+        } catch (e) {}
+        return 'main';
+      }
+
+      function deleteEntryFile(collection, slug, done) {
+        var identity = window.netlifyIdentity;
+        var user = identity && identity.currentUser();
+        if (!user) { done(new Error('Sesión no disponible')); return; }
+
+        var branch = getRepoBranch();
+        user.jwt().then(function (token) {
+          var path = 'src/content/' + baseCollection(collection) + '/' + slug + '.md';
+          var url = '/.netlify/git/github/contents/' + path;
+          return fetch(url + '?ref=' + encodeURIComponent(branch), { headers: { Authorization: 'Bearer ' + token } })
+            .then(function (r) {
+              if (!r.ok) throw new Error('No se encontró el archivo (' + r.status + ')');
+              return r.json();
+            })
+            .then(function (info) {
+              return fetch(url, {
+                method: 'DELETE',
+                headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: 'Eliminar borrador "' + slug + '" desde el panel de borradores',
+                  sha: info.sha,
+                  branch: branch,
+                }),
+              });
+            })
+            .then(function (r) {
+              if (!r.ok) throw new Error('Error al eliminar (' + r.status + ')');
+              done(null);
+            });
+        }).catch(done);
+      }
+
+      function clearAllDrafts() {
+        saveDrafts([]);
+        refreshDraftsPanel();
+      }
+
+      /* ===== Panel lateral de borradores ===== */
+
+      var draftsPanel = null;
+      var draftsPanelWatcher = null;
+
+      function buildDraftsPanel() {
+        if (document.querySelector('.cms-drafts-panel')) return;
+
+        var panel = document.createElement('div');
+        panel.className = 'cms-drafts-panel';
+        // Recordar el estado colapsado entre sesiones
+        try {
+          if (localStorage.getItem('cms_drafts_panel_collapsed') === '1') panel.classList.add('collapsed');
+        } catch (e) {}
+        panel.innerHTML =
+          '<div class="cms-drafts-header" id="cms-drafts-header" title="Mostrar/ocultar borradores recientes">' +
+          '  <div class="cms-drafts-title">' +
+          '    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
+          '    Borradores recientes' +
+          '    <span class="cms-drafts-badge" id="cms-drafts-count">0</span>' +
+          '  </div>' +
+          '  <button class="cms-drafts-toggle" id="cms-drafts-toggle" title="Colapsar/expandir">' +
+          '    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>' +
+          '  </button>' +
+          '</div>' +
+          '<div class="cms-drafts-list" id="cms-drafts-list"></div>' +
+          '<div class="cms-drafts-footer">' +
+          '  <a class="cms-drafts-goto" id="cms-drafts-goto" href="#/collections/borradores-entradas">Ver todos los borradores →</a>' +
+          '  <button class="cms-drafts-clear" id="cms-drafts-clear" title="Vaciar la lista de accesos rápidos (no borra el contenido)">Limpiar</button>' +
+          '</div>';
+
+        document.body.appendChild(panel);
+        draftsPanel = panel;
+
+        panel.querySelector('#cms-drafts-header').addEventListener('click', function () {
+          panel.classList.toggle('collapsed');
+          try {
+            localStorage.setItem('cms_drafts_panel_collapsed', panel.classList.contains('collapsed') ? '1' : '0');
+          } catch (e) {}
+        });
+
+        panel.querySelector('#cms-drafts-clear').addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (confirm('¿Vaciar la lista de accesos rápidos? (no borra el contenido)')) clearAllDrafts();
+        });
+
+        refreshDraftsPanel();
+        log('panel de borradores creado');
+      }
+
+      function refreshDraftsPanel() {
+        var list = document.getElementById('cms-drafts-list');
+        var badge = document.getElementById('cms-drafts-count');
+        if (!list) return;
+
+        var drafts = loadDrafts();
+        if (badge) badge.textContent = drafts.length;
+
+        if (drafts.length === 0) {
+          list.innerHTML = '<div class="cms-drafts-empty">No hay borradores guardados.<br>Al guardar como borrador aparecerán aquí.</div>';
+          return;
+        }
+
+        list.innerHTML = '';
+        drafts.forEach(function (d) {
+          // Los borradores viven en su propia colección filtrada (borradores-*)
+          var linkCollection = (d.collection === 'entradas' || d.collection === 'proyectos')
+            ? 'borradores-' + d.collection
+            : d.collection;
+          var link = '#/collections/' + linkCollection + '/entries/' + d.slug;
+          var date = new Date(d.time);
+          var dateStr = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+          var item = document.createElement('div');
+          item.className = 'cms-draft-item';
+          item.title = d.title + ' (' + d.collection + ')';
+          item.innerHTML =
+            '<div class="cms-draft-item-dot"></div>' +
+            '<div class="cms-draft-item-info">' +
+            '  <div class="cms-draft-item-title">' + escapeHtml(d.title) + '</div>' +
+            '  <div class="cms-draft-item-meta">' + escapeHtml(d.collection) + ' · ' + dateStr + '</div>' +
+            '</div>' +
+            '<button class="cms-draft-item-trash" title="Eliminar el borrador definitivamente">' +
+            '  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/></svg>' +
+            '</button>' +
+            '<button class="cms-draft-item-del" title="Quitar de la lista (no borra el contenido)">×</button>';
+
+          item.addEventListener('click', function (e) {
+            var trashBtn = e.target.closest('.cms-draft-item-trash');
+            if (trashBtn) {
+              e.stopPropagation();
+              if (!confirm('¿Eliminar definitivamente el borrador "' + d.title + '"?\n\nEsta acción borra el archivo del repositorio y no se puede deshacer.')) return;
+              trashBtn.disabled = true;
+              deleteEntryFile(d.collection, d.slug, function (err) {
+                if (err) {
+                  trashBtn.disabled = false;
+                  showToast('No se pudo eliminar: ' + err.message, 'warn');
+                  return;
+                }
+                removeDraft(d.collection, d.slug);
+                showToast('Borrador eliminado: "' + d.title + '"');
+              });
+              return;
+            }
+            if (e.target.classList.contains('cms-draft-item-del')) {
+              e.stopPropagation();
+              removeDraft(d.collection, d.slug);
+              return;
+            }
+            window.location.hash = link;
+          });
+
+          list.appendChild(item);
+        });
+      }
+
+      function updateDraftsPanelVisibility() {
+        var hash = window.location.hash || '';
+        // Vista de colección: #/collections/xxx  (sin /entries/)
+        var isCollectionList = /^#\/collections\/[^/]+\/?$/.test(hash) || hash === '#/' || hash === '' || hash === '#';
+        var panel = document.querySelector('.cms-drafts-panel');
+        if (isCollectionList) {
+          if (!panel) buildDraftsPanel();
+          else { panel.style.display = ''; refreshDraftsPanel(); }
+        } else {
+          if (panel) panel.style.display = 'none';
+        }
+      }
+
+      function watchForCollectionView() {
+        // Mostrar/ocultar el panel solo en la vista de listado de colecciones.
+        // Usamos hashchange para reactividad inmediata y un intervalo ligero de
+        // respaldo porque Decap es una SPA que a veces no dispara hashchange.
+        if (draftsPanelWatcher) return;
+        updateDraftsPanelVisibility();
+        window.addEventListener('hashchange', updateDraftsPanelVisibility);
+        draftsPanelWatcher = setInterval(updateDraftsPanelVisibility, 800);
+      }
+
+      function stopDraftsPanelWatcher() {
+        if (draftsPanelWatcher) { clearInterval(draftsPanelWatcher); draftsPanelWatcher = null; }
+        window.removeEventListener('hashchange', updateDraftsPanelVisibility);
+        var panel = document.querySelector('.cms-drafts-panel');
+        if (panel) panel.remove();
+        draftsPanel = null;
+      }
+
+      /* ===== Guardado de borradores desde el dropdown de Publish ===== */
+
+      /**
+       * Detecta si estamos en la vista de edición de una entrada.
+       */
+      function isEditingEntry() {
+        var hash = window.location.hash || '';
+        return /#\/collections\/[^/]+\/entries\//.test(hash) || /#\/collections\/[^/]+\/new/.test(hash);
+      }
+
+      /**
+       * Encuentra el botón toggle "Borrador" en el editor.
+       * Decap CMS usa <button role="switch" aria-checked="true/false"> para el widget Boolean.
+       */
+      function findDraftToggleButton() {
+        var labels = document.querySelectorAll('label, span, div, p');
+        for (var i = 0; i < labels.length; i++) {
+          var el = labels[i];
+          var txt = (el.textContent || '').trim();
+          if (txt !== 'Borrador' && txt !== 'Draft') continue;
+          var container = el.parentElement;
+          for (var depth = 0; depth < 6 && container; depth++) {
+            var btn = container.querySelector('button[role="switch"]');
+            if (btn) return btn;
+            container = container.parentElement;
+          }
+        }
+        var switches = document.querySelectorAll('button[role="switch"]');
+        for (var j = 0; j < switches.length; j++) {
+          var r = switches[j].getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return switches[j];
+        }
+        return null;
+      }
+
+      function activateDraftToggle() {
+        var toggle = findDraftToggleButton();
+        if (!toggle) {
+          log('toggle borrador no encontrado');
+          return false;
+        }
+        var isActive = toggle.getAttribute('aria-checked') === 'true';
+        log('toggle borrador aria-checked:', isActive);
+        if (!isActive) {
+          toggle.click();
+          log('toggle borrador activado');
+        } else {
+          log('toggle borrador ya estaba activo');
+        }
+        return true;
+      }
+
+      /**
+       * Encuentra el botón de guardado principal del editor (Publish/Save).
+       * Busca dentro del header para evitar confundirse con el dropdown toggle
+       * o con botones de otros paneles. Devuelve el botón principal (el más a la
+       * izquierda de los candidatos, porque el toggle de flecha suele estar a la
+       * derecha del botón Publish en Decap CMS).
+       */
+      function findSaveButton() {
+        var header = document.querySelector('header');
+        var scope = header || document.body;
+        var buttons = scope.querySelectorAll('button');
+        var candidates = [];
+        var saveLabels = ['Publish', 'Save', 'Guardar', 'Publicar', 'Published', 'Published changes'];
+        for (var i = 0; i < buttons.length; i++) {
+          var btn = buttons[i];
+          var rect = btn.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0 || rect.top > 140) continue;
+          var text = (btn.textContent || '').trim();
+          var ariaLabel = (btn.getAttribute('aria-label') || '').trim();
+          var isSave = saveLabels.indexOf(text) !== -1 || saveLabels.indexOf(ariaLabel) !== -1;
+          if (!isSave) continue;
+          // Descartar el toggle del dropdown (suele no tener texto o ser solo un icono)
+          if (text === '' && ariaLabel === '') continue;
+          candidates.push({ btn: btn, text: text, right: rect.right, top: rect.top });
+        }
+        if (candidates.length === 0) return null;
+        // El botón principal es el más a la izquierda de los que están en la
+        // misma línea horizontal (el dropdown toggle queda a la derecha).
+        candidates.sort(function (a, b) {
+          if (Math.abs(a.top - b.top) > 10) return a.top - b.top;
+          return a.right - b.right;
+        });
+        log('findSaveButton candidatos:', candidates.map(function (c) { return c.text; }).join(', '));
+        return candidates[0].btn;
+      }
+
+      function clickSaveButton() {
+        var btn = findSaveButton();
+        if (btn) {
+          btn.click();
+          log('clic en botón de guardado:', btn.textContent.trim());
+          return true;
+        }
+        log('botón de guardado no encontrado');
+        return false;
+      }
+
+      /* ===== Opción "Guardar como borrador" dentro del dropdown de Publish =====
+       * Estrategia profesional:
+       *  1. Un MutationObserver detecta cuándo Decap abre el dropdown de Publish
+       *     (contiene "Publish now").
+       *  2. Se clona el item "Publish now" (así hereda exactamente los estilos
+       *     de Decap) y se cambia su texto a "Guardar como borrador".
+       *  3. Al hacer clic: se marca window.__cmsDraftState.active = true con un
+       *     ID de transacción y se dispara el "Publish now" real. El hook
+       *     preSave (registrado arriba) fuerza draft: true en los datos antes de
+       *     persistir.
+       *  4. Decap ejecuta su flujo nativo de guardado, por lo que el estado
+       *     pasa de UNSAVED CHANGES a CHANGES SAVED automáticamente.
+       */
+      var publishDropdownObserver = null;
+
+      // Callback que ejecuta el hook postSave (definido en el primer script).
+      // Recibe slug/colección/título reales de la entrada guardada.
+      window.__cmsOnDraftSaved = function (details) {
+        try { registerDraft(details); } catch (e) {}
+        var title = (details && details.title) || getCurrentEntryInfo().title;
+        showToast('Borrador guardado: "' + title + '"');
+      };
+
+      // Cuando una entrada se guarda publicada (draft desactivado), sale de la
+      // lista de borradores recientes automáticamente.
+      window.__cmsOnEntryPublished = function (details) {
+        if (!details || !details.slug) return;
+        removeDraft(details.collection, details.slug);
+        log('entrada publicada, retirada de borradores recientes:', details.slug);
+      };
+
+      function findPublishNowItem(root) {
+        var candidates = root.querySelectorAll('div[role="menuitem"], [role="menuitem"], li, button, div');
+        for (var i = 0; i < candidates.length; i++) {
+          var el = candidates[i];
+          var txt = (el.textContent || '').trim();
+          if ((txt === 'Publish now' || txt === 'Publicar ahora') && el.children.length <= 3) {
+            return el;
+          }
+        }
+        return null;
+      }
+
+      function replaceItemText(node, newText) {
+        // Reemplaza el nodo de texto más profundo que contenga el label original
+        var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
+        var t;
+        while ((t = walker.nextNode())) {
+          var val = (t.nodeValue || '').trim();
+          if (val === 'Publish now' || val === 'Publicar ahora') {
+            t.nodeValue = newText;
+            return true;
+          }
+        }
+        // Fallback: reemplazar todo el texto
+        node.textContent = newText;
+        return false;
+      }
+
+      function injectDraftDropdownItem(dropdownRoot) {
+        if (dropdownRoot.querySelector('[data-cms-draft-item]')) return;
+
+        var publishNow = findPublishNowItem(dropdownRoot);
+        if (!publishNow) return;
+
+        var item = publishNow.cloneNode(true);
+        item.setAttribute('data-cms-draft-item', 'true');
+        replaceItemText(item, 'Guardar como borrador');
+        // Quitar iconos svg del clon para diferenciar la opción
+        var svgs = item.querySelectorAll('svg');
+        for (var s = 0; s < svgs.length; s++) svgs[s].remove();
+        item.style.color = '#92400e';
+        item.style.cursor = 'pointer';
+        item.setAttribute('title', 'Guarda la entrada con Borrador activado (no aparecerá en el sitio público)');
+
+        // Evitar que el menú se cierre antes de que podamos disparar el guardado
+        ['mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(function (evName) {
+          item.addEventListener(evName, function (e) { e.stopPropagation(); }, true);
+        });
+
+        item.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Evitar race condition: si ya hay un guardado de borrador en curso,
+          // no permitir otro clic hasta que termine.
+          if (isDraftSaveActive()) {
+            showToast('Ya se está guardando un borrador. Espera un momento.', 'warn');
+            return;
+          }
+
+          log('guardar como borrador solicitado');
+          var info = getCurrentEntryInfo();
+          setDraftState(true, { collection: info.collection, slug: info.slug });
+
+          // Disparar el flujo nativo de guardado SINCRÓNICAMENTE, mientras el
+          // item original "Publish now" sigue montado en el DOM. El hook
+          // preSave fuerza draft: true en los datos antes de persistir.
+          try {
+            publishNow.click();
+            log('Publish now disparado con draft forzado');
+          } catch (err) {
+            setDraftState(false);
+            showToast('No se pudo guardar el borrador.', 'warn');
+            return;
+          }
+
+          // Red de seguridad: si el guardado falla (validación, error de red),
+          // postSave nunca se dispara y el estado podría quedar pillado.
+          // Limpiarlo tras un tiempo prudente para no afectar futuros guardados.
+          var txId = window.__cmsDraftState.transactionId;
+          setTimeout(function () {
+            var state = window.__cmsDraftState || {};
+            if (state.active && state.transactionId === txId) {
+              setDraftState(false);
+              log('estado de borrador limpiado por timeout (el guardado no se completó)');
+            }
+          }, 15000);
+        }, true);
+
+        publishNow.parentElement.insertBefore(item, publishNow.nextSibling);
+        log('opción "Guardar como borrador" añadida al dropdown de Publish');
+      }
+
+      function watchPublishDropdown() {
+        if (publishDropdownObserver) return;
+        publishDropdownObserver = new MutationObserver(function (mutations) {
+          if (!isEditingEntry()) {
+            // Si salimos de la edición, desconectar el observer para evitar leaks.
+            try {
+              if (publishDropdownObserver) publishDropdownObserver.disconnect();
+            } catch (e) {}
+            return;
+          }
+          for (var i = 0; i < mutations.length; i++) {
+            var added = mutations[i].addedNodes;
+            for (var j = 0; j < added.length; j++) {
+              var node = added[j];
+              if (node.nodeType !== 1) continue;
+              var txt = node.textContent || '';
+              if (txt.indexOf('Publish now') !== -1 || txt.indexOf('Publicar ahora') !== -1) {
+                injectDraftDropdownItem(node);
+              }
+            }
+          }
+        });
+        publishDropdownObserver.observe(document.body, { childList: true, subtree: true });
+        log('observer del dropdown de Publish activo');
+      }
+
+      function reconnectPublishDropdownObserver() {
+        // Si volvemos a la vista de edición, reconectar el observer.
+        if (publishDropdownObserver && isEditingEntry()) {
+          try {
+            publishDropdownObserver.observe(document.body, { childList: true, subtree: true });
+          } catch (e) {}
+        }
+      }
+
+      function stopPublishDropdownWatcher() {
+        if (publishDropdownObserver) {
+          publishDropdownObserver.disconnect();
+          publishDropdownObserver = null;
+        }
+        window.removeEventListener('hashchange', reconnectPublishDropdownObserver);
+      }
+
+      // Limpieza de recursos al cerrar la pestaña/recargar para evitar leaks.
+      window.addEventListener('beforeunload', function () {
+        stopUserNameWatcher();
+        stopSidebarWatcher();
+        stopPublishDropdownWatcher();
+        stopDraftsPanelWatcher();
+      });
 
       waitForIdentity(function (identity) {
         log('configurando identity events');
@@ -903,6 +2109,9 @@
             // Los botones se muestran a todo usuario logueado; la página
             // /admin/gestion-colecciones y la Netlify Function validan el rol admin.
             watchSidebar();
+            watchPublishDropdown();
+            window.addEventListener('hashchange', reconnectPublishDropdownObserver);
+            watchForCollectionView();
           }
         }
 
@@ -913,6 +2122,8 @@
           removeUserName();
           stopUserNameWatcher();
           stopSidebarWatcher();
+          stopPublishDropdownWatcher();
+          stopDraftsPanelWatcher();
           closeAdminPanel();
           var sidebarActions = document.querySelector('.cms-sidebar-actions');
           if (sidebarActions) sidebarActions.remove();

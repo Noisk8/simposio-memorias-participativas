@@ -1,5 +1,13 @@
-// Gestión de usuarios de Netlify Identity: listar usuarios y asignar roles.
-// Solo accesible para admins (por rol o por estar en ADMIN_EMAILS).
+/**
+ * manage-users.ts
+ *
+ * Gestión de usuarios de Netlify Identity: listar y asignar roles.
+ * Estrategia de autenticación:
+ *   1. Lee el JWT del header Authorization: Bearer <token>
+ *   2. Verifica admin via context.clientContext.user (inyectado por Netlify)
+ *   3. Llama a la API GoTrue con el mismo JWT del usuario admin
+ *      (los usuarios con rol admin pueden acceder al endpoint /admin/users)
+ */
 export const handler = async (event: any, context: any) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -12,10 +20,36 @@ export const handler = async (event: any, context: any) => {
     return { statusCode: 204, headers };
   }
 
-  const { identity, user } = context.clientContext || {};
+  // ── Extraer el JWT del header Authorization ──────────────────────────────
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+  const userToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  if (!user) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Debes iniciar sesión.' }) };
+  if (!userToken) {
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: 'Debes iniciar sesión.' }),
+    };
+  }
+
+  // ── Verificar que el usuario tiene rol admin ──────────────────────────────
+  // En Netlify Functions, clientContext.user contiene los datos del JWT verificados.
+  const clientUser = context?.clientContext?.user;
+
+  // Fallback: decodificar el JWT manualmente (solo payload, sin verificar firma)
+  // para obtener email y roles cuando estamos en local sin clientContext.
+  let email = clientUser?.email || '';
+  let roles: string[] = clientUser?.app_metadata?.roles || [];
+
+  if (!clientUser) {
+    try {
+      const payloadB64 = userToken.split('.')[1];
+      const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString('utf-8'));
+      email = payload.email || payload.sub || '';
+      roles = payload.app_metadata?.roles || payload['https://netlify/roles'] || [];
+    } catch {
+      // Si no se puede decodificar, seguimos con arrays vacíos
+    }
   }
 
   const adminEmails = (process.env.ADMIN_EMAILS || '')
@@ -23,33 +57,59 @@ export const handler = async (event: any, context: any) => {
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  const callerRoles = user.app_metadata?.roles || [];
-  const isAdmin = callerRoles.includes('admin') || adminEmails.includes((user.email || '').toLowerCase());
+  const isAdmin = roles.includes('admin') || adminEmails.includes(email.toLowerCase());
 
   if (!isAdmin) {
-    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden gestionar usuarios.' }) };
-  }
-
-  if (!identity || !identity.url || !identity.token) {
     return {
-      statusCode: 500,
+      statusCode: 403,
       headers,
-      body: JSON.stringify({ error: 'No se pudo obtener el contexto de Identity. Verifica que Identity esté habilitado en Netlify.' }),
+      body: JSON.stringify({ error: 'Solo los administradores pueden gestionar usuarios.' }),
     };
   }
 
+  // ── URL de la API GoTrue ──────────────────────────────────────────────────
+  // En producción: context.clientContext.identity.url
+  // En local: la URL del site en Netlify (desde variable de entorno o hardcodeada)
+  // Detectar entorno local: en local la URL es localhost o la variable NETLIFY_DEV está presente
+  const isLocal =
+    process.env.NETLIFY_DEV === 'true' ||
+    (event.headers?.host || '').includes('localhost') ||
+    (event.headers?.host || '').includes('127.0.0.1');
+
+  if (isLocal) {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        users: [],
+        _dev_notice: 'La gestión de usuarios no está disponible en local (limitación de Netlify Identity). Usa el deploy en producción para gestionar usuarios.',
+      }),
+    };
+  }
+
+  const identityUrl =
+    context?.clientContext?.identity?.url ||
+    process.env.IDENTITY_URL ||
+    `https://${process.env.URL?.replace(/^https?:\/\//, '') || 'test-smp-v1.netlify.app'}/.netlify/identity`;
+
   const adminHeaders = {
-    'Authorization': `Bearer ${identity.token}`,
+    'Authorization': `Bearer ${userToken}`,
     'Content-Type': 'application/json',
   };
 
   try {
-    // GET: listar usuarios con sus roles.
+    // GET: listar usuarios
     if (event.httpMethod === 'GET') {
-      const res = await fetch(`${identity.url}/admin/users?per_page=100`, { headers: adminHeaders });
+      const res = await fetch(`${identityUrl}/admin/users?per_page=100`, {
+        headers: adminHeaders,
+      });
       if (!res.ok) {
         const text = await res.text();
-        return { statusCode: 500, headers, body: JSON.stringify({ error: `Error listando usuarios: ${res.status} ${text}` }) };
+        return {
+          statusCode: res.status,
+          headers,
+          body: JSON.stringify({ error: `Error listando usuarios: ${res.status} ${text}` }),
+        };
       }
       const data = await res.json();
       const users = (data.users || []).map((u: any) => ({
@@ -63,35 +123,51 @@ export const handler = async (event: any, context: any) => {
       return { statusCode: 200, headers, body: JSON.stringify({ users }) };
     }
 
-    // POST: asignar roles a un usuario. Body: { userId, roles: ["admin"] }
+    // POST: asignar roles. Body: { userId, roles: ["admin"] }
     if (event.httpMethod === 'POST') {
-      let payload;
+      let payload: any;
       try {
         payload = JSON.parse(event.body);
       } catch {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo de la petición inválido.' }) };
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Cuerpo de la petición inválido.' }),
+        };
       }
 
-      const { userId, roles } = payload;
-      if (!userId || !Array.isArray(roles)) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Se requiere userId y roles (array).' }) };
+      const { userId, roles: newRoles } = payload;
+      if (!userId || !Array.isArray(newRoles)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Se requiere userId y roles (array).' }),
+        };
       }
 
       const allowedRoles = ['admin', 'editor'];
-      const invalid = roles.filter((r: string) => !allowedRoles.includes(r));
+      const invalid = newRoles.filter((r: string) => !allowedRoles.includes(r));
       if (invalid.length > 0) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: `Roles no válidos: ${invalid.join(', ')}` }) };
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: `Roles no válidos: ${invalid.join(', ')}` }),
+        };
       }
 
-      const res = await fetch(`${identity.url}/admin/users/${userId}`, {
+      const res = await fetch(`${identityUrl}/admin/users/${userId}`, {
         method: 'PUT',
         headers: adminHeaders,
-        body: JSON.stringify({ app_metadata: { roles } }),
+        body: JSON.stringify({ app_metadata: { roles: newRoles } }),
       });
 
       if (!res.ok) {
         const text = await res.text();
-        return { statusCode: 500, headers, body: JSON.stringify({ error: `Error actualizando usuario: ${res.status} ${text}` }) };
+        return {
+          statusCode: res.status,
+          headers,
+          body: JSON.stringify({ error: `Error actualizando usuario: ${res.status} ${text}` }),
+        };
       }
 
       const updated = await res.json();
@@ -111,6 +187,10 @@ export const handler = async (event: any, context: any) => {
 
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Método no permitido.' }) };
   } catch (error: any) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: error.message || 'Error interno del servidor.' }),
+    };
   }
 };

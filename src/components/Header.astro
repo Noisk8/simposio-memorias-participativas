@@ -1,7 +1,11 @@
 ---
+const pathname = Astro.url.pathname;
+function isActive(href: string) {
+  return pathname === href || pathname.startsWith(href + '/');
+}
 ---
 
-<header class="bg-white sticky top-0 z-50 overflow-hidden">
+<header class="bg-white sticky top-0 z-50">
   <!-- Fila 1: Franja arcoíris + Logos -->
   <div class="flex items-stretch">
     <!-- Franja arcoíris vertical -->
@@ -39,32 +43,64 @@
   <!-- Fila 2: Título + Navegación -->
   <div class="border-t border-gray-200">
     <div class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <!-- Título del simposio -->
+      <!-- Título de la Red -->
       <a href="/" class="flex-shrink-0">
         <h1 class="text-base md:text-lg lg:text-xl font-bold text-ugr-green leading-tight font-[family-name:var(--font-heading)] tracking-tight">
-          I SIMPOSIO SOBRE MEMORIAS PARTICIPATIVAS
+          Red Internacional de Memorias Participativas
         </h1>
       </a>
 
       <!-- Usuario -->
       <div class="flex items-center gap-2 flex-shrink-0 order-2 md:order-3">
-        <div id="user-info" class="hidden items-center gap-2">
-          <div class="w-8 h-8 rounded-full bg-ugr-green text-white flex items-center justify-center flex-shrink-0">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <span id="user-name" class="text-sm font-medium text-ugr-text max-w-[150px] truncate hidden md:block"></span>
-          <a id="admin-link" href="/admin/crear-proyecto" class="hidden text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-2 py-1 rounded-md transition-all duration-200">
-            Admin
-          </a>
-        </div>
+        <!-- Estado: no autenticado -->
         <button id="login-btn" class="text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
           Entrar
         </button>
-        <button id="logout-btn" class="hidden text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
-          Salir
-        </button>
+
+        <!-- Estado: autenticado — dropdown hover -->
+        <div id="user-info" class="hidden relative group">
+          <!-- Trigger: avatar + nombre -->
+          <button
+            id="user-trigger"
+            class="flex items-center gap-2 cursor-pointer rounded-lg px-1 py-1 hover:bg-gray-100 transition-colors"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <div class="w-8 h-8 rounded-full bg-ugr-green text-white flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <span id="user-name" class="text-sm font-medium text-ugr-text max-w-[150px] truncate hidden md:block"></span>
+            <!-- chevron pequeño -->
+            <svg class="w-3 h-3 text-gray-400 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          <!-- Dropdown (visible en hover desktop / toggle click móvil) -->
+          <div
+            id="user-dropdown"
+            class="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50
+                   opacity-0 invisible pointer-events-none
+                   group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto
+                   transition-all duration-150"
+          >
+            <a
+              id="admin-link"
+              href="/admin/"
+              class="hidden w-full text-left px-4 py-2 text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-colors"
+            >
+              Admin
+            </a>
+            <button
+              id="logout-btn"
+              class="w-full text-left px-4 py-2 text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-colors"
+            >
+              Salir
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Navegación -->
@@ -83,32 +119,32 @@
         <!-- Navegación desktop -->
         <ul id="main-nav" class="hidden md:flex md:items-center md:gap-1 md:flex-wrap md:justify-end">
           <li>
-            <a href="/" class="block px-3 py-2 rounded-md text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
-              Inicio
+            <a href="/acerca-de" class="nav-link" aria-current={isActive('/acerca-de') ? 'page' : undefined}>
+              Acerca de
             </a>
           </li>
           <li>
-            <a href="/el-simposio" class="block px-3 py-2 rounded-md text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
-              El Simposio
+            <a href="/simposios" class="nav-link" aria-current={isActive('/simposios') ? 'page' : undefined}>
+              Simposios
             </a>
           </li>
           <li>
-            <a href="/organizacion" class="block px-3 py-2 rounded-md text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/organizacion" class="nav-link" aria-current={isActive('/organizacion') ? 'page' : undefined}>
               Organización
             </a>
           </li>
           <li>
-            <a href="/museo-memorias" class="block px-3 py-2 rounded-md text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/museo-memorias" class="nav-link" aria-current={isActive('/museo-memorias') ? 'page' : undefined}>
               Museo de Memorias Vivas
             </a>
           </li>
           <li>
-            <a href="/programa" class="block px-3 py-2 rounded-md text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/programa" class="nav-link" aria-current={isActive('/programa') ? 'page' : undefined}>
               Programa
             </a>
           </li>
           <li>
-            <a href="/contacto" class="block px-3 py-2 rounded-md text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/contacto" class="nav-link" aria-current={isActive('/contacto') ? 'page' : undefined}>
               Contacto
             </a>
           </li>
@@ -117,32 +153,32 @@
         <!-- Navegación móvil -->
         <ul id="mobile-nav" class="hidden md:hidden flex-col gap-1 mt-3 pb-2">
           <li>
-            <a href="/" class="block px-4 py-3 rounded-lg text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
-              Inicio
+            <a href="/acerca-de" class="nav-link-mobile" aria-current={isActive('/acerca-de') ? 'page' : undefined}>
+              Acerca de
             </a>
           </li>
           <li>
-            <a href="/el-simposio" class="block px-4 py-3 rounded-lg text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
-              El Simposio
+            <a href="/simposios" class="nav-link-mobile" aria-current={isActive('/simposios') ? 'page' : undefined}>
+              Simposios
             </a>
           </li>
           <li>
-            <a href="/organizacion" class="block px-4 py-3 rounded-lg text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/organizacion" class="nav-link-mobile" aria-current={isActive('/organizacion') ? 'page' : undefined}>
               Organización
             </a>
           </li>
           <li>
-            <a href="/museo-memorias" class="block px-4 py-3 rounded-lg text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/museo-memorias" class="nav-link-mobile" aria-current={isActive('/museo-memorias') ? 'page' : undefined}>
               Museo de Memorias Vivas
             </a>
           </li>
           <li>
-            <a href="/programa" class="block px-4 py-3 rounded-lg text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/programa" class="nav-link-mobile" aria-current={isActive('/programa') ? 'page' : undefined}>
               Programa
             </a>
           </li>
           <li>
-            <a href="/contacto" class="block px-4 py-3 rounded-lg text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-200">
+            <a href="/contacto" class="nav-link-mobile" aria-current={isActive('/contacto') ? 'page' : undefined}>
               Contacto
             </a>
           </li>
@@ -151,6 +187,36 @@
     </div>
   </div>
 </header>
+
+<style>
+  /* Estilos base de los enlaces de navegación */
+  .nav-link,
+  .nav-link-mobile {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2f680c; /* ugr-green */
+    text-decoration: none;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .nav-link         { padding: 0.5rem 0.75rem; }
+  .nav-link-mobile  { padding: 0.75rem 1rem; border-radius: 0.5rem; }
+
+  /* Hover */
+  .nav-link:hover,
+  .nav-link-mobile:hover {
+    background-color: #2f680c;
+    color: #ffffff;
+  }
+
+  /* Página activa */
+  .nav-link[aria-current="page"],
+  .nav-link-mobile[aria-current="page"] {
+    background-color: #2f680c;
+    color: #ffffff !important;
+  }
+</style>
 
 <script is:inline>
   // @ts-nocheck
@@ -165,6 +231,28 @@
   const adminLink = document.getElementById('admin-link');
   const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
+  const userTrigger = document.getElementById('user-trigger');
+  const userDropdown = document.getElementById('user-dropdown');
+
+  // Toggle dropdown en click (útil en móvil donde no hay hover)
+  userTrigger?.addEventListener('click', () => {
+    const isOpen = userDropdown?.classList.contains('!opacity-100');
+    if (isOpen) {
+      userDropdown?.classList.remove('!opacity-100', '!visible', '!pointer-events-auto');
+      userTrigger?.setAttribute('aria-expanded', 'false');
+    } else {
+      userDropdown?.classList.add('!opacity-100', '!visible', '!pointer-events-auto');
+      userTrigger?.setAttribute('aria-expanded', 'true');
+    }
+  });
+
+  // Cerrar dropdown al hacer click fuera
+  document.addEventListener('click', (e) => {
+    if (!userInfo?.contains(e.target)) {
+      userDropdown?.classList.remove('!opacity-100', '!visible', '!pointer-events-auto');
+      userTrigger?.setAttribute('aria-expanded', 'false');
+    }
+  });
 
   function isAdmin(user) {
     if (!user) return false;
@@ -179,20 +267,17 @@
       const displayName = metadata.full_name || metadata.name || user.email;
       userName.textContent = displayName;
       userInfo?.classList.remove('hidden');
-      userInfo?.classList.add('flex');
       loginBtn?.classList.add('hidden');
-      logoutBtn?.classList.remove('hidden');
       if (isAdmin(user)) {
         adminLink?.classList.remove('hidden');
+        adminLink?.classList.add('block');
       } else {
         adminLink?.classList.add('hidden');
+        adminLink?.classList.remove('block');
       }
     } else {
       userInfo?.classList.add('hidden');
-      userInfo?.classList.remove('flex');
       loginBtn?.classList.remove('hidden');
-      logoutBtn?.classList.add('hidden');
-      adminLink?.classList.add('hidden');
     }
   }
 

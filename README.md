@@ -1,63 +1,76 @@
-# Astro Starter Kit: Blog
+# I Simposio sobre Memorias Participativas
 
-```sh
-npm create astro@latest -- --template blog
+Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build) y gestionado con [Decap CMS](https://decapcms.org) (anteriormente Netlify CMS).
+
+## Tecnologías
+
+- **Framework**: Astro 7
+- **UI**: React 19 + Tailwind CSS 4
+- **CMS**: Decap CMS con autenticación Netlify Identity
+- **Backend serverless**: Netlify Functions
+- **Hosting**: Netlify
+
+## Arquitectura de contenido
+
+El proyecto sigue una arquitectura tipo **WordPress**:
+
+- **Entradas**: posts genéricos (noticias, artículos) con fecha, autor, categorías y etiquetas.
+- **Proyectos**: custom post type del *Museo de Memorias Vivas*.
+- **Categorías**: taxonomía jerárquica.
+- **Etiquetas**: taxonomía plana de palabras clave.
+- **Borradores**: colecciones filtradas por `draft: true` para gestión de borradores.
+
+## Scripts disponibles
+
+```bash
+npm run dev          # Servidor de desarrollo
+npm run build        # Build de producción
+npm run preview      # Vista previa del build
+npm run check        # Type-check con astro check
+npm run lint         # ESLint
+npm run lint:fix     # ESLint con auto-fix
+npm run format       # Formatear con Prettier
+npm run format:check # Verificar formato con Prettier
+npm run sync         # Sincronizar content.config.ts y config.yml
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Estructura del proyecto
 
-Features:
-
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
+```
+simposio-memorias/
 ├── public/
+│   └── admin/              # Interfaz de Decap CMS
+│       ├── index.html      # UI custom: previews, borradores, admin overlay
+│       └── config.yml      # Configuración de colecciones
+├── netlify/functions/      # Funciones serverless (gestión de usuarios, colecciones)
+├── scripts/
+│   └── sync-collections.mjs # Sincroniza carpetas de src/content con config
 ├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
+│   ├── components/         # Componentes Astro/React
+│   ├── content/            # Colecciones de contenido (Markdown)
+│   ├── layouts/            # Layouts Astro
+│   ├── lib/                # Utilidades (taxonomías, fechas)
+│   ├── pages/              # Páginas y rutas dinámicas
+│   └── styles/             # Estilos globales + Tailwind
 ├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+├── netlify.toml
+└── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Documentación adicional
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+- [`INSTRUCCIONES.md`](./INSTRUCCIONES.md) — Guía rápida de uso y despliegue.
+- [`GUIA-DESPLIEGUE.md`](./GUIA-DESPLIEGUE.md) — Despliegue paso a paso en Netlify.
+- [`docs/`](./docs/) — Documentación técnica adicional.
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+## Calidad de código
 
-Any static assets, like images, can be placed in the `public/` directory.
+El proyecto incluye:
 
-## 🧞 Commands
+- `astro check` para type-checking de archivos `.astro` y TypeScript.
+- ESLint con `eslint-plugin-astro` y `@typescript-eslint`.
+- Prettier con `prettier-plugin-astro`.
 
-All commands are run from the root of the project, from a terminal:
+---
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+Generado a partir del template [Astro Starter Kit: Blog](https://github.com/withastro/astro/tree/main/examples/blog).

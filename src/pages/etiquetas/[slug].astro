@@ -1,0 +1,157 @@
+---
+/**
+ * /etiquetas/[slug]/ — Archivo de una etiqueta (estilo WordPress).
+ */
+import Layout from '../../layouts/Layout.astro';
+import TermPills from '../../components/TermPills.astro';
+import { getCollection } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import {
+  getCategorias,
+  getEtiquetas,
+  termSlugMap,
+  slugify,
+  formatDate,
+  sortByDateDesc,
+} from '../../lib/taxonomies';
+
+type TermProps = {
+  title: string;
+  slug: string;
+  description: string;
+};
+
+type Props = {
+  term: TermProps;
+};
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const etiquetas = await getEtiquetas();
+  const entradas = await getCollection('entradas', ({ data }) => !data.draft);
+  const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
+
+  const usadas = new Set<string>();
+  for (const e of entradas) (e.data.tags || []).forEach((t) => usadas.add(t));
+  for (const p of proyectos) (p.data.tags || []).forEach((t) => usadas.add(t));
+
+  const terms = new Map<string, { title: string; slug: string; description: string }>();
+  for (const t of etiquetas) terms.set(t.slug, { title: t.title, slug: t.slug, description: t.description });
+  for (const titulo of usadas) {
+    const s = etiquetas.find((t) => t.title === titulo)?.slug || slugify(titulo);
+    if (!terms.has(s)) terms.set(s, { title: titulo, slug: s, description: '' });
+  }
+
+  return Array.from(terms.values()).map((term) => ({
+    params: { slug: term.slug },
+    props: { term },
+  }));
+};
+
+const { term } = Astro.props;
+
+const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.tags?.includes(term.title));
+const proyectos = await getCollection('proyectos', ({ data }) => !data.draft && data.tags?.includes(term.title));
+sortByDateDesc(entradas);
+proyectos.sort((a, b) => b.data.number - a.data.number);
+
+const catSlugs = termSlugMap(await getCategorias());
+const tagSlugs = termSlugMap(await getEtiquetas());
+const total = entradas.length + proyectos.length;
+---
+
+<Layout title={`Etiqueta: ${term.title} - I Simposio sobre Memorias Participativas`}>
+  <section class="bg-ugr-green py-14 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <nav class="text-white/70 text-sm mb-4">
+        <a href="/" class="hover:text-white transition-colors">Inicio</a>
+        <span class="mx-2">/</span>
+        <a href="/etiquetas/" class="hover:text-white transition-colors">Etiquetas</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">{term.title}</span>
+      </nav>
+      <p class="text-white/70 text-sm uppercase tracking-widest mb-2">Etiqueta</p>
+      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
+        #{term.title}
+      </h1>
+      {term.description && (
+        <p class="mt-4 text-white/80 max-w-2xl mx-auto">{term.description}</p>
+      )}
+      <p class="mt-3 text-white/60 text-sm">{total} {total === 1 ? 'publicación' : 'publicaciones'}</p>
+    </div>
+  </section>
+
+  <section class="py-16 bg-white">
+    <div class="max-w-5xl mx-auto px-4">
+      {total === 0 && (
+        <p class="text-center text-ugr-text-light py-16">
+          No hay contenido publicado con esta etiqueta todavía.
+        </p>
+      )}
+
+      {entradas.length > 0 && (
+        <div class="mb-14">
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">Entradas</h2>
+          <div class="grid gap-8 md:grid-cols-2">
+            {entradas.map((entry) => (
+              <article class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-ugr-green/30 transition-all duration-300 group">
+                <a href={`/entradas/${entry.id}`} class="block">
+                  {entry.data.image && (
+                    <div class="relative h-48 overflow-hidden">
+                      <img src={entry.data.image} alt={entry.data.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    </div>
+                  )}
+                </a>
+                <div class="p-5">
+                  {entry.data.date && (
+                    <p class="text-xs text-ugr-green-light font-semibold uppercase tracking-wide mb-1">
+                      {formatDate(entry.data.date)}
+                    </p>
+                  )}
+                  <a href={`/entradas/${entry.id}`}>
+                    <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2 group-hover:text-ugr-green transition-colors">
+                      {entry.data.title}
+                    </h3>
+                  </a>
+                  <div class="mb-3">
+                    <TermPills categories={entry.data.categories} tags={entry.data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} size="sm" />
+                  </div>
+                  {entry.data.description && (
+                    <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {proyectos.length > 0 && (
+        <div>
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">Proyectos del Museo</h2>
+          <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {proyectos.map((entry) => (
+              <a
+                href={`/museo-memorias/${entry.data.number}`}
+                class="block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-ugr-green/30 transition-all duration-300 group"
+              >
+                <div class="relative h-44 overflow-hidden">
+                  <img src={entry.data.image} alt={entry.data.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-ugr-green text-white text-xs font-bold px-3 py-1 rounded-full">{entry.data.number}</span>
+                  </div>
+                </div>
+                <div class="p-5">
+                  <h3 class="text-base font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2">{entry.data.title}</h3>
+                  <p class="text-xs text-ugr-green-light font-semibold uppercase tracking-wide mb-2">{entry.data.place}</p>
+                  {entry.data.description && (
+                    <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+</Layout>

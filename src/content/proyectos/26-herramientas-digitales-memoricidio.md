@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 26
 title: "Herramientas digitales para combatir el memoricidio: memoria de la Nakba y narrativas palestinas"
 place: "Palestina, Jordania y Estados Unidos"

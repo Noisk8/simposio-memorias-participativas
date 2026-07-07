@@ -1,4 +1,6 @@
 ---
+draft: false
+simposio: "2026"
 number: 11
 title: "Amoratorio de Creación: Cenizas, Flores y Faroles para No Olvidar"
 place: "Bogotá, Colombia"

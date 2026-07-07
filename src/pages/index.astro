@@ -1,24 +1,35 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { getSimposioDefault } from '../lib/simposios';
+import { NETWORK_TITLE, NETWORK_INSTAGRAM } from '../consts';
+
+const simposio = await getSimposioDefault();
+const simposioTitle = simposio?.data.title || 'I Simposio sobre Memorias Participativas';
+const simposioPlace = simposio?.data.place || 'Universidad de Granada';
+const simposioPoster = simposio?.data.poster || '/images/cartel-oficial.jpg';
+const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
 ---
 
-<Layout title="I Simposio sobre Memorias Participativas">
+<Layout title={`${simposioTitle} · ${NETWORK_TITLE}`}>
   <!-- Hero Section -->
   <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
-      <img 
-        src="/images/hero-bg.jpg" 
-        alt="I Simposio sobre Memorias Participativas" 
+      <img
+        src={simposioImage}
+        alt={simposioTitle}
         class="w-full h-full object-cover"
       />
       <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
     </div>
     <div class="relative z-10 text-center px-4">
+      <p class="text-sm md:text-base text-white/80 uppercase tracking-widest mb-3">
+        {NETWORK_TITLE}
+      </p>
       <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 font-[family-name:var(--font-heading)] drop-shadow-lg">
-        I SIMPOSIO SOBRE<br/>MEMORIAS PARTICIPATIVAS
+        {simposioTitle.toUpperCase()}
       </h1>
       <p class="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto drop-shadow-md">
-        Universidad de Granada
+        {simposioPlace}
       </p>
     </div>
   </section>
@@ -30,38 +41,65 @@ import Layout from '../layouts/Layout.astro';
         Cartel Oficial
       </h2>
       <div class="card-shadow rounded-xl overflow-hidden inline-block">
-        <img 
-          src="/images/cartel-oficial.jpg" 
-          alt="Cartel Oficial del I Simposio sobre Memorias Participativas" 
+        <img
+          src={simposioPoster}
+          alt={`Cartel Oficial del ${simposioTitle}`}
           class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500"
         />
       </div>
     </div>
   </section>
 
-  <!-- Enlace Instagram -->
+  <!-- Enlaces principales -->
   <section class="py-16 bg-ugr-cream">
+    <div class="max-w-5xl mx-auto px-4">
+      <h2 class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center">
+        Explora
+      </h2>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <a href="/acerca-de" class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
+          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Acerca de</h3>
+          <p class="text-sm text-ugr-text-light">La Red Internacional</p>
+        </a>
+        <a href="/simposios" class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
+          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Simposios</h3>
+          <p class="text-sm text-ugr-text-light">Ediciones y encuentros</p>
+        </a>
+        <a href="/museo-memorias" class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
+          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Museo</h3>
+          <p class="text-sm text-ugr-text-light">Memorias Vivas</p>
+        </a>
+        <a href={`/ediciones/${simposio?.data.slug || '2026'}/`} class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
+          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Edición actual</h3>
+          <p class="text-sm text-ugr-text-light">Página del simposio</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enlace Instagram -->
+  <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-4 text-center">
       <h2 class="text-3xl font-bold mb-8 text-ugr-green-dark font-[family-name:var(--font-heading)]">
         Síguenos en Instagram
       </h2>
-      
+
       <div class="card-shadow bg-white rounded-xl p-8 max-w-md mx-auto">
         <div class="w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden shadow-lg">
-          <img 
-            src="/images/instagram-icon.jpg" 
-            alt="Instagram @memoriasparticipativas" 
+          <img
+            src="/images/instagram-icon.jpg"
+            alt="Instagram @memoriasparticipativas"
             class="w-full h-full object-cover"
           />
         </div>
-        
+
         <p class="text-ugr-text-light mb-6 font-semibold">
           @memoriasparticipativas
         </p>
-        
-        <a 
-          href="https://www.instagram.com/memoriasparticipativas/" 
-          target="_blank" 
+
+        <a
+          href={NETWORK_INSTAGRAM}
+          target="_blank"
           rel="noopener noreferrer"
           class="btn-green inline-flex items-center gap-2"
         >
@@ -71,7 +109,7 @@ import Layout from '../layouts/Layout.astro';
           Seguir en Instagram
         </a>
       </div>
-      
+
       <p class="mt-6 text-ugr-text-light text-sm">
         Actualizaciones, fotos y vídeos del simposio
       </p>
