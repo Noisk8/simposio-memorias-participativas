@@ -73,3 +73,26 @@ export function sortByDateDesc<T extends { data: { date?: string; title?: string
     return (a.data.title ?? '').localeCompare(b.data.title ?? '');
   });
 }
+
+/**
+ * Verifica si una entrada/proyecto está programada para publicarse en el futuro.
+ * Si publish_date está establecido y es posterior a la fecha actual, el contenido
+ * no debe mostrarse (equivalente a "Programar" de WordPress).
+ */
+export function isScheduled(data: { draft?: boolean; publish_date?: string }): boolean {
+  if (data.draft) return false;
+  if (!data.publish_date) return false;
+  const now = new Date();
+  const scheduled = new Date(data.publish_date);
+  return scheduled > now;
+}
+
+/**
+ * Filtra colecciones excluyendo borradores y publicaciones programadas.
+ * Úsalo en las consultas de Astro para que el contenido programado no aparezca en el sitio.
+ */
+export function filterPublished<T extends { data: { draft?: boolean; publish_date?: string } }>(
+  entries: T[]
+): T[] {
+  return entries.filter((e) => !e.data.draft && !isScheduled(e.data));
+}

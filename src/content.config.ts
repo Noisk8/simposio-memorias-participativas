@@ -69,6 +69,7 @@ const proyectos = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/proyectos' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
+    publish_date: dateField,
     simposio: z.string().default('2026'),
     number: z.number(),
     title: z.string(),
@@ -86,6 +87,7 @@ const entradas = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/entradas' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
+    publish_date: dateField,
     simposio: z.string().default('2026'),
     title: z.string(),
     date: dateField,
@@ -97,4 +99,24 @@ const entradas = defineCollection({
   }),
 });
 
-export const collections = { simposios, categorias, etiquetas, paginas, proyectos, entradas };
+const menuItems = z.object({
+  label: z.string(),
+  url: z.string(),
+  order: z.number().optional().default(0),
+  children: z.array(z.object({
+    label: z.string(),
+    url: z.string(),
+    order: z.number().optional().default(0),
+  })).optional().default([]),
+});
+
+const menus = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/menus' }),
+  schema: z.object({
+    title: z.string(),
+    slug: z.string(),
+    items: z.array(menuItems).optional().default([]),
+  }),
+});
+
+export const collections = { simposios, categorias, etiquetas, paginas, proyectos, entradas, menus };

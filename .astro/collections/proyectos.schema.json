@@ -6,6 +6,18 @@
       "default": false,
       "type": "boolean"
     },
+    "publish_date": {
+      "default": "",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
+    },
     "simposio": {
       "default": "2026",
       "type": "string"

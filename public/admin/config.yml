@@ -94,6 +94,14 @@ collections:
       # Campo interno: se gestiona automáticamente con "Publish" (publica) y
       # "Guardar como borrador" (borrador). No se muestra en el formulario.
       - { name: "draft", widget: "hidden", default: false }
+      - label: "Fecha de programación"
+        name: "publish_date"
+        widget: "datetime"
+        format: "YYYY-MM-DDTHH:mm"
+        date_format: "DD/MM/YYYY"
+        time_format: "HH:mm"
+        required: false
+        hint: "Si se establece una fecha futura, la entrada no se publicará hasta esa fecha. Déjalo vacío para publicar inmediatamente."
       - label: "Simposio"
         name: "simposio"
         widget: "relation"
@@ -154,6 +162,14 @@ collections:
       # Campo interno: se gestiona automáticamente con "Publish" (publica) y
       # "Guardar como borrador" (borrador). No se muestra en el formulario.
       - { name: "draft", widget: "hidden", default: false }
+      - label: "Fecha de programación"
+        name: "publish_date"
+        widget: "datetime"
+        format: "YYYY-MM-DDTHH:mm"
+        date_format: "DD/MM/YYYY"
+        time_format: "HH:mm"
+        required: false
+        hint: "Si se establece una fecha futura, la entrada no se publicará hasta esa fecha. Déjalo vacío para publicar inmediatamente."
       - label: "Simposio"
         name: "simposio"
         widget: "relation"
@@ -206,6 +222,14 @@ collections:
     fields:
       # Campo interno: "Publish" publica el borrador automáticamente.
       - { name: "draft", widget: "hidden", default: true }
+      - label: "Fecha de programación"
+        name: "publish_date"
+        widget: "datetime"
+        format: "YYYY-MM-DDTHH:mm"
+        date_format: "DD/MM/YYYY"
+        time_format: "HH:mm"
+        required: false
+        hint: "Si se establece una fecha futura, la entrada no se publicará hasta esa fecha."
       - label: "Simposio"
         name: "simposio"
         widget: "relation"
@@ -252,6 +276,14 @@ collections:
     fields:
       # Campo interno: "Publish" publica el borrador automáticamente.
       - { name: "draft", widget: "hidden", default: true }
+      - label: "Fecha de programación"
+        name: "publish_date"
+        widget: "datetime"
+        format: "YYYY-MM-DDTHH:mm"
+        date_format: "DD/MM/YYYY"
+        time_format: "HH:mm"
+        required: false
+        hint: "Si se establece una fecha futura, el proyecto no se publicará hasta esa fecha."
       - label: "Simposio"
         name: "simposio"
         widget: "relation"
@@ -386,3 +418,35 @@ collections:
         field: { label: "Organizador", name: "organizador", widget: "string" }
       - { label: "Imagen de instituciones", name: "instituciones_image", widget: "image", required: false }
       - { label: "Contenido", name: "body", widget: "markdown", required: false }
+
+  # Menus de navegación (equivalente a Menús de WordPress)
+  - name: "menus"
+    label: "Menús de navegación"
+    label_singular: "Menú"
+    folder: "src/content/menus"
+    create: true
+    slug: "{{slug}}"
+    description: "Menús de navegación del sitio. Cada menú contiene una lista de enlaces que se renderizan en el header y footer."
+    sortable_fields: ["title"]
+    fields:
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Slug", name: "slug", widget: "string", hint: "Identificador único del menú, ej: principal, footer." }
+      - label: "Elementos del menú"
+        name: "items"
+        widget: "list"
+        collapsed: false
+        min: 1
+        max: 20
+        fields:
+          - { label: "Texto del enlace", name: "label", widget: "string" }
+          - { label: "URL", name: "url", widget: "string", hint: "Ruta relativa (ej: /acerca-de) o URL completa." }
+          - { label: "Orden", name: "order", widget: "number", value_type: "int", default: 0 }
+          - label: "Submenú"
+            name: "children"
+            widget: "list"
+            collapsed: true
+            required: false
+            fields:
+              - { label: "Texto", name: "label", widget: "string" }
+              - { label: "URL", name: "url", widget: "string" }
+              - { label: "Orden", name: "order", widget: "number", value_type: "int", default: 0 }

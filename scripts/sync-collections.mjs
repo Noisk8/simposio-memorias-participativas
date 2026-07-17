@@ -80,6 +80,7 @@ const KNOWN_SCHEMAS = {
   loader: glob({ pattern: '*.md', base: './src/content/entradas' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
+    publish_date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
     simposio: z.string().default('2026'),
     title: z.string(),
     date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
@@ -94,6 +95,7 @@ const KNOWN_SCHEMAS = {
   loader: glob({ pattern: '*.md', base: './src/content/proyectos' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
+    publish_date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
     simposio: z.string().default('2026'),
     number: z.number(),
     title: z.string(),
@@ -104,6 +106,25 @@ const KNOWN_SCHEMAS = {
     tags: z.array(z.string()).optional().default([]),
     image: z.string(),
     description: z.string().optional().default(''),
+  }),
+});`,
+  menus: `const menuItems = z.object({
+  label: z.string(),
+  url: z.string(),
+  order: z.number().optional().default(0),
+  children: z.array(z.object({
+    label: z.string(),
+    url: z.string(),
+    order: z.number().optional().default(0),
+  })).optional().default([]),
+});
+
+const menus = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/menus' }),
+  schema: z.object({
+    title: z.string(),
+    slug: z.string(),
+    items: z.array(menuItems).optional().default([]),
   }),
 });`,
 };

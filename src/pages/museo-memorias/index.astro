@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
 import { getCollection } from 'astro:content';
-import { getCategorias, getEtiquetas, termSlugMap } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, termSlugMap, filterPublished } from '../../lib/taxonomies';
 import { getSimposios } from '../../lib/simposios';
 
 const PAGE_SIZE = 10;
@@ -11,7 +11,8 @@ const catSlugs = termSlugMap(await getCategorias());
 const tagSlugs = termSlugMap(await getEtiquetas());
 const simposios = await getSimposios();
 
-const todos = await getCollection('proyectos', ({ data }) => !data.draft);
+const allProyectos = await getCollection('proyectos');
+const todos = filterPublished(allProyectos);
 const proyectos = todos.sort((a, b) => b.data.number - a.data.number).slice(0, PAGE_SIZE);
 
 const totalPages = Math.ceil(todos.length / PAGE_SIZE);

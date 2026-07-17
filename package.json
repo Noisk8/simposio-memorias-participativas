@@ -8,7 +8,7 @@
   "scripts": {
     "sync": "node scripts/sync-collections.mjs",
     "dev": "node scripts/sync-collections.mjs && astro dev",
-    "build": "node scripts/sync-collections.mjs && astro build",
+    "build": "node scripts/sync-collections.mjs && astro build && npx pagefind --site dist",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
@@ -38,6 +38,7 @@
     "@typescript-eslint/parser": "^8.62.1",
     "eslint": "^10.6.0",
     "eslint-plugin-astro": "^1.7.0",
+    "pagefind": "^1.5.2",
     "prettier": "^3.9.4",
     "prettier-plugin-astro": "^0.14.1",
     "typescript": "^6.0.3"

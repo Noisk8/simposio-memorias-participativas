@@ -1,8 +1,5 @@
 ---
-const pathname = Astro.url.pathname;
-function isActive(href: string) {
-  return pathname === href || pathname.startsWith(href + '/');
-}
+import DynamicMenu from './DynamicMenu.astro';
 ---
 
 <header class="bg-white sticky top-0 z-50">
@@ -117,72 +114,19 @@ function isActive(href: string) {
         </button>
 
         <!-- Navegación desktop -->
-        <ul id="main-nav" class="hidden md:flex md:items-center md:gap-1 md:flex-wrap md:justify-end">
-          <li>
-            <a href="/acerca-de" class="nav-link" aria-current={isActive('/acerca-de') ? 'page' : undefined}>
-              Acerca de
-            </a>
-          </li>
-          <li>
-            <a href="/simposios" class="nav-link" aria-current={isActive('/simposios') ? 'page' : undefined}>
-              Simposios
-            </a>
-          </li>
-          <li>
-            <a href="/organizacion" class="nav-link" aria-current={isActive('/organizacion') ? 'page' : undefined}>
-              Organización
-            </a>
-          </li>
-          <li>
-            <a href="/museo-memorias" class="nav-link" aria-current={isActive('/museo-memorias') ? 'page' : undefined}>
-              Museo de Memorias Vivas
-            </a>
-          </li>
-          <li>
-            <a href="/programa" class="nav-link" aria-current={isActive('/programa') ? 'page' : undefined}>
-              Programa
-            </a>
-          </li>
-          <li>
-            <a href="/contacto" class="nav-link" aria-current={isActive('/contacto') ? 'page' : undefined}>
-              Contacto
-            </a>
-          </li>
-        </ul>
+        <DynamicMenu
+          slug="principal"
+          class="hidden md:flex md:items-center md:gap-1 md:flex-wrap md:justify-end"
+          itemClass="nav-link"
+        />
 
         <!-- Navegación móvil -->
-        <ul id="mobile-nav" class="hidden md:hidden flex-col gap-1 mt-3 pb-2">
-          <li>
-            <a href="/acerca-de" class="nav-link-mobile" aria-current={isActive('/acerca-de') ? 'page' : undefined}>
-              Acerca de
-            </a>
-          </li>
-          <li>
-            <a href="/simposios" class="nav-link-mobile" aria-current={isActive('/simposios') ? 'page' : undefined}>
-              Simposios
-            </a>
-          </li>
-          <li>
-            <a href="/organizacion" class="nav-link-mobile" aria-current={isActive('/organizacion') ? 'page' : undefined}>
-              Organización
-            </a>
-          </li>
-          <li>
-            <a href="/museo-memorias" class="nav-link-mobile" aria-current={isActive('/museo-memorias') ? 'page' : undefined}>
-              Museo de Memorias Vivas
-            </a>
-          </li>
-          <li>
-            <a href="/programa" class="nav-link-mobile" aria-current={isActive('/programa') ? 'page' : undefined}>
-              Programa
-            </a>
-          </li>
-          <li>
-            <a href="/contacto" class="nav-link-mobile" aria-current={isActive('/contacto') ? 'page' : undefined}>
-              Contacto
-            </a>
-          </li>
-        </ul>
+        <DynamicMenu
+          slug="principal"
+          class="hidden md:hidden flex-col gap-1 mt-3 pb-2"
+          itemClass="nav-link-mobile"
+          mobile
+        />
       </nav>
     </div>
   </div>
@@ -221,7 +165,7 @@ function isActive(href: string) {
 <script is:inline>
   // @ts-nocheck
   const btn = document.getElementById('mobile-menu-btn');
-  const nav = document.getElementById('mobile-nav');
+  const nav = btn?.closest('nav')?.querySelector('.md\\:hidden.flex-col') || document.querySelector('nav .md\\:hidden');
   btn?.addEventListener('click', () => {
     nav?.classList.toggle('hidden');
   });

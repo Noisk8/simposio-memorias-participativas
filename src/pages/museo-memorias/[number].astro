@@ -1,10 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
+import GiscusComments from '../../components/GiscusComments.astro';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getCategorias, getEtiquetas, termSlugMap } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, termSlugMap, filterPublished } from '../../lib/taxonomies';
 import { getSimposioBySlug } from '../../lib/simposios';
 
 type Props = {
@@ -12,7 +13,8 @@ type Props = {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
+  const allProyectos = await getCollection('proyectos');
+  const proyectos = filterPublished(allProyectos);
   return proyectos.map((entry) => ({
     params: { number: entry.data.number.toString() },
     props: { entry },
@@ -24,7 +26,8 @@ const { Content } = await render(entry);
 const proyecto = entry.data;
 
 // Proyectos adyacentes para navegación
-const todos = await getCollection('proyectos', ({ data }) => !data.draft);
+const allProyectosNav = await getCollection('proyectos');
+const todos = filterPublished(allProyectosNav);
 const ordenados = todos.sort((a, b) => b.data.number - a.data.number);
 const idx = ordenados.findIndex((e) => e.data.number === proyecto.number);
 const prevProject = idx < ordenados.length - 1 ? ordenados[idx + 1] : null;
@@ -153,6 +156,8 @@ const simposioTitle = simposio?.data.title || proyecto.simposio;
           ← Volver al Museo de Memorias Vivas
         </a>
       </div>
+
+      <GiscusComments />
     </div>
   </section>
 </Layout>

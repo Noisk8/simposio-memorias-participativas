@@ -1,0 +1,66 @@
+---
+interface Props {
+  repo?: string;
+  repoId?: string;
+  category?: string;
+  categoryId?: string;
+  mapping?: string;
+  reactionsEnabled?: boolean;
+  emitMetadata?: boolean;
+  inputPosition?: 'top' | 'bottom';
+  theme?: string;
+  lang?: string;
+}
+
+const {
+  repo = 'noisk8/simposio-memorias',
+  repoId = '',
+  category = 'Announcements',
+  categoryId = '',
+  mapping = 'pathname',
+  reactionsEnabled = true,
+  emitMetadata = false,
+  inputPosition = 'bottom',
+  theme = 'light',
+  lang = 'es',
+} = Astro.props;
+---
+
+<div class="giscus mt-12 border-t border-gray-200 pt-8">
+  <h2 class="text-xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">
+    Comentarios
+  </h2>
+  <p class="text-sm text-[var(--ugr-text-light)] mb-4">
+    Los comentarios se gestionan a través de GitHub Discussions. Necesitas una cuenta de GitHub para participar.
+  </p>
+  <div id="giscus-container">
+    <script
+      is:inline
+      src="https://giscus.app/client.js"
+      data-repo={repo}
+      data-repo-id={repoId}
+      data-category={category}
+      data-category-id={categoryId}
+      data-mapping={mapping}
+      data-reactions-enabled={reactionsEnabled ? '1' : '0'}
+      data-emit-metadata={emitMetadata ? '1' : '0'}
+      data-input-position={inputPosition}
+      data-theme={theme}
+      data-lang={lang}
+      data-loading="lazy"
+      crossorigin="anonymous"
+      async
+    ></script>
+  </div>
+  <noscript>
+    <p class="text-sm text-[var(--ugr-text-light)]">
+      Los comentarios requieren JavaScript. Por favor, habilita JavaScript en tu navegador para ver los comentarios.
+    </p>
+  </noscript>
+</div>
+
+<style>
+  .giscus :global(iframe) {
+    max-width: 100%;
+  }
+</style>

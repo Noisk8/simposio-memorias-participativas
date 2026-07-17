@@ -2,11 +2,12 @@
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
 import { getCollection } from 'astro:content';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate, sortByDateDesc } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, termSlugMap, formatDate, sortByDateDesc, filterPublished } from '../../lib/taxonomies';
 import { resolveSimposioSlug } from '../../lib/simposios';
 
 const defaultSlug = await resolveSimposioSlug();
-const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.simposio === defaultSlug);
+const allEntradas = await getCollection('entradas', ({ data }) => data.simposio === defaultSlug);
+const entradas = filterPublished(allEntradas);
 sortByDateDesc(entradas);
 
 const catSlugs = termSlugMap(await getCategorias());

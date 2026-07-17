@@ -1,10 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
+import GiscusComments from '../../components/GiscusComments.astro';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, termSlugMap, formatDate, filterPublished } from '../../lib/taxonomies';
 import { resolveSimposioSlug } from '../../lib/simposios';
 
 type Props = {
@@ -13,7 +14,8 @@ type Props = {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const defaultSlug = await resolveSimposioSlug();
-  const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.simposio === defaultSlug);
+  const allEntradas = await getCollection('entradas', ({ data }) => data.simposio === defaultSlug);
+  const entradas = filterPublished(allEntradas);
   return entradas.map((entry) => ({
     params: { slug: entry.id },
     props: { entry },
@@ -82,6 +84,8 @@ const tagSlugs = termSlugMap(await getEtiquetas());
           ← Volver a Entradas
         </a>
       </div>
+
+      <GiscusComments />
     </div>
   </section>
 </Layout>
