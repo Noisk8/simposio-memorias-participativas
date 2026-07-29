@@ -533,6 +533,42 @@
       opacity: 0.8 !important;
     }
 
+    /* =====================================================
+       Sidebar nativo de Decap (clases ...-SidebarContainer):
+       fondo blanco y texto oscuro para un look más profesional
+       ===================================================== */
+    [class*="SidebarContainer"] {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border: 1px solid #e5e7eb !important;
+      padding-top: 14px !important;
+    }
+    [class*="SidebarContainer"] [class*="SidebarHeading"] {
+      color: #111827 !important;
+    }
+    [class*="SidebarContainer"] [class*="SidebarNavLink"],
+    [class*="SidebarContainer"] a {
+      color: #111827 !important;
+      border-left-color: transparent !important;
+    }
+    [class*="SidebarContainer"] [class*="SidebarNavLink"]:hover,
+    [class*="SidebarContainer"] a:hover {
+      background: #f3f4f6 !important;
+      color: #111827 !important;
+    }
+    [class*="SidebarContainer"] svg {
+      color: #6b7280 !important;
+    }
+    [class*="SidebarContainer"] input {
+      background: #f9fafb !important;
+      border: 1px solid #d1d5db !important;
+      color: #111827 !important;
+      margin-top: 10px !important;
+    }
+    [class*="SidebarContainer"] input::placeholder {
+      color: #9ca3af !important;
+    }
+
     /* Sidebar search input */
     aside input[type="search"],
     aside input[type="text"],
@@ -1565,6 +1601,14 @@
       background: var(--surface) !important;
       border-color: var(--border-strong) !important;
       color: var(--text) !important;
+    }
+    /* El encabezado y la descripción de una colección (clases ...-cardTopHeading /
+       ...-cardTopDescription) no deben verse como tarjetas con borde. */
+    [class*="CollectionTopHeading"],
+    [class*="CollectionTopDescription"] {
+      border: none !important;
+      background: transparent !important;
+      border-radius: 0 !important;
     }
     .cms-admin-overlay { background: var(--overlay-bg) !important; }
     .cms-admin-panel { background: var(--surface) !important; color: var(--text) !important; }

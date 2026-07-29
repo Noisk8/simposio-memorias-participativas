@@ -96,6 +96,17 @@ import Layout from '../../layouts/Layout.astro';
       var res = await fetch('/.netlify/functions/manage-users', {
         headers: { 'Authorization': 'Bearer ' + token },
       });
+
+      // Si el servidor no es Netlify (p. ej. `astro dev` puro), la ruta
+      // /.netlify/functions/* devuelve el HTML del 404 en vez de JSON.
+      var contentType = res.headers.get('content-type') || '';
+      if (contentType.indexOf('application/json') === -1) {
+        usersLoading.classList.add('hidden');
+        usersError.textContent = 'Las funciones de Netlify no están disponibles en este servidor. Abre esta página desde "netlify dev" (http://localhost:8888) o desde el sitio en producción.';
+        usersError.classList.remove('hidden');
+        return;
+      }
+
       var data = await res.json();
 
       usersLoading.classList.add('hidden');
