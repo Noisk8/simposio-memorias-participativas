@@ -5,7 +5,7 @@ import GiscusComments from '../../components/GiscusComments.astro';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getCategorias, getEtiquetas, termSlugMap, filterPublished } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, filterPublished } from '../../lib/taxonomies';
 import { getSimposioBySlug } from '../../lib/simposios';
 
 type Props = {
@@ -25,7 +25,6 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const proyecto = entry.data;
 
-// Proyectos adyacentes para navegación
 const allProyectosNav = await getCollection('proyectos');
 const todos = filterPublished(allProyectosNav);
 const ordenados = todos.sort((a, b) => b.data.number - a.data.number);
@@ -33,14 +32,21 @@ const idx = ordenados.findIndex((e) => e.data.number === proyecto.number);
 const prevProject = idx < ordenados.length - 1 ? ordenados[idx + 1] : null;
 const nextProject = idx > 0 ? ordenados[idx - 1] : null;
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 const simposio = await getSimposioBySlug(proyecto.simposio || '2026');
 const simposioTitle = simposio?.data.title || proyecto.simposio;
+
+const allPublished = filterPublished(await getCollection('proyectos'));
+const related = allPublished
+  .filter((p) => p.data.number !== proyecto.number && (
+    (p.data.categories || []).some((c) => (proyecto.categories || []).includes(c)) ||
+    (p.data.tags || []).some((t) => (proyecto.tags || []).includes(t))
+  ))
+  .slice(0, 3);
 ---
 
 <Layout title={`${proyecto.title} - Museo de Memorias Vivas`}>
-  <!-- Hero -->
   <section class="relative h-[30vh] min-h-[250px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
       <img 
@@ -67,10 +73,8 @@ const simposioTitle = simposio?.data.title || proyecto.simposio;
     </div>
   </section>
 
-  <!-- Contenido del proyecto -->
   <section class="py-12 bg-white">
     <div class="max-w-4xl mx-auto px-4">
-      <!-- Imagen del proyecto -->
       <div class="mb-8">
         <img 
           src={proyecto.image} 
@@ -79,7 +83,6 @@ const simposioTitle = simposio?.data.title || proyecto.simposio;
         />
       </div>
 
-      <!-- Metadatos -->
       <div class="flex flex-wrap gap-4 mb-8 text-sm">
         <div class="flex items-center gap-2 text-ugr-green">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,22 +110,34 @@ const simposioTitle = simposio?.data.title || proyecto.simposio;
       </div>
 
       <div class="mb-6">
-        <TermPills categories={proyecto.categories} tags={proyecto.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} />
+        <TermPills categories={proyecto.categories} tags={proyecto.tags} catTitles={catTitles} tagTitles={tagTitles} />
       </div>
 
-      <!-- Descripción corta -->
       {proyecto.description && (
         <p class="text-lg text-ugr-text leading-relaxed mb-6 font-medium border-l-4 border-ugr-green pl-4">
           {proyecto.description}
         </p>
       )}
 
-      <!-- Cuerpo en markdown -->
       <div class="prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
         <Content />
       </div>
 
-      <!-- Navegación entre proyectos -->
+      {related.length > 0 && (
+        <div class="mt-12 pt-8 border-t border-gray-200">
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">Proyectos relacionados</h2>
+          <div class="grid gap-6 md:grid-cols-3">
+            {related.map((r) => (
+              <a href={`/museo-memorias/${r.data.number}`} class="block bg-gray-50 rounded-xl p-4 hover:bg-ugr-green/5 transition-colors">
+                <img src={r.data.image} alt={r.data.title} class="w-full h-32 object-cover rounded-lg mb-3" />
+                <h3 class="font-bold text-ugr-green-dark text-sm line-clamp-2">{r.data.title}</h3>
+                <p class="text-xs text-ugr-text-light mt-1">{r.data.place}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div class="mt-12 pt-8 border-t border-gray-200 flex flex-col sm:flex-row gap-4 justify-between">
         {prevProject && (
           <a 
@@ -150,7 +165,6 @@ const simposioTitle = simposio?.data.title || proyecto.simposio;
         )}
       </div>
 
-      <!-- Volver al museo -->
       <div class="mt-8 text-center">
         <a href="/museo-memorias/" class="btn-green inline-block px-6 py-3">
           ← Volver al Museo de Memorias Vivas

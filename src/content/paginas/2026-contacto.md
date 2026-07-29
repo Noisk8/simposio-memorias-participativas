@@ -1,5 +1,8 @@
 ---
 simposio: "2026"
+slug: "contacto"
+parent: ""
+is_home: false
 template: "contacto"
 title: "Contacto"
 description: "Ponte en contacto con el equipo del I Simposio sobre Memorias Participativas."

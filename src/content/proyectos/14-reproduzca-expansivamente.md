@@ -8,6 +8,8 @@ author: ""
 collective: "Entrelazando"
 image: "/images/proyecto-14.jpg"
 description: "La escritura no requiere permisos, pero hay quien la usa para distorsionar la realidad, proclamándose a sí mismos dueños de la verdad."
+tags:
+  - museo-memorias
 ---
 
 Este proyecto propone la reproducción expansiva de narrativas comunitarias como acto de resistencia frente a los relatos hegemónicos. Frente a quienes monopolizan la verdad, Entrelazando apuesta por multiplicar las voces y democratizar la producción de memoria.

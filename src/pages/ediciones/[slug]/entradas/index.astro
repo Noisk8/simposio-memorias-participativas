@@ -3,7 +3,7 @@ import Layout from '../../../../layouts/Layout.astro';
 import TermPills from '../../../../components/TermPills.astro';
 import { getCollection } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate, sortByDateDesc } from '../../../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, formatDate, sortByDateDesc } from '../../../../lib/taxonomies';
 import { getSimposioBySlug } from '../../../../lib/simposios';
 
 export const getStaticPaths: GetStaticPaths = async () => {
@@ -19,12 +19,11 @@ const simposioTitle = simposio?.data.title || `Edición ${slug}`;
 const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.simposio === slug);
 sortByDateDesc(entradas);
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 ---
 
 <Layout title={`Entradas - ${simposioTitle}`}>
-  <!-- Hero -->
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">
@@ -40,7 +39,6 @@ const tagSlugs = termSlugMap(await getEtiquetas());
     </div>
   </section>
 
-  <!-- Listado -->
   <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-4">
       {entradas.length === 0 && (
@@ -62,7 +60,7 @@ const tagSlugs = termSlugMap(await getEtiquetas());
                 <h2 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2 group-hover:text-ugr-green transition-colors">{entry.data.title}</h2>
               </a>
               <div class="mb-3">
-                <TermPills categories={entry.data.categories} tags={entry.data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} size="sm" />
+                <TermPills categories={entry.data.categories} tags={entry.data.tags} catTitles={catTitles} tagTitles={tagTitles} size="sm" />
               </div>
               {entry.data.description && (
                 <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>

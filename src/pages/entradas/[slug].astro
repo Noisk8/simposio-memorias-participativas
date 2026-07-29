@@ -5,7 +5,7 @@ import GiscusComments from '../../components/GiscusComments.astro';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate, filterPublished } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, formatDate, filterPublished } from '../../lib/taxonomies';
 import { resolveSimposioSlug } from '../../lib/simposios';
 
 type Props = {
@@ -26,12 +26,19 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const entrada = entry.data;
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
+
+const allPublished = filterPublished(await getCollection('entradas'));
+const related = allPublished
+  .filter((e) => e.id !== entry.id && (
+    (e.data.categories || []).some((c) => (entrada.categories || []).includes(c)) ||
+    (e.data.tags || []).some((t) => (entrada.tags || []).includes(t))
+  ))
+  .slice(0, 3);
 ---
 
 <Layout title={`${entrada.title} - Entradas`}>
-  <!-- Hero -->
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">
@@ -52,7 +59,6 @@ const tagSlugs = termSlugMap(await getEtiquetas());
     </div>
   </section>
 
-  <!-- Contenido -->
   <section class="py-12 bg-white">
     <div class="max-w-3xl mx-auto px-4">
       {entrada.image && (
@@ -66,7 +72,7 @@ const tagSlugs = termSlugMap(await getEtiquetas());
       )}
 
       <div class="mb-6">
-        <TermPills categories={entrada.categories} tags={entrada.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} />
+        <TermPills categories={entrada.categories} tags={entrada.tags} catTitles={catTitles} tagTitles={tagTitles} />
       </div>
 
       {entrada.description && (
@@ -78,6 +84,23 @@ const tagSlugs = termSlugMap(await getEtiquetas());
       <div class="prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
         <Content />
       </div>
+
+      {related.length > 0 && (
+        <div class="mt-12 pt-8 border-t border-gray-200">
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">Entradas relacionadas</h2>
+          <div class="grid gap-6 md:grid-cols-3">
+            {related.map((r) => (
+              <a href={`/entradas/${r.id}`} class="block bg-gray-50 rounded-xl p-4 hover:bg-ugr-green/5 transition-colors">
+                {r.data.image && (
+                  <img src={r.data.image} alt={r.data.title} class="w-full h-32 object-cover rounded-lg mb-3" />
+                )}
+                <h3 class="font-bold text-ugr-green-dark text-sm line-clamp-2">{r.data.title}</h3>
+                {r.data.date && <p class="text-xs text-ugr-text-light mt-1">{formatDate(r.data.date)}</p>}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div class="mt-12 text-center">
         <a href="/entradas/" class="btn-green inline-block px-6 py-3">

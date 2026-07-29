@@ -25,6 +25,7 @@
         "npm:astro@^7.0.3",
         "npm:eslint-plugin-astro@^1.7.0",
         "npm:eslint@^10.6.0",
+        "npm:pagefind@^1.5.2",
         "npm:prettier-plugin-astro@~0.14.1",
         "npm:prettier@^3.9.4",
         "npm:react-dom@^19.2.7",

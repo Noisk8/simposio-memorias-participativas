@@ -4,7 +4,7 @@ import TermPills from '../../../../components/TermPills.astro';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate } from '../../../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, formatDate } from '../../../../lib/taxonomies';
 import { getSimposioBySlug } from '../../../../lib/simposios';
 
 type Props = {
@@ -24,14 +24,13 @@ const { slug } = Astro.params;
 const { Content } = await render(entry);
 const entrada = entry.data;
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 const simposio = await getSimposioBySlug(slug || entrada.simposio || '2026');
 const simposioTitle = simposio?.data.title || `Edición ${slug}`;
 ---
 
 <Layout title={`${entrada.title} - ${simposioTitle}`}>
-  <!-- Hero -->
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">
@@ -54,7 +53,6 @@ const simposioTitle = simposio?.data.title || `Edición ${slug}`;
     </div>
   </section>
 
-  <!-- Contenido -->
   <section class="py-12 bg-white">
     <div class="max-w-3xl mx-auto px-4">
       {entrada.image && (
@@ -64,7 +62,7 @@ const simposioTitle = simposio?.data.title || `Edición ${slug}`;
       )}
 
       <div class="mb-6">
-        <TermPills categories={entrada.categories} tags={entrada.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} />
+        <TermPills categories={entrada.categories} tags={entrada.tags} catTitles={catTitles} tagTitles={tagTitles} />
       </div>
 
       {entrada.description && (

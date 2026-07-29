@@ -1,8 +1,4 @@
 ---
-/**
- * /categorias/[slug]/ — Archivo de una categoría (estilo WordPress).
- * Lista las entradas y proyectos publicados que pertenecen a la categoría.
- */
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
 import { getCollection } from 'astro:content';
@@ -10,16 +6,18 @@ import type { GetStaticPaths } from 'astro';
 import {
   getCategorias,
   getEtiquetas,
-  termSlugMap,
+  slugTitleMap,
   slugify,
   formatDate,
   sortByDateDesc,
+  getParentChain,
 } from '../../lib/taxonomies';
 
 type TermProps = {
   title: string;
   slug: string;
   description: string;
+  parent?: string;
 };
 
 type Props = {
@@ -31,16 +29,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const entradas = await getCollection('entradas', ({ data }) => !data.draft);
   const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
 
-  // Unión: términos definidos como documento + títulos usados en contenido
   const usados = new Set<string>();
   for (const e of entradas) (e.data.categories || []).forEach((c) => usados.add(c));
   for (const p of proyectos) (p.data.categories || []).forEach((c) => usados.add(c));
 
-  const terms = new Map<string, { title: string; slug: string; description: string }>();
-  for (const c of categorias) terms.set(c.slug, { title: c.title, slug: c.slug, description: c.description });
-  for (const titulo of usados) {
-    const s = categorias.find((c) => c.title === titulo)?.slug || slugify(titulo);
-    if (!terms.has(s)) terms.set(s, { title: titulo, slug: s, description: '' });
+  const terms = new Map<string, TermProps>();
+  for (const c of categorias) terms.set(c.slug, { title: c.title, slug: c.slug, description: c.description, parent: c.parent });
+  for (const slug of usados) {
+    if (!terms.has(slug)) terms.set(slug, { title: slug, slug, description: '' });
   }
 
   return Array.from(terms.values()).map((term) => ({
@@ -51,23 +47,35 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 const { term } = Astro.props;
 
-const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.categories?.includes(term.title));
-const proyectos = await getCollection('proyectos', ({ data }) => !data.draft && data.categories?.includes(term.title));
+const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.categories?.includes(term.slug));
+const proyectos = await getCollection('proyectos', ({ data }) => !data.draft && data.categories?.includes(term.slug));
 sortByDateDesc(entradas);
 proyectos.sort((a, b) => b.data.number - a.data.number);
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
+const allCategorias = await getCategorias();
 const total = entradas.length + proyectos.length;
+
+const breadcrumbs = getParentChain(term.slug, allCategorias);
 ---
 
-<Layout title={`Categoría: ${term.title} - I Simposio sobre Memorias Participativas`}>
+<Layout
+  title={`Categoría: ${term.title} - I Simposio sobre Memorias Participativas`}
+  description={term.description}
+>
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">
         <a href="/" class="hover:text-white transition-colors">Inicio</a>
         <span class="mx-2">/</span>
         <a href="/categorias/" class="hover:text-white transition-colors">Categorías</a>
+        {breadcrumbs.slice(0, -1).map((c) => (
+          <>
+            <span class="mx-2">/</span>
+            <a href={`/categorias/${c.slug}/`} class="hover:text-white transition-colors">{c.title}</a>
+          </>
+        ))}
         <span class="mx-2">/</span>
         <span class="text-white">{term.title}</span>
       </nav>
@@ -115,7 +123,7 @@ const total = entradas.length + proyectos.length;
                     </h3>
                   </a>
                   <div class="mb-3">
-                    <TermPills categories={entry.data.categories} tags={entry.data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} size="sm" />
+                    <TermPills categories={entry.data.categories} tags={entry.data.tags} catTitles={catTitles} tagTitles={tagTitles} size="sm" />
                   </div>
                   {entry.data.description && (
                     <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>

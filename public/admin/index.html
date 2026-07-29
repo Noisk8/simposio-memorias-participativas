@@ -255,7 +255,7 @@
   </script>
   <style>
     :root {
-      --wp-admin-bar-height: 36px;
+      --wp-admin-bar-height: 52px;
       --bg: #f0f0f1;
       --surface: #ffffff;
       --surface-alt: #f9fafb;
@@ -342,6 +342,12 @@
     header[class] {
       display: none !important;
     }
+
+    /* --- Ocultar el avatar/menú de usuario nativo de Decap:
+       el usuario ya se muestra en la barra superior personalizada --- */
+    [class*="AvatarDropdownButton"] {
+      display: none !important;
+    }
     html {
       scroll-padding-top: 32px !important;
     }
@@ -375,7 +381,7 @@
     }
     #wp-admin-bar .site-name {
       color: inherit !important;
-      font-size: 13px;
+      font-size: 17px;
       font-weight: 600;
       text-decoration: none;
       display: flex;
@@ -383,12 +389,12 @@
       gap: 6px;
     }
     #wp-admin-bar .site-name:hover { color: var(--sidebar-active-text) !important; }
-    #wp-admin-bar .site-name svg { width: 16px; height: 16px; }
+    #wp-admin-bar .site-name svg { width: 22px; height: 22px; }
     #wp-admin-bar .bar-item {
       color: inherit !important;
-      font-size: 12px;
+      font-size: 15px;
       text-decoration: none;
-      padding: 5px 10px;
+      padding: 8px 14px;
       border-radius: 4px;
       display: flex;
       align-items: center;
@@ -399,18 +405,18 @@
       background: var(--sidebar-hover) !important;
       color: var(--sidebar-active-text) !important;
     }
-    #wp-admin-bar .bar-item svg { width: 14px; height: 14px; }
+    #wp-admin-bar .bar-item svg { width: 19px; height: 19px; }
     #wp-admin-bar .bar-user {
       color: var(--primary) !important;
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 500;
       display: flex;
       align-items: center;
       gap: 6px;
     }
     #wp-admin-bar .bar-user .avatar-sm {
-      width: 22px;
-      height: 22px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       background: var(--primary) !important;
       color: var(--primary-contrast) !important;
@@ -425,11 +431,11 @@
     body { margin-top: var(--wp-admin-bar-height) !important; }
     html { scroll-padding-top: var(--wp-admin-bar-height) !important; }
 
-    /* --- Fix sticky editor controls below the top admin bar --- */
-    .css-13xgqvl-EditorControlBar,
-    [class*="EditorControlBar"] {
+    /* --- Bajar el contenedor del editor de Decap (position:absolute; top:0; height:100%)
+       para que la barra superior no tape la cabecera del editor --- */
+    [class*="EditorContainer"] {
       top: var(--wp-admin-bar-height) !important;
-      z-index: 1000 !important;
+      height: calc(100% - var(--wp-admin-bar-height)) !important;
     }
 
     /* =====================================================
@@ -899,7 +905,7 @@
     /* ===== Panel de administración integrado ===== */
     .cms-admin-overlay {
       position: fixed;
-      top: 36px;
+      top: 52px;
       left: 0;
       right: 0;
       bottom: 0;
@@ -1622,6 +1628,36 @@
   <script>
     (function () {
       var DEBUG = true;
+
+      /* ===== Confirmación obligatoria antes de borrar =====
+       * Intercepta en fase de captura cualquier clic sobre botones/enlaces
+       * cuyo texto indique una acción destructiva (borrar/eliminar/delete)
+       * y exige confirmación. Se ignoran:
+       *  - clics dentro de modales/diálogos de Decap (ese diálogo ya es la confirmación)
+       *  - los botones del panel de borradores propio (ya confirman por su cuenta)
+       */
+      document.addEventListener('click', function (e) {
+        try {
+          var t = e.target && e.target.closest ? e.target.closest('button, [role="button"], [role="menuitem"], a') : null;
+          if (!t) return;
+          // Diálogos/modales nativos de Decap: ya son una confirmación.
+          if (t.closest('[class*="Modal"], [class*="Dialog"], [role="dialog"], [role="alertdialog"]')) return;
+          // Botones propios del panel de borradores: ya confirman.
+          if (t.closest('.cms-drafts-panel') || t.classList.contains('cms-draft-item-trash') || t.id === 'cms-drafts-clear') return;
+          var txt = (t.textContent || '').replace(/\s+/g, ' ').trim();
+          if (!txt || txt.length > 80) return;
+          if (!/(delete|eliminar|borrar)/i.test(txt)) return;
+          var ok = window.confirm('¿Seguro que quieres "' + txt + '"?\n\nEsta acción es destructiva y puede no poder deshacerse.');
+          if (!ok) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          }
+        } catch (err) {
+          console.warn('[CMS UI] error en confirmación de borrado:', err);
+        }
+      }, true);
+
       function log() {
         if (DEBUG) console.log.apply(console, ['[CMS UI]'].concat(Array.prototype.slice.call(arguments)));
       }
@@ -3078,7 +3114,7 @@
       /* ===== WordPress Admin Bar ===== */
       function getTopBarOffset() {
         var bar = document.getElementById('wp-admin-bar');
-        return bar ? bar.getBoundingClientRect().height : 36;
+        return bar ? bar.getBoundingClientRect().height : 52;
       }
 
       function adjustFixedTopElements() {
@@ -3088,6 +3124,9 @@
         var candidates = Array.prototype.slice.call(document.querySelectorAll('body *'));
         candidates.forEach(function (el) {
           if (el === bar || el.closest('#wp-admin-bar')) return;
+          // El editor de Decap ya se baja vía CSS ([class*="EditorContainer"]);
+          // no tocar sus elementos internos para evitar doble desplazamiento.
+          if (el.closest('[class*="EditorContainer"]')) return;
           var cls = '';
           if (typeof el.className === 'string') {
             cls = el.className;
@@ -3137,10 +3176,6 @@
           '  <a href="#/collections/proyectos" class="bar-item">' +
           '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>' +
           '    Proyectos' +
-          '  </a>' +
-          '  <a href="#/collections/menus" class="bar-item">' +
-          '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>' +
-          '    Menús' +
           '  </a>' +
           '  <a href="#/collections/paginas" class="bar-item">' +
           '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>' +
@@ -3338,7 +3373,18 @@ if (user) {
             adjustFixedTopElements();
           }
           }
+          // Re-ajustar elementos fijos/sticky (p. ej. la cabecera del editor)
+          // para que la barra superior nunca tape la parte alta del editor.
+          if (document.getElementById('wp-admin-bar')) {
+            adjustFixedTopElements();
+          }
         }, 1000);
+
+        // Ajustar también al navegar dentro del CMS (entrar/salir del editor).
+        window.addEventListener('hashchange', function () {
+          setTimeout(adjustFixedTopElements, 50);
+          setTimeout(adjustFixedTopElements, 400);
+        });
       }
 
     })();

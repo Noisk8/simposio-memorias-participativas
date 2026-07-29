@@ -1,5 +1,8 @@
 ---
 simposio: "2026"
+slug: "programa"
+parent: ""
+is_home: false
 template: "programa"
 title: "Programa"
 description: "Programa completo del I Simposio sobre Memorias Participativas."

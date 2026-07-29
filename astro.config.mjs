@@ -15,6 +15,7 @@ export default defineConfig({
   redirects: {
     '/noticias': '/entradas',
     '/noticias/[slug]': '/entradas/[slug]',
+    '/admin': '/admin/index.html',
   },
 
   fonts: [

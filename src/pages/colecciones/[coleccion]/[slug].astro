@@ -1,15 +1,11 @@
 ---
-/**
- * /colecciones/[coleccion]/[slug]
- * Detalle de una entrada de cualquier colección genérica.
- */
 import Layout from '../../../layouts/Layout.astro';
 import TermPills from '../../../components/TermPills.astro';
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate } from '../../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, formatDate } from '../../../lib/taxonomies';
 
 type Props = {
   entry: any;
@@ -44,12 +40,11 @@ const { entry, coleccion } = Astro.props;
 const { Content } = await render(entry);
 const data = entry.data;
 const label = coleccion.charAt(0).toUpperCase() + coleccion.slice(1);
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 ---
 
 <Layout title={`${data.title} - ${label}`}>
-  <!-- Hero -->
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">
@@ -68,7 +63,6 @@ const tagSlugs = termSlugMap(await getEtiquetas());
     </div>
   </section>
 
-  <!-- Contenido -->
   <section class="py-12 bg-white">
     <div class="max-w-3xl mx-auto px-4">
       {data.image && (
@@ -82,7 +76,7 @@ const tagSlugs = termSlugMap(await getEtiquetas());
       )}
 
       <div class="mb-6">
-        <TermPills categories={data.categories} tags={data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} />
+        <TermPills categories={data.categories} tags={data.tags} catTitles={catTitles} tagTitles={tagTitles} />
       </div>
 
       {data.description && (

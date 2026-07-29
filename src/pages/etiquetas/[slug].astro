@@ -1,7 +1,4 @@
 ---
-/**
- * /etiquetas/[slug]/ — Archivo de una etiqueta (estilo WordPress).
- */
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
 import { getCollection } from 'astro:content';
@@ -9,8 +6,7 @@ import type { GetStaticPaths } from 'astro';
 import {
   getCategorias,
   getEtiquetas,
-  termSlugMap,
-  slugify,
+  slugTitleMap,
   formatDate,
   sortByDateDesc,
 } from '../../lib/taxonomies';
@@ -34,11 +30,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
   for (const e of entradas) (e.data.tags || []).forEach((t) => usadas.add(t));
   for (const p of proyectos) (p.data.tags || []).forEach((t) => usadas.add(t));
 
-  const terms = new Map<string, { title: string; slug: string; description: string }>();
+  const terms = new Map<string, TermProps>();
   for (const t of etiquetas) terms.set(t.slug, { title: t.title, slug: t.slug, description: t.description });
-  for (const titulo of usadas) {
-    const s = etiquetas.find((t) => t.title === titulo)?.slug || slugify(titulo);
-    if (!terms.has(s)) terms.set(s, { title: titulo, slug: s, description: '' });
+  for (const slug of usadas) {
+    if (!terms.has(slug)) terms.set(slug, { title: slug, slug, description: '' });
   }
 
   return Array.from(terms.values()).map((term) => ({
@@ -49,17 +44,20 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 const { term } = Astro.props;
 
-const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.tags?.includes(term.title));
-const proyectos = await getCollection('proyectos', ({ data }) => !data.draft && data.tags?.includes(term.title));
+const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.tags?.includes(term.slug));
+const proyectos = await getCollection('proyectos', ({ data }) => !data.draft && data.tags?.includes(term.slug));
 sortByDateDesc(entradas);
 proyectos.sort((a, b) => b.data.number - a.data.number);
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 const total = entradas.length + proyectos.length;
 ---
 
-<Layout title={`Etiqueta: ${term.title} - I Simposio sobre Memorias Participativas`}>
+<Layout
+  title={`Etiqueta: ${term.title} - I Simposio sobre Memorias Participativas`}
+  description={term.description}
+>
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">
@@ -113,7 +111,7 @@ const total = entradas.length + proyectos.length;
                     </h3>
                   </a>
                   <div class="mb-3">
-                    <TermPills categories={entry.data.categories} tags={entry.data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} size="sm" />
+                    <TermPills categories={entry.data.categories} tags={entry.data.tags} catTitles={catTitles} tagTitles={tagTitles} size="sm" />
                   </div>
                   {entry.data.description && (
                     <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>

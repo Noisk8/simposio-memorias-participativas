@@ -54,6 +54,7 @@
       }
     },
     "image": {
+      "default": "",
       "type": "string"
     },
     "description": {
@@ -67,7 +68,6 @@
   "required": [
     "number",
     "title",
-    "place",
-    "image"
+    "place"
   ]
 }

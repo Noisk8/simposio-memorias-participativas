@@ -10,7 +10,7 @@ import { getCollection } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getCategorias, getEtiquetas, termSlugMap, formatDate, sortByDateDesc } from '../../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, formatDate, sortByDateDesc } from '../../../lib/taxonomies';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const SPECIAL = ['simposios', 'paginas', 'proyectos', 'categorias', 'etiquetas'];
@@ -35,8 +35,8 @@ const entries = (await getCollection(
 sortByDateDesc(entries);
 
 const label = coleccion.charAt(0).toUpperCase() + coleccion.slice(1);
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 ---
 
 <Layout title={`${label} - I Simposio sobre Memorias Participativas`}>
@@ -87,7 +87,7 @@ const tagSlugs = termSlugMap(await getEtiquetas());
                 </h2>
               </a>
               <div class="mb-2">
-                <TermPills categories={entry.data.categories} tags={entry.data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} size="sm" />
+                <TermPills categories={entry.data.categories} tags={entry.data.tags} catTitles={catTitles} tagTitles={tagTitles} size="sm" />
               </div>
               {entry.data.description && (
                 <p class="text-sm text-ugr-text-light line-clamp-3">

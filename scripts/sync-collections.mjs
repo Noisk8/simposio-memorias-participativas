@@ -32,7 +32,7 @@ const KNOWN_SCHEMAS = {
     slug: z.string(),
     edition: z.number(),
     year: z.number(),
-    date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
+    date: dateField,
     place: z.string().optional().default(''),
     status: z.enum(['active', 'archived', 'upcoming']).default('active'),
     theme: z.string().optional().default(''),
@@ -64,11 +64,14 @@ const KNOWN_SCHEMAS = {
   schema: z.object({
     draft: z.boolean().optional().default(false),
     simposio: z.string().default('2026'),
-    template: z.enum(['el-simposio', 'organizacion', 'programa', 'contacto', 'custom']).default('custom'),
+    slug: z.string().optional().default(''),
+    parent: z.string().optional().default(''),
+    is_home: z.boolean().optional().default(false),
+    order: z.number().optional().default(0),
+    template: z.enum(['el-simposio', 'organizacion', 'programa', 'contacto', 'default', 'custom']).default('default'),
     title: z.string(),
     description: z.string().optional().default(''),
     image: z.string().optional().default(''),
-    order: z.number().optional().default(0),
     email: z.string().optional().default(''),
     instagram: z.string().optional().default(''),
     instagram_handle: z.string().optional().default(''),
@@ -80,10 +83,10 @@ const KNOWN_SCHEMAS = {
   loader: glob({ pattern: '*.md', base: './src/content/entradas' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
-    publish_date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
+    publish_date: dateField,
     simposio: z.string().default('2026'),
     title: z.string(),
-    date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
+    date: dateField,
     author: z.string().optional().default(''),
     categories: z.array(z.string()).optional().default([]),
     tags: z.array(z.string()).optional().default([]),
@@ -95,7 +98,7 @@ const KNOWN_SCHEMAS = {
   loader: glob({ pattern: '*.md', base: './src/content/proyectos' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
-    publish_date: z.union([z.string(), z.date()]).optional().default('').transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v)),
+    publish_date: dateField,
     simposio: z.string().default('2026'),
     number: z.number(),
     title: z.string(),
@@ -104,7 +107,7 @@ const KNOWN_SCHEMAS = {
     collective: z.string().optional().default(''),
     categories: z.array(z.string()).optional().default([]),
     tags: z.array(z.string()).optional().default([]),
-    image: z.string(),
+    image: z.string().optional().default(''),
     description: z.string().optional().default(''),
   }),
 });`,
@@ -220,13 +223,12 @@ fs.writeFileSync(configPath, configText, 'utf-8');
 console.log('✓ content.config.ts sincronizado');
 
 // ── 3. Sincronizar public/admin/config.yml ──────────────────────────────────
+const CMS_HIDDEN = ['menus']; // Existen en content/ pero no deben aparecer en el CMS
 let cmsYml = fs.readFileSync(cmsConfigPath, 'utf-8');
 
 for (const name of folders) {
+  if (CMS_HIDDEN.includes(name)) continue;
   if (cmsYml.includes(`name: "${name}"`)) continue;
-  // No generar entradas automáticas para colecciones con esquema conocido,
-  // salvo que el config.yml no las tenga. En ese caso usamos el esquema genérico
-  // como fallback para que no queden huérfanas.
   cmsYml += genericCmsEntry(name);
   console.log(`✓ Colección "${name}" añadida al CMS config`);
 }

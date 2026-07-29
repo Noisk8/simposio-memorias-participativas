@@ -2,13 +2,13 @@
 import Layout from '../../layouts/Layout.astro';
 import TermPills from '../../components/TermPills.astro';
 import { getCollection } from 'astro:content';
-import { getCategorias, getEtiquetas, termSlugMap, filterPublished } from '../../lib/taxonomies';
+import { getCategorias, getEtiquetas, slugTitleMap, filterPublished } from '../../lib/taxonomies';
 import { getSimposios } from '../../lib/simposios';
 
 const PAGE_SIZE = 10;
 
-const catSlugs = termSlugMap(await getCategorias());
-const tagSlugs = termSlugMap(await getEtiquetas());
+const catTitles = slugTitleMap(await getCategorias());
+const tagTitles = slugTitleMap(await getEtiquetas());
 const simposios = await getSimposios();
 
 const allProyectos = await getCollection('proyectos');
@@ -97,7 +97,7 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
               </a>
               <p class="text-xs text-ugr-green-light mb-2 font-semibold uppercase tracking-wide">{entry.data.place}</p>
               <div class="mb-2">
-                <TermPills categories={entry.data.categories} tags={entry.data.tags} catSlugs={catSlugs} tagSlugs={tagSlugs} size="sm" />
+                <TermPills categories={entry.data.categories} tags={entry.data.tags} catTitles={catTitles} tagTitles={tagTitles} size="sm" />
               </div>
               <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>
               <p class="text-xs text-ugr-text-light mt-3 italic">{entry.data.author || entry.data.collective}</p>

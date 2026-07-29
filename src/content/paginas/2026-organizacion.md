@@ -1,5 +1,8 @@
 ---
 simposio: "2026"
+slug: "organizacion"
+parent: ""
+is_home: false
 template: "organizacion"
 title: "Organización"
 description: "Equipo organizador e instituciones del I Simposio sobre Memorias Participativas."

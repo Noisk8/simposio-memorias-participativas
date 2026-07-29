@@ -2,6 +2,10 @@ backend:
   name: git-gateway
   branch: main
 
+# Backend local para desarrollo: solo se activa en localhost y permite
+# editar los archivos del repo local sin Netlify Identity (requiere `npx decap-server`).
+local_backend: true
+
 media_folder: "public/images"
 public_folder: "/images"
 
@@ -59,7 +63,7 @@ collections:
         widget: "relation"
         collection: "categorias"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         required: false
         hint: "Selecciona una categoría superior para crear jerarquía (equivalente a Categorías padre/hijo de WordPress)."
@@ -83,7 +87,7 @@ collections:
     create: true
     slug: "{{number}}-{{slug}}"
     # Solo entradas publicadas: los borradores viven en su propia colección
-    filter: { field: draft, values: [false] }
+    filter: { field: draft, value: false }
     sortable_fields: ["number", "title", "place", "author"]
     view_groups:
       - label: "Lugar"
@@ -122,7 +126,7 @@ collections:
         widget: "relation"
         collection: "categorias"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -132,7 +136,7 @@ collections:
         widget: "relation"
         collection: "etiquetas"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -150,7 +154,7 @@ collections:
     slug: "{{slug}}"
     description: "Entradas o noticias del sitio (equivalente a Posts de WordPress). Solo se listan las publicadas; los borradores están en la colección Borradores."
     # Solo entradas publicadas: los borradores viven en su propia colección
-    filter: { field: draft, values: [false] }
+    filter: { field: draft, value: false }
     sortable_fields: ["date", "title", "author"]
     view_groups:
       - label: "Autor/a"
@@ -188,7 +192,7 @@ collections:
         widget: "relation"
         collection: "categorias"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -198,7 +202,7 @@ collections:
         widget: "relation"
         collection: "etiquetas"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -217,7 +221,7 @@ collections:
     create: false
     slug: "{{slug}}"
     description: "Entradas guardadas como borrador. Para publicar: abre el borrador y pulsa Publish."
-    filter: { field: draft, values: [true] }
+    filter: { field: draft, value: true }
     sortable_fields: ["date", "title", "author"]
     fields:
       # Campo interno: "Publish" publica el borrador automáticamente.
@@ -247,7 +251,7 @@ collections:
         widget: "relation"
         collection: "categorias"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -256,7 +260,7 @@ collections:
         widget: "relation"
         collection: "etiquetas"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -271,7 +275,7 @@ collections:
     create: false
     slug: "{{number}}-{{slug}}"
     description: "Proyectos guardados como borrador. Para publicar: abre el borrador y pulsa Publish."
-    filter: { field: draft, values: [true] }
+    filter: { field: draft, value: true }
     sortable_fields: ["number", "title", "place"]
     fields:
       # Campo interno: "Publish" publica el borrador automáticamente.
@@ -304,7 +308,7 @@ collections:
         widget: "relation"
         collection: "categorias"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -313,7 +317,7 @@ collections:
         widget: "relation"
         collection: "etiquetas"
         search_fields: ["title"]
-        value_field: "title"
+        value_field: "slug"
         display_fields: ["title"]
         multiple: true
         required: false
@@ -335,7 +339,7 @@ collections:
         field: simposio
       - label: "Plantilla"
         field: template
-    filter: { field: draft, values: [false] }
+    filter: { field: draft, value: false }
     fields:
       - { name: "draft", widget: "hidden", default: false }
       - label: "Simposio"
@@ -347,17 +351,29 @@ collections:
         display_fields: ["title", "year"]
         required: false
         default: "2026"
-      - label: "Plantilla"
+      - { label: "Slug (URL)", name: "slug", widget: "string", hint: "Identificador URL. Ej: el-simposio, contacto." }
+      - label: "Página padre"
+        name: "parent"
+        widget: "relation"
+        collection: "paginas"
+        search_fields: ["title"]
+        value_field: "slug"
+        display_fields: ["title"]
+        required: false
+        hint: "Si seleccionas una página padre, la URL será /padre/hija (jerarquía estilo WordPress)."
+      - { label: "Portada del sitio", name: "is_home", widget: "boolean", default: false, hint: "Marca esta página como portada del sitio (solo una)." }
+      - label: "Plantilla (diseño)"
         name: "template"
         widget: "select"
         options: [
+          { label: "Por defecto", value: "default" },
           { label: "El Simposio", value: "el-simposio" },
           { label: "Organización", value: "organizacion" },
           { label: "Programa", value: "programa" },
           { label: "Contacto", value: "contacto" },
           { label: "Personalizada", value: "custom" }
         ]
-        default: "custom"
+        default: "default"
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Descripción", name: "description", widget: "text", required: false }
       - { label: "Imagen de cabecera", name: "image", widget: "image", required: false }
@@ -380,7 +396,7 @@ collections:
     create: false
     slug: "{{slug}}"
     description: "Páginas guardadas como borrador. Para publicar: abre el borrador y pulsa Publish."
-    filter: { field: draft, values: [true] }
+    filter: { field: draft, value: true }
     sortable_fields: ["order", "title", "simposio"]
     fields:
       - { name: "draft", widget: "hidden", default: true }
@@ -393,17 +409,29 @@ collections:
         display_fields: ["title", "year"]
         required: false
         default: "2026"
-      - label: "Plantilla"
+      - { label: "Slug (URL)", name: "slug", widget: "string", hint: "Identificador URL. Ej: el-simposio, contacto." }
+      - label: "Página padre"
+        name: "parent"
+        widget: "relation"
+        collection: "paginas"
+        search_fields: ["title"]
+        value_field: "slug"
+        display_fields: ["title"]
+        required: false
+        hint: "Si seleccionas una página padre, la URL será /padre/hija (jerarquía estilo WordPress)."
+      - { label: "Portada del sitio", name: "is_home", widget: "boolean", default: false, hint: "Marca esta página como portada del sitio (solo una)." }
+      - label: "Plantilla (diseño)"
         name: "template"
         widget: "select"
         options: [
+          { label: "Por defecto", value: "default" },
           { label: "El Simposio", value: "el-simposio" },
           { label: "Organización", value: "organizacion" },
           { label: "Programa", value: "programa" },
           { label: "Contacto", value: "contacto" },
           { label: "Personalizada", value: "custom" }
         ]
-        default: "custom"
+        default: "default"
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Descripción", name: "description", widget: "text", required: false }
       - { label: "Imagen de cabecera", name: "image", widget: "image", required: false }
@@ -420,33 +448,4 @@ collections:
       - { label: "Contenido", name: "body", widget: "markdown", required: false }
 
   # Menus de navegación (equivalente a Menús de WordPress)
-  - name: "menus"
-    label: "Menús de navegación"
-    label_singular: "Menú"
-    folder: "src/content/menus"
-    create: true
-    slug: "{{slug}}"
-    description: "Menús de navegación del sitio. Cada menú contiene una lista de enlaces que se renderizan en el header y footer."
-    sortable_fields: ["title"]
-    fields:
-      - { label: "Título", name: "title", widget: "string" }
-      - { label: "Slug", name: "slug", widget: "string", hint: "Identificador único del menú, ej: principal, footer." }
-      - label: "Elementos del menú"
-        name: "items"
-        widget: "list"
-        collapsed: false
-        min: 1
-        max: 20
-        fields:
-          - { label: "Texto del enlace", name: "label", widget: "string" }
-          - { label: "URL", name: "url", widget: "string", hint: "Ruta relativa (ej: /acerca-de) o URL completa." }
-          - { label: "Orden", name: "order", widget: "number", value_type: "int", default: 0 }
-          - label: "Submenú"
-            name: "children"
-            widget: "list"
-            collapsed: true
-            required: false
-            fields:
-              - { label: "Texto", name: "label", widget: "string" }
-              - { label: "URL", name: "url", widget: "string" }
-              - { label: "Orden", name: "order", widget: "number", value_type: "int", default: 0 }
+

@@ -8,6 +8,8 @@ author: "Sara Martín Terceño"
 collective: "Celebración de los 50 años de España en Libertad y La Liminal"
 image: "/images/proyecto-29.jpg"
 description: "Durante el tardofranquismo y la transición, muchos barrios obreros de España se convirtieron en espacios esenciales de organización colectiva y aprendizaje ciudadano."
+tags:
+  - museo-memorias
 ---
 
 Centrado en 3 barrios periféricos de Madrid, el proyecto recoge esta historia cruzando el territorio con la memoria oral, para dar forma a una cartografía que localiza espacios de reunión, lucha y conquista ciudadana y recoge relatos orales del vecindario. La iniciativa activa memorias locales, reconoce el papel de las mujeres y pone en valor estos patrimonios comunitarios.

@@ -1,19 +1,13 @@
 ---
-/**
- * Pills clicables de categorías y etiquetas (estilo WordPress).
- * Enlazan a las páginas de archivo /categorias/[slug] y /etiquetas/[slug].
- */
 interface Props {
   categories?: string[];
   tags?: string[];
-  catSlugs: Map<string, string>;
-  tagSlugs: Map<string, string>;
+  catTitles: Map<string, string>;
+  tagTitles: Map<string, string>;
   size?: 'sm' | 'md';
 }
 
-import { resolveTermSlug } from '../lib/taxonomies';
-
-const { categories = [], tags = [], catSlugs, tagSlugs, size = 'md' } = Astro.props;
+const { categories = [], tags = [], catTitles, tagTitles, size = 'md' } = Astro.props;
 const sizeClasses = size === 'sm'
   ? 'text-[10px] px-2 py-0.5'
   : 'text-xs px-3 py-1';
@@ -21,21 +15,27 @@ const sizeClasses = size === 'sm'
 
 {(categories.length > 0 || tags.length > 0) && (
   <div class={`flex flex-wrap ${size === 'sm' ? 'gap-1' : 'gap-2'}`}>
-    {categories.map((cat) => (
-      <a
-        href={`/categorias/${resolveTermSlug(cat, catSlugs)}/`}
-        class={`${sizeClasses} uppercase tracking-wider font-semibold bg-ugr-green/10 text-ugr-green rounded-full hover:bg-ugr-green hover:text-white transition-colors`}
-      >
-        {cat}
-      </a>
-    ))}
-    {tags.map((tag) => (
-      <a
-        href={`/etiquetas/${resolveTermSlug(tag, tagSlugs)}/`}
-        class={`${sizeClasses} uppercase tracking-wider font-semibold bg-gray-100 text-ugr-text-light rounded-full hover:bg-gray-600 hover:text-white transition-colors`}
-      >
-        #{tag}
-      </a>
-    ))}
+    {categories.map((slug) => {
+      const title = catTitles.get(slug) || slug;
+      return (
+        <a
+          href={`/categorias/${slug}/`}
+          class={`${sizeClasses} uppercase tracking-wider font-semibold bg-ugr-green/10 text-ugr-green rounded-full hover:bg-ugr-green hover:text-white transition-colors`}
+        >
+          {title}
+        </a>
+      );
+    })}
+    {tags.map((slug) => {
+      const title = tagTitles.get(slug) || slug;
+      return (
+        <a
+          href={`/etiquetas/${slug}/`}
+          class={`${sizeClasses} uppercase tracking-wider font-semibold bg-gray-100 text-ugr-text-light rounded-full hover:bg-gray-600 hover:text-white transition-colors`}
+        >
+          #{title}
+        </a>
+      );
+    })}
   </div>
 )}

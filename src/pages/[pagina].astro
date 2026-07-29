@@ -11,10 +11,13 @@ interface Props {
 export const getStaticPaths: GetStaticPaths = async () => {
   const defaultSlug = await resolveSimposioSlug();
   const paginas = await getCollection('paginas', ({ data }) => !data.draft && data.simposio === defaultSlug);
-  return paginas.map((entry) => ({
-    params: { pagina: entry.data.template },
-    props: { entry },
-  }));
+  return paginas.map((entry) => {
+    const slug = entry.data.slug || entry.data.template;
+    return {
+      params: { pagina: slug },
+      props: { entry },
+    };
+  });
 };
 
 const { entry } = Astro.props;
@@ -33,7 +36,6 @@ const organizadores = data.organizadores.map((o: string) => {
 ---
 
 <Layout title={pageTitle} description={data.description}>
-  <!-- Hero -->
   <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
       <img src={heroImage} alt={data.title} class="w-full h-full object-cover" />
@@ -153,7 +155,7 @@ const organizadores = data.organizadores.map((o: string) => {
     </section>
   )}
 
-  {data.template === 'custom' && (
+  {(data.template === 'custom' || data.template === 'default') && (
     <section class="py-16 bg-white">
       <div class="max-w-4xl mx-auto px-4 prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
         <Content />

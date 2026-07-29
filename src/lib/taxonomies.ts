@@ -1,11 +1,5 @@
-/**
- * Utilidades para taxonomías (categorías y etiquetas) y fechas.
- * Arquitectura tipo WordPress: las entradas/proyectos guardan los títulos
- * de las taxonomías; estas utilidades resuelven slugs y archivos.
- */
 import { getCollection } from 'astro:content';
 
-/** Convierte un texto a slug URL-friendly (ej: "Memoria Histórica" → "memoria-historica"). */
 export function slugify(text: string): string {
   return text
     .normalize('NFD')
@@ -23,7 +17,6 @@ export interface TaxonomyTerm {
   parent?: string;
 }
 
-/** Carga las categorías con su slug canónico (campo slug o slugify del título). */
 export async function getCategorias(): Promise<TaxonomyTerm[]> {
   const entries = await getCollection('categorias');
   return entries.map((e) => ({
@@ -34,7 +27,6 @@ export async function getCategorias(): Promise<TaxonomyTerm[]> {
   }));
 }
 
-/** Carga las etiquetas con su slug canónico. */
 export async function getEtiquetas(): Promise<TaxonomyTerm[]> {
   const entries = await getCollection('etiquetas');
   return entries.map((e) => ({
@@ -44,17 +36,55 @@ export async function getEtiquetas(): Promise<TaxonomyTerm[]> {
   }));
 }
 
-/** Mapa título → slug para generar enlaces desde los pills. */
 export function termSlugMap(terms: TaxonomyTerm[]): Map<string, string> {
   return new Map(terms.map((t) => [t.title, t.slug]));
 }
 
-/** Resuelve el slug de un término; si no existe como documento, usa slugify. */
+export function slugTitleMap(terms: TaxonomyTerm[]): Map<string, string> {
+  return new Map(terms.map((t) => [t.slug, t.title]));
+}
+
 export function resolveTermSlug(title: string, map: Map<string, string>): string {
   return map.get(title) || slugify(title);
 }
 
-/** Formatea una fecha ISO/string a español legible (ej: "3 de julio de 2026"). */
+export function resolveTermTitle(slug: string, map: Map<string, string>): string {
+  return map.get(slug) || slug;
+}
+
+export function buildTree(terms: TaxonomyTerm[]): TaxonomyTerm[] {
+  const map = new Map<string, TaxonomyTerm & { children: TaxonomyTerm[] }>();
+  const roots: (TaxonomyTerm & { children: TaxonomyTerm[] })[] = [];
+
+  for (const t of terms) {
+    map.set(t.slug, { ...t, children: [] });
+  }
+
+  for (const t of terms) {
+    if (t.parent && map.has(t.parent)) {
+      map.get(t.parent)!.children.push(map.get(t.slug)!);
+    } else {
+      roots.push(map.get(t.slug)!);
+    }
+  }
+
+  return roots;
+}
+
+export function getParentChain(
+  slug: string,
+  allTerms: TaxonomyTerm[],
+  chain: TaxonomyTerm[] = []
+): TaxonomyTerm[] {
+  const term = allTerms.find((t) => t.slug === slug);
+  if (!term) return chain;
+  chain.unshift(term);
+  if (term.parent) {
+    return getParentChain(term.parent, allTerms, chain);
+  }
+  return chain;
+}
+
 export function formatDate(dateStr: string | undefined | null): string {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -62,7 +92,6 @@ export function formatDate(dateStr: string | undefined | null): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/** Ordena entradas por fecha descendente; sin fecha van al final (orden alfabético). */
 export function sortByDateDesc<T extends { data: { date?: string; title?: string } }>(entries: T[]): T[] {
   return entries.sort((a, b) => {
     const da = a.data.date || '';
@@ -74,11 +103,6 @@ export function sortByDateDesc<T extends { data: { date?: string; title?: string
   });
 }
 
-/**
- * Verifica si una entrada/proyecto está programada para publicarse en el futuro.
- * Si publish_date está establecido y es posterior a la fecha actual, el contenido
- * no debe mostrarse (equivalente a "Programar" de WordPress).
- */
 export function isScheduled(data: { draft?: boolean; publish_date?: string }): boolean {
   if (data.draft) return false;
   if (!data.publish_date) return false;
@@ -87,10 +111,6 @@ export function isScheduled(data: { draft?: boolean; publish_date?: string }): b
   return scheduled > now;
 }
 
-/**
- * Filtra colecciones excluyendo borradores y publicaciones programadas.
- * Úsalo en las consultas de Astro para que el contenido programado no aparezca en el sitio.
- */
 export function filterPublished<T extends { data: { draft?: boolean; publish_date?: string } }>(
   entries: T[]
 ): T[] {
