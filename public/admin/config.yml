@@ -2,6 +2,10 @@ backend:
   name: git-gateway
   branch: main
 
+# Los cambios pasan por flujo editorial: draft → in_review → ready → publish.
+# Solo los usuarios con permisos de merge en el repo pueden publicar en main.
+publish_mode: editorial_workflow
+
 # Backend local para desarrollo: solo se activa en localhost y permite
 # editar los archivos del repo local sin Netlify Identity (requiere `npx decap-server`).
 local_backend: true

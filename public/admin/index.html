@@ -9,6 +9,18 @@
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
+    // Redirigir a /admin/ tras el login desde el widget de Identity.
+    if (window.netlifyIdentity) {
+      window.netlifyIdentity.on('init', function (user) {
+        if (!user) {
+          window.netlifyIdentity.on('login', function () {
+            document.location.href = '/admin/';
+          });
+        }
+      });
+    }
+  </script>
+  <script>
     /* ===== Vistas previas con el estilo del sitio (equivalente a "Vista previa" de WordPress) ===== */
     (function () {
       if (!window.CMS) return;
@@ -187,9 +199,26 @@
         return window.__cmsDraftState && window.__cmsDraftState.active === true;
       }
 
+      // Colecciones que solo pueden editar los administradores.
+      var ADMIN_ONLY_COLLECTIONS = ['simposios', 'categorias', 'etiquetas', 'paginas', 'borradores-paginas'];
+
+      function currentUserHasRole(role) {
+        var identity = window.netlifyIdentity;
+        var user = identity && identity.currentUser ? identity.currentUser() : null;
+        if (!user) return false;
+        var metadata = user.app_metadata || user.user_metadata || {};
+        var roles = metadata.roles || user.roles || [];
+        return roles.indexOf(role) !== -1;
+      }
+
       CMS.registerEventListener({
         name: 'preSave',
         handler: function (event) {
+          var collection = event.entry.get('collection');
+          if (!currentUserHasRole('admin') && ADMIN_ONLY_COLLECTIONS.indexOf(collection) !== -1) {
+            throw new Error('Solo los administradores pueden editar la colección "' + collection + '".');
+          }
+
           try {
             var data = event.entry.get('data');
             var active = isDraftSaveActive();
@@ -248,6 +277,31 @@
             if (typeof window.__cmsOnEntryPublished === 'function') {
               window.__cmsOnEntryPublished(details);
             }
+          }
+        },
+      });
+
+      CMS.registerEventListener({
+        name: 'prePublish',
+        handler: function (event) {
+          var collection = event.entry.get('collection');
+          if (!currentUserHasRole('admin')) {
+            throw new Error('Solo los administradores pueden publicar. Los editores pueden guardar borradores o revisiones.');
+          }
+        },
+      });
+
+      CMS.registerEventListener({
+        name: 'preDelete',
+        handler: function (event) {
+          try {
+            var collection = event.entry.get('collection');
+            if (!currentUserHasRole('admin') && ADMIN_ONLY_COLLECTIONS.indexOf(collection) !== -1) {
+              throw new Error('Solo los administradores pueden eliminar la colección "' + collection + '".');
+            }
+          } catch (e) {
+            console.warn('[CMS RBAC] preDelete error:', e);
+            throw e;
           }
         },
       });

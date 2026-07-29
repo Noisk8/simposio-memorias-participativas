@@ -5,8 +5,9 @@
  * Estrategia de autenticación:
  *   1. Lee el JWT del header Authorization: Bearer <token>
  *   2. Verifica admin via context.clientContext.user (inyectado por Netlify)
- *   3. Llama a la API GoTrue con el mismo JWT del usuario admin
- *      (los usuarios con rol admin pueden acceder al endpoint /admin/users)
+ *   3. Llama a la API GoTrue con el token de operador de Netlify Identity
+ *      (context.clientContext.identity.token), que es el único con permisos
+ *      para el endpoint /admin/users.
  */
 export const handler = async (event: any, context: any) => {
   const headers = {
@@ -39,7 +40,7 @@ export const handler = async (event: any, context: any) => {
   // Fallback: decodificar el JWT manualmente (solo payload, sin verificar firma)
   // para obtener email y roles cuando estamos en local sin clientContext.
   let email = clientUser?.email || '';
-  let roles: string[] = clientUser?.app_metadata?.roles || [];
+  let roles: string[] = clientUser?.app_metadata?.roles || clientUser?.roles || [];
 
   if (!clientUser) {
     try {
@@ -67,8 +68,8 @@ export const handler = async (event: any, context: any) => {
     };
   }
 
-  // ── URL de la API GoTrue ──────────────────────────────────────────────────
-  // En producción: context.clientContext.identity.url
+  // ── URL y token de administración de Netlify Identity ───────────────────────
+  // En producción: context.clientContext.identity.url / .token
   // En local: la URL del site en Netlify (desde variable de entorno o hardcodeada)
   // Detectar entorno local: en local la URL es localhost o la variable NETLIFY_DEV está presente
   const isLocal =
@@ -87,13 +88,30 @@ export const handler = async (event: any, context: any) => {
     };
   }
 
+  const identity = context?.clientContext?.identity;
   const identityUrl =
-    context?.clientContext?.identity?.url ||
+    identity?.url ||
     process.env.IDENTITY_URL ||
     `https://${process.env.URL?.replace(/^https?:\/\//, '') || 'test-smp-v1.netlify.app'}/.netlify/identity`;
 
+  // El token de operador de Identity puede venir como string o como objeto
+  // con propiedad access_token (GoTrue JS).
+  const rawIdentityToken = identity?.token;
+  const identityToken =
+    typeof rawIdentityToken === 'string' ? rawIdentityToken : rawIdentityToken?.access_token;
+
+  if (!identityToken) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'No se pudo obtener el token de administrador de Netlify Identity. Asegúrate de que Identity está habilitado y la función se ejecuta en el sitio de Netlify.',
+      }),
+    };
+  }
+
   const adminHeaders = {
-    'Authorization': `Bearer ${userToken}`,
+    'Authorization': `Bearer ${identityToken}`,
     'Content-Type': 'application/json',
   };
 
