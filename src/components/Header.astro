@@ -150,6 +150,17 @@ import DynamicMenu from './DynamicMenu.astro';
     background-color: #2f680c;
     color: #ffffff !important;
   }
+
+  /* Puente invisible para no perder el hover en el gap del dropdown */
+  #user-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: transparent;
+  }
 </style>
 
 <script is:inline>
@@ -168,23 +179,33 @@ import DynamicMenu from './DynamicMenu.astro';
   const userTrigger = document.getElementById('user-trigger');
   const userDropdown = document.getElementById('user-dropdown');
 
-  // Toggle dropdown en click (útil en móvil donde no hay hover)
+  // Toggle dropdown en click: al abrirlo con click queda fijado (pinned)
+  // hasta click fuera o Escape; el hover solo lo abre/cierra si no está fijado.
+  let dropdownPinned = false;
+
+  function setDropdownOpen(open, pinned) {
+    if (open) {
+      userDropdown?.classList.add('!opacity-100', '!visible', '!pointer-events-auto');
+    } else {
+      userDropdown?.classList.remove('!opacity-100', '!visible', '!pointer-events-auto');
+    }
+    userTrigger?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (pinned !== undefined) dropdownPinned = pinned;
+  }
+
   userTrigger?.addEventListener('click', () => {
     const isOpen = userDropdown?.classList.contains('!opacity-100');
-    if (isOpen) {
-      userDropdown?.classList.remove('!opacity-100', '!visible', '!pointer-events-auto');
-      userTrigger?.setAttribute('aria-expanded', 'false');
-    } else {
-      userDropdown?.classList.add('!opacity-100', '!visible', '!pointer-events-auto');
-      userTrigger?.setAttribute('aria-expanded', 'true');
-    }
+    setDropdownOpen(!isOpen, !isOpen);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setDropdownOpen(false, false);
   });
 
   // Cerrar dropdown al hacer click fuera
   document.addEventListener('click', (e) => {
     if (!userInfo?.contains(e.target)) {
-      userDropdown?.classList.remove('!opacity-100', '!visible', '!pointer-events-auto');
-      userTrigger?.setAttribute('aria-expanded', 'false');
+      setDropdownOpen(false, false);
     }
   });
 
@@ -221,7 +242,10 @@ import DynamicMenu from './DynamicMenu.astro';
 
     identity.on('init', (user) => updateUserUI(user));
     identity.on('login', (user) => updateUserUI(user));
-    identity.on('logout', () => updateUserUI(null));
+    identity.on('logout', () => {
+      updateUserUI(null);
+      document.location.href = '/';
+    });
 
     loginBtn?.addEventListener('click', () => identity.open('login'));
     logoutBtn?.addEventListener('click', () => identity.logout());

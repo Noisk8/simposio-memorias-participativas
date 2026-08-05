@@ -35,7 +35,7 @@ const organizadores = data.organizadores.map((o: string) => {
 });
 ---
 
-<Layout title={pageTitle} description={data.description}>
+<Layout title={pageTitle} description={data.description} image={heroImage}>
   <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
       <img src={heroImage} alt={data.title} class="w-full h-full object-cover" />

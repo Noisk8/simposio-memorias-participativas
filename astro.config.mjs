@@ -11,7 +11,13 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://simposio-memorias-participativas.netlify.app',
-  integrations: [mdx(), sitemap(), react()],
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) => !page.includes('/admin/') && !page.includes('/404'),
+    }),
+    react(),
+  ],
   redirects: {
     '/noticias': '/entradas',
     '/noticias/[slug]': '/entradas/[slug]',

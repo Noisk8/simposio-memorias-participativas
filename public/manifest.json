@@ -1,0 +1,23 @@
+{
+  "name": "Red Internacional de Memorias Participativas",
+  "short_name": "Memorias Participativas",
+  "description": "Red de encuentro, investigación y acción sobre memorias participativas en territorio.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f0",
+  "theme_color": "#2f680c",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}

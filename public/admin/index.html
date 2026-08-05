@@ -18,6 +18,9 @@
           });
         }
       });
+      window.netlifyIdentity.on('logout', function () {
+        document.location.href = '/';
+      });
     }
   </script>
   <script>
@@ -1930,6 +1933,109 @@
       border-radius: 12px !important;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2) !important;
     }
+    .cms-user-menu {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .cms-user-trigger {
+      border: 0 !important;
+      background: transparent !important;
+      color: inherit !important;
+      cursor: pointer;
+      padding: 5px 8px !important;
+      gap: 8px !important;
+    }
+    .cms-user-trigger:hover,
+    .cms-user-menu.is-open .cms-user-trigger {
+      background: var(--sidebar-hover) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    .cms-user-label {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cms-user-chevron {
+      width: 15px;
+      height: 15px;
+      transition: transform 0.18s ease;
+    }
+    .cms-user-menu.is-open .cms-user-chevron {
+      transform: rotate(180deg);
+    }
+    .cms-user-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      min-width: 190px;
+      padding: 7px;
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 14px !important;
+      box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18) !important;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-5px);
+      transition: opacity 0.16s ease, visibility 0.16s ease, transform 0.16s ease;
+      z-index: 1000000;
+    }
+    .cms-user-menu.is-open .cms-user-dropdown,
+    .cms-user-menu:hover .cms-user-dropdown {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .cms-user-dropdown::before {
+      content: '';
+      position: absolute;
+      top: -12px;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: transparent;
+    }
+    .cms-user-dropdown a,
+    .cms-user-dropdown button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 11px !important;
+      border: 0 !important;
+      border-radius: 9px !important;
+      background: transparent !important;
+      color: var(--text) !important;
+      font: inherit;
+      font-size: 0.86rem;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    .cms-user-dropdown a:hover,
+    .cms-user-dropdown button:hover,
+    .cms-user-dropdown a:focus-visible,
+    .cms-user-dropdown button:focus-visible {
+      background: var(--surface-alt) !important;
+      color: var(--primary) !important;
+      outline: none;
+    }
+    .cms-user-dropdown svg {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+    @media (max-width: 640px) {
+      .cms-user-label { display: none; }
+      .cms-user-dropdown { right: -4px; }
+    }
 
     @media (max-width: 782px) {
       .wp-sidebar-organized a {
@@ -3521,27 +3627,88 @@
           '  </a>' +
           '</div>' +
           '<div class="wp-bar-right">' +
-          '  <a href="/admin/gestion-colecciones" class="bar-item" target="_blank">' +
-          '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.611 3.611 0 0112 15.6z"/></svg>' +
-          '    Ajustes' +
-          '  </a>' +
           '  <button id="cms-theme-toggle" class="bar-item" type="button" title="Cambiar tema">' +
           '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.1a1 1 0 011 1V6a1 1 0 11-2 0V4.1a1 1 0 011-1zm0 13.8a1 1 0 011 1v1.9a1 1 0 11-2 0V17.9a1 1 0 011-1zm8.9-4.9a1 1 0 01-1 1H17.9a1 1 0 110-2h1.9a1 1 0 011 1zM5.2 13a1 1 0 01-1 1H2.3a1 1 0 110-2h1.9a1 1 0 011 1zm11.6-6.36a1 1 0 01.71.29l1.35 1.35a1 1 0 11-1.42 1.42L15.1 8.36a1 1 0 01.71-1.71zM7.95 16.05a1 1 0 01.71.29l1.35 1.35a1 1 0 11-1.42 1.42L7.24 17.76a1 1 0 01.71-1.71zM16.66 16.66a1 1 0 01.29.71v1.9a1 1 0 11-2 0v-1.9a1 1 0 01.29-.71zM8.34 7.34a1 1 0 01.29.71V9.95a1 1 0 11-2 0V8.05a1 1 0 01.29-.71zM12 7a5 5 0 100 10 5 5 0 000-10z"/></svg>' +
           '    <span class="theme-toggle-text">Tema</span>' +
           '  </button>' +
-          '  <span class="bar-user">' +
-          '    <span class="avatar-sm">' + initial + '</span>' +
-          '    ' + escapeHtml(name) +
-          '  </span>' +
+          '  <div class="cms-user-menu">' +
+          '    <button id="cms-user-trigger" class="bar-user cms-user-trigger" type="button" aria-haspopup="true" aria-expanded="false">' +
+          '      <span class="avatar-sm">' + initial + '</span>' +
+          '      <span class="cms-user-label">' + escapeHtml(name) + '</span>' +
+          '      <svg class="cms-user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>' +
+          '    </button>' +
+          '    <div id="cms-user-dropdown" class="cms-user-dropdown" role="menu" aria-label="Menú de usuario">' +
+          '      <a href="/admin/" role="menuitem">' +
+          '        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9M9 19v-5h6v5"/></svg>' +
+          '        Dashboard' +
+          '      </a>' +
+          '      <button id="cms-logout" type="button" role="menuitem">' +
+          '        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M21 3v18"/></svg>' +
+          '        Cerrar sesión' +
+          '      </button>' +
+          '    </div>' +
+          '  </div>' +
           '</div>';
 
         removeUserName();
         document.body.prepend(bar);
         adjustFixedTopElements();
+
+        var settingsTrigger = bar.querySelector('.cms-settings-trigger');
+        if (settingsTrigger) {
+          settingsTrigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            openAdminPanel('colecciones');
+          });
+        }
+
         var themeToggle = document.getElementById('cms-theme-toggle');
         if (themeToggle) {
           themeToggle.addEventListener('click', function () {
             toggleTheme();
+          });
+        }
+
+        var userMenu = document.querySelector('.cms-user-menu');
+        var userTrigger = document.getElementById('cms-user-trigger');
+        var userDropdown = document.getElementById('cms-user-dropdown');
+        var logoutButton = document.getElementById('cms-logout');
+
+        var userMenuPinned = false;
+
+        function setUserMenuOpen(open, pinned) {
+          if (!userMenu || !userTrigger || !userDropdown) return;
+          if (typeof pinned === 'boolean') userMenuPinned = pinned;
+          userMenu.classList.toggle('is-open', open);
+          userTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        if (userTrigger) {
+          userTrigger.addEventListener('click', function () {
+            var open = !userMenu.classList.contains('is-open');
+            setUserMenuOpen(open, open);
+          });
+          userTrigger.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') setUserMenuOpen(false, false);
+            if (event.key === 'ArrowDown') {
+              setUserMenuOpen(true, true);
+              userDropdown?.querySelector('[role="menuitem"]')?.focus();
+            }
+          });
+        }
+        if (userMenu) {
+          userMenu.addEventListener('mouseenter', function () { if (!userMenuPinned) setUserMenuOpen(true); });
+          userMenu.addEventListener('mouseleave', function () { if (!userMenuPinned) setUserMenuOpen(false); });
+        }
+        document.addEventListener('click', function (event) {
+          if (userMenu && !userMenu.contains(event.target)) setUserMenuOpen(false, false);
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape') setUserMenuOpen(false, false);
+        });
+        if (logoutButton) {
+          logoutButton.addEventListener('click', function () {
+            if (window.netlifyIdentity) window.netlifyIdentity.logout();
           });
         }
       }
