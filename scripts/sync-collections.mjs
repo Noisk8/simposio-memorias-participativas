@@ -75,7 +75,7 @@ const KNOWN_SCHEMAS = {
     email: z.string().optional().default(''),
     instagram: z.string().optional().default(''),
     instagram_handle: z.string().optional().default(''),
-    organizadores: z.array(z.string()).optional().default([]),
+    organizadores: nonEmptyStringList,
     instituciones_image: z.string().optional().default(''),
   }),
 });`,
@@ -88,8 +88,8 @@ const KNOWN_SCHEMAS = {
     title: z.string(),
     date: dateField,
     author: z.string().optional().default(''),
-    categories: z.array(z.string()).optional().default([]),
-    tags: z.array(z.string()).optional().default([]),
+    categories: nonEmptyStringList,
+    tags: nonEmptyStringList,
     image: z.string().optional().default(''),
     description: z.string().optional().default(''),
   }),
@@ -105,8 +105,8 @@ const KNOWN_SCHEMAS = {
     place: z.string(),
     author: z.string().optional().default(''),
     collective: z.string().optional().default(''),
-    categories: z.array(z.string()).optional().default([]),
-    tags: z.array(z.string()).optional().default([]),
+    categories: nonEmptyStringList,
+    tags: nonEmptyStringList,
     image: z.string().optional().default(''),
     description: z.string().optional().default(''),
   }),
@@ -195,8 +195,38 @@ for (const name of folders) {
   if (configText.includes(`const ${name} = defineCollection(`)) continue;
 
   const schema = KNOWN_SCHEMAS[name] || genericSchema(name);
-  configText += '\n\n' + schema;
+  const exportIndex = configText.indexOf('export const collections');
+  if (exportIndex === -1) {
+    configText += '\n\n' + schema;
+  } else {
+    configText = configText.slice(0, exportIndex) + '\n' + schema + '\n' + configText.slice(exportIndex);
+  }
   console.log(`✓ Esquema "${name}" añadido a content.config.ts`);
+}
+
+// ── 2b. Detección de desviación: KNOWN_SCHEMAS vs content.config.ts ─────────
+// Los esquemas conocidos están duplicados (aquí y en content.config.ts). Si
+// divergen, las ediciones futuras de sync-collections podrían sobrescribir
+// silenciosamente el esquema real. Avisamos para mantenerlos en sincronía.
+function normalizeSchema(schemaText) {
+  return schemaText.replace(/\s+/g, ' ').trim();
+}
+
+let drift = 0;
+for (const [name, known] of Object.entries(KNOWN_SCHEMAS)) {
+  const blockRegex = new RegExp(`const ${name} = defineCollection\\([\\s\\S]*?\\n\\}\\);`);
+  const knownBlock = known.match(blockRegex);
+  const configBlock = configText.match(blockRegex);
+  if (!knownBlock || !configBlock) continue;
+  if (normalizeSchema(knownBlock[0]) !== normalizeSchema(configBlock[0])) {
+    console.warn(`⚠ El esquema "${name}" en content.config.ts difiere del esquema conocido en sync-collections.mjs. Actualiza KNOWN_SCHEMAS para evitar desviación.`);
+    drift++;
+  }
+}
+if (drift > 0) {
+  console.warn(`⚠ ${drift} esquema(s) desviado(s).`);
+} else {
+  console.log('✓ Esquemas conocidos en sincronía con content.config.ts.');
 }
 
 // Asegurar que el export incluya todas las carpetas

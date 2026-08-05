@@ -1,4 +1,4 @@
-import { getCorsHeaders, getVerifiedUser, hasRole, isSafeContentPath } from '../security';
+import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, rateLimitHeaders, isSafeContentPath } from '../security';
 
 export const handler = async (event: any, context: any) => {
   const headers = getCorsHeaders(event, 'GET, OPTIONS');
@@ -21,6 +21,15 @@ export const handler = async (event: any, context: any) => {
   }
   if (!hasRole(user, 'admin') && !hasRole(user, 'editor')) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Permisos insuficientes.' }) };
+  }
+
+  const limit = checkRateLimit('read', `revisions:${user.id || user.sub || getClientIp(event)}`);
+  if (!limit.allowed) {
+    return {
+      statusCode: 429,
+      headers: rateLimitHeaders(limit, headers),
+      body: JSON.stringify({ error: 'Demasiadas peticiones. Inténtalo de nuevo en un momento.' }),
+    };
   }
 
   const params = event.queryStringParameters || {};

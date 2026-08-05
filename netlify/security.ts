@@ -1,4 +1,9 @@
+import { createRateLimiter } from '../shared/lib.mjs';
+
 const DEFAULT_SITE_ORIGIN = 'https://simposio-memorias-participativas.netlify.app';
+
+const writeLimiter = createRateLimiter({ max: 20, windowMs: 60000 });
+const readLimiter = createRateLimiter({ max: 60, windowMs: 60000 });
 
 function configuredOrigins(): string[] {
   return [process.env.SITE_URL, process.env.URL, DEFAULT_SITE_ORIGIN]
@@ -37,4 +42,38 @@ export function hasRole(user: any, role: string): boolean {
 
 export function isSafeContentPath(filePath: unknown): filePath is string {
   return typeof filePath === 'string' && /^src\/content\/[a-z0-9_-]+\/[a-z0-9][a-z0-9._-]*\.md$/i.test(filePath);
+}
+
+export function getClientIp(event: any): string {
+  return (
+    event.headers?.['x-nf-client-connection-ip'] ||
+    event.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
+    event.headers?.['x-real-ip'] ||
+    'unknown'
+  );
+}
+
+export function checkRateLimit(kind: 'read' | 'write', key: string): { allowed: boolean; retryAfterMs: number } {
+  const limiter = kind === 'write' ? writeLimiter : readLimiter;
+  return limiter(key);
+}
+
+export function rateLimitHeaders(result: { retryAfterMs: number }, headers: Record<string, string>): Record<string, string> {
+  if (result.retryAfterMs > 0) {
+    return { ...headers, 'Retry-After': String(Math.ceil(result.retryAfterMs / 1000)) };
+  }
+  return headers;
+}
+
+export function logAudit(action: string, user: any, details: Record<string, unknown> = {}) {
+  console.log(
+    JSON.stringify({
+      type: 'audit',
+      timestamp: new Date().toISOString(),
+      action,
+      user: user?.id || user?.sub || 'unknown',
+      email: user?.email || '',
+      ...details,
+    })
+  );
 }

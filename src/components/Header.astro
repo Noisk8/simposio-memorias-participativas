@@ -179,33 +179,28 @@ import DynamicMenu from './DynamicMenu.astro';
   const userTrigger = document.getElementById('user-trigger');
   const userDropdown = document.getElementById('user-dropdown');
 
-  // Toggle dropdown en click: al abrirlo con click queda fijado (pinned)
-  // hasta click fuera o Escape; el hover solo lo abre/cierra si no está fijado.
-  let dropdownPinned = false;
-
-  function setDropdownOpen(open, pinned) {
+  function setDropdownOpen(open) {
     if (open) {
       userDropdown?.classList.add('!opacity-100', '!visible', '!pointer-events-auto');
     } else {
       userDropdown?.classList.remove('!opacity-100', '!visible', '!pointer-events-auto');
     }
     userTrigger?.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (pinned !== undefined) dropdownPinned = pinned;
   }
 
   userTrigger?.addEventListener('click', () => {
     const isOpen = userDropdown?.classList.contains('!opacity-100');
-    setDropdownOpen(!isOpen, !isOpen);
+    setDropdownOpen(!isOpen);
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') setDropdownOpen(false, false);
+    if (e.key === 'Escape') setDropdownOpen(false);
   });
 
   // Cerrar dropdown al hacer click fuera
   document.addEventListener('click', (e) => {
     if (!userInfo?.contains(e.target)) {
-      setDropdownOpen(false, false);
+      setDropdownOpen(false);
     }
   });
 

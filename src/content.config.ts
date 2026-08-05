@@ -8,6 +8,12 @@ const dateField = z
   .default('')
   .transform((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v));
 
+const nonEmptyStringList = z
+  .array(z.string())
+  .optional()
+  .default([])
+  .transform((arr) => [...new Set(arr.filter((s) => s.trim() !== ''))]);
+
 const simposios = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/simposios' }),
   schema: z.object({
@@ -61,7 +67,7 @@ const paginas = defineCollection({
     email: z.string().optional().default(''),
     instagram: z.string().optional().default(''),
     instagram_handle: z.string().optional().default(''),
-    organizadores: z.array(z.string()).optional().default([]),
+    organizadores: nonEmptyStringList,
     instituciones_image: z.string().optional().default(''),
   }),
 });
@@ -77,8 +83,8 @@ const memorias = defineCollection({
     place: z.string(),
     author: z.string().optional().default(''),
     collective: z.string().optional().default(''),
-    categories: z.array(z.string()).optional().default([]),
-    tags: z.array(z.string()).optional().default([]),
+    categories: nonEmptyStringList,
+    tags: nonEmptyStringList,
     image: z.string().optional().default(''),
     description: z.string().optional().default(''),
   }),
@@ -93,8 +99,8 @@ const entradas = defineCollection({
     title: z.string(),
     date: dateField,
     author: z.string().optional().default(''),
-    categories: z.array(z.string()).optional().default([]),
-    tags: z.array(z.string()).optional().default([]),
+    categories: nonEmptyStringList,
+    tags: nonEmptyStringList,
     image: z.string().optional().default(''),
     description: z.string().optional().default(''),
   }),

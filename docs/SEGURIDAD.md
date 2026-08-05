@@ -47,6 +47,17 @@ El archivo `public/_headers` añade cabeceras generales como:
 - `Permissions-Policy`;
 - `Strict-Transport-Security`.
 
+## Límites de peticiones y auditoría
+
+Las funciones administrativas limitan el ritmo de peticiones por usuario (e IP de respaldo) con una ventana deslizante en memoria (`shared/lib.mjs` → `createRateLimiter`):
+
+- Escrituras (crear colección, crear memoria, asignar roles): 20 peticiones/minuto.
+- Lecturas (listar usuarios, historial de revisiones): 60 peticiones/minuto.
+
+Al superar el límite se responde `429` con la cabecera `Retry-After`. El límite es por instancia serverless: suficiente como control básico, pero no sustituye a un límite distribuido.
+
+Cada acción de escritura emite un evento de auditoría (`logAudit`) en los logs de la función con formato JSON (`type: "audit"`), incluyendo acción, usuario, email y detalle. No se registran tokens ni cabeceras `Authorization`.
+
 ## Reglas para cambios futuros
 
 - No reintroducir fallbacks que acepten JWT sin verificar firma.

@@ -1,4 +1,4 @@
-import { getCorsHeaders, getVerifiedUser, hasRole } from '../security';
+import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
 
 export const handler = async (event: any, context: any) => {
   const headers = getCorsHeaders(event, 'POST, OPTIONS');
@@ -20,6 +20,15 @@ export const handler = async (event: any, context: any) => {
 
   if (!isAdmin) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear colecciones.' }) };
+  }
+
+  const limit = checkRateLimit('write', `coleccion:${user.id || user.sub || getClientIp(event)}`);
+  if (!limit.allowed) {
+    return {
+      statusCode: 429,
+      headers: rateLimitHeaders(limit, headers),
+      body: JSON.stringify({ error: 'Demasiadas peticiones. Inténtalo de nuevo en un momento.' }),
+    };
   }
 
   let payload;
@@ -190,6 +199,8 @@ Contenido de ejemplo.
     await putFile(configPath, newConfigContent, message, configFile?.sha);
     await putFile(contentConfigPath, newContentConfig, message, contentConfigFile?.sha);
     await putFile(sampleFilePath, sampleContent, message);
+
+    logAudit('create-coleccion', user, { collection: safeName, folder: safeFolder });
 
     return {
       statusCode: 201,

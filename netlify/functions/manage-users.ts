@@ -9,7 +9,7 @@
  *      (context.clientContext.identity.token), que es el único con permisos
  *      para el endpoint /admin/users.
  */
-import { getCorsHeaders, getVerifiedUser, hasRole } from '../security';
+import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
 
 export const handler = async (event: any, context: any) => {
   const headers = getCorsHeaders(event, 'GET, POST, OPTIONS');
@@ -34,6 +34,17 @@ export const handler = async (event: any, context: any) => {
       statusCode: 403,
       headers,
       body: JSON.stringify({ error: 'Solo los administradores pueden gestionar usuarios.' }),
+    };
+  }
+
+  const limitKey = `users:${clientUser.id || clientUser.sub || getClientIp(event)}`;
+  const limitKind = event.httpMethod === 'GET' ? 'read' : 'write';
+  const limit = checkRateLimit(limitKind, limitKey);
+  if (!limit.allowed) {
+    return {
+      statusCode: 429,
+      headers: rateLimitHeaders(limit, headers),
+      body: JSON.stringify({ error: 'Demasiadas peticiones. Inténtalo de nuevo en un momento.' }),
     };
   }
 
@@ -203,6 +214,7 @@ export const handler = async (event: any, context: any) => {
       }
 
       const updated = await res.json();
+      logAudit('assign-roles', clientUser, { targetUserId: userId, roles: newRoles });
       return {
         statusCode: 200,
         headers,

@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import PageTemplate from '../components/PageTemplate.astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { getSimposioDefault, resolveSimposioSlug } from '../lib/simposios';
@@ -11,13 +12,10 @@ interface Props {
 export const getStaticPaths: GetStaticPaths = async () => {
   const defaultSlug = await resolveSimposioSlug();
   const paginas = await getCollection('paginas', ({ data }) => !data.draft && data.simposio === defaultSlug);
-  return paginas.map((entry) => {
-    const slug = entry.data.slug || entry.data.template;
-    return {
-      params: { pagina: slug },
-      props: { entry },
-    };
-  });
+  return paginas.map((entry) => ({
+    params: { pagina: entry.data.slug || entry.data.template },
+    props: { entry },
+  }));
 };
 
 const { entry } = Astro.props;
@@ -27,139 +25,11 @@ const simposio = await getSimposioDefault();
 const simposioTitle = simposio?.data.title || 'I Simposio sobre Memorias Participativas';
 
 const pageTitle = `${data.title} - ${simposioTitle}`;
-const heroImage = data.image || '/images/hero-bg.jpg';
-
-const organizadores = data.organizadores.map((o: string) => {
-  const [nombre, institucion] = o.split(' | ');
-  return { nombre, institucion };
-});
+const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
 ---
 
 <Layout title={pageTitle} description={data.description} image={heroImage}>
-  <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
-    <div class="absolute inset-0">
-      <img src={heroImage} alt={data.title} class="w-full h-full object-cover" />
-      <div class="absolute inset-0 bg-black/60"></div>
-    </div>
-    <div class="relative z-10 text-center px-4">
-      <nav class="text-white/70 text-sm mb-4">
-        <a href="/" class="hover:text-white transition-colors">Inicio</a>
-        <span class="mx-2">/</span>
-        <span class="text-white">{data.title}</span>
-      </nav>
-      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
-        {data.title}
-      </h1>
-    </div>
-  </section>
-
-  {data.template === 'el-simposio' && (
-    <section class="py-16 bg-white">
-      <div class="max-w-4xl mx-auto px-4 prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
-        <Content />
-      </div>
-    </section>
-  )}
-
-  {data.template === 'organizacion' && (
-    <>
-      <section class="py-16 bg-white">
-        <div class="max-w-5xl mx-auto px-4">
-          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {organizadores.map((org: { nombre: string; institucion: string }) => (
-              <div class="card-shadow bg-white rounded-xl p-5 border-l-4 border-ugr-green hover:border-ugr-green-light transition-all duration-300">
-                <h3 class="font-bold text-ugr-green-dark mb-1 font-[family-name:var(--font-heading)]">
-                  {org.nombre}
-                </h3>
-                <p class="text-sm text-ugr-text-light">{org.institucion}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {data.instituciones_image && (
-        <section class="py-16 bg-ugr-cream">
-          <div class="max-w-4xl mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)]">
-              Instituciones organizadoras
-            </h2>
-            <div class="card-shadow rounded-xl overflow-hidden inline-block bg-white p-4">
-              <img src={data.instituciones_image} alt="Instituciones organizadoras" class="w-full max-w-2xl mx-auto" />
-            </div>
-          </div>
-        </section>
-      )}
-    </>
-  )}
-
-  {data.template === 'programa' && (
-    <section class="py-16 bg-white">
-      <div class="max-w-4xl mx-auto px-4 text-center">
-        <div class="card-shadow rounded-xl overflow-hidden inline-block mb-8">
-          <img src={simposio?.data.program_url ? '/images/programa.jpg' : '/images/programa.jpg'} alt={`Programa del ${simposioTitle}`} class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500" />
-        </div>
-        {simposio?.data.program_url && (
-          <div class="mt-8">
-            <p class="text-lg text-ugr-text mb-6">Descarga el programa completo</p>
-            <a href={simposio.data.program_url} target="_blank" rel="noopener noreferrer" class="btn-green inline-flex items-center gap-2 text-lg">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-              Descarga el programa aquí
-            </a>
-          </div>
-        )}
-        <div class="mt-12 text-left prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
-          <Content />
-        </div>
-      </div>
-    </section>
-  )}
-
-  {data.template === 'contacto' && (
-    <section class="py-16 bg-white">
-      <div class="max-w-3xl mx-auto px-4 text-center">
-        <p class="text-xl text-ugr-text mb-10 leading-relaxed">
-          <Content />
-        </p>
-
-        {data.email && (
-          <div class="card-shadow bg-white rounded-xl p-8 mb-8 border-l-4 border-ugr-green">
-            <div class="flex items-center justify-center gap-4 mb-4">
-              <svg class="w-10 h-10 text-ugr-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-              <h2 class="text-2xl font-bold text-ugr-green-dark font-[family-name:var(--font-heading)]">Email</h2>
-            </div>
-            <a href={`mailto:${data.email}`} class="text-xl text-ugr-green hover:text-ugr-green-light transition-colors duration-300 font-semibold">
-              {data.email}
-            </a>
-          </div>
-        )}
-
-        {data.instagram && (
-          <div class="card-shadow bg-white rounded-xl p-8 border-l-4 border-ugr-green">
-            <div class="flex items-center justify-center gap-4 mb-4">
-              <svg class="w-10 h-10 text-ugr-green" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-              <h2 class="text-2xl font-bold text-ugr-green-dark font-[family-name:var(--font-heading)]">Instagram</h2>
-            </div>
-            <a href={data.instagram} target="_blank" rel="noopener noreferrer" class="text-xl text-ugr-green hover:text-ugr-green-light transition-colors duration-300 font-semibold">
-              {data.instagram_handle || data.instagram}
-            </a>
-          </div>
-        )}
-      </div>
-    </section>
-  )}
-
-  {(data.template === 'custom' || data.template === 'default') && (
-    <section class="py-16 bg-white">
-      <div class="max-w-4xl mx-auto px-4 prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
-        <Content />
-      </div>
-    </section>
-  )}
+  <PageTemplate data={data} simposio={simposio} simposioTitle={simposioTitle}>
+    <Content />
+  </PageTemplate>
 </Layout>

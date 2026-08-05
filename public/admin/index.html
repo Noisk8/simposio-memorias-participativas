@@ -245,6 +245,18 @@
             //  - "Publish" (guardado normal) → draft: false (publica, incluso
             //    si la entrada era un borrador)
             data = data.set('draft', active);
+
+            // Saneo: eliminar elementos vacíos y duplicados de listas
+            // (el widget relation de Decap puede guardar "" al deseleccionar).
+            ['categories', 'tags'].forEach(function (field) {
+              if (data.has(field) && Array.isArray(data.get(field))) {
+                var cleaned = data.get(field).filter(function (value) {
+                  return typeof value === 'string' && value.trim() !== '';
+                });
+                data = data.set(field, cleaned);
+              }
+            });
+
             return data;
           } catch (e) {
             console.error('[CMS Draft] preSave error:', e);

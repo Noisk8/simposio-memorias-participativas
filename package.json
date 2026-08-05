@@ -16,8 +16,9 @@
     "astro": "astro",
     "check": "node scripts/lint-taxonomies.mjs && astro check",
     "check:taxonomies": "node scripts/lint-taxonomies.mjs",
-    "lint": "eslint src scripts netlify",
-    "lint:fix": "eslint src scripts netlify --fix",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "lint": "eslint src scripts netlify shared tests",
+    "lint:fix": "eslint src scripts netlify shared tests --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -1,4 +1,5 @@
-import { getCorsHeaders, getVerifiedUser, hasRole } from '../security';
+import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
+import { slugify, isValidPublicImagePath } from '../../shared/lib.mjs';
 
 export const handler = async (event: any, context: any) => {
   const headers = getCorsHeaders(event, 'POST, OPTIONS');
@@ -20,6 +21,15 @@ export const handler = async (event: any, context: any) => {
 
   if (!isAdmin) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear memorias.' }) };
+  }
+
+  const limit = checkRateLimit('write', `memoria:${user.id || user.sub || getClientIp(event)}`);
+  if (!limit.allowed) {
+    return {
+      statusCode: 429,
+      headers: rateLimitHeaders(limit, headers),
+      body: JSON.stringify({ error: 'Demasiadas peticiones. Inténtalo de nuevo en un momento.' }),
+    };
   }
 
   let payload;
@@ -44,18 +54,13 @@ export const handler = async (event: any, context: any) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: `El campo ${field} excede su longitud máxima.` }) };
     }
   }
-  if (!/^\/images\/[a-z0-9][a-z0-9_./-]*\.(?:avif|gif|jpe?g|png|webp)$/i.test(String(image).trim())) {
+  if (!isValidPublicImagePath(String(image).trim())) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'La imagen debe ser una ruta pública válida dentro de /images/.' }) };
   }
 
   const safeTitle = String(title).trim();
   const yamlString = (value: unknown) => JSON.stringify(String(value ?? '').trim());
-  const slug = safeTitle
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+  const slug = slugify(safeTitle);
 
   const fileName = `${number}-${slug || 'memoria'}.md`;
   const filePath = `src/content/memorias/${fileName}`;
@@ -106,6 +111,8 @@ export const handler = async (event: any, context: any) => {
     }
 
     const data = await response.json();
+
+    logAudit('create-memoria', user, { number, title: safeTitle, file: filePath });
 
     return {
       statusCode: 201,
