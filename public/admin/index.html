@@ -244,7 +244,8 @@
             data = data.set('draft', active);
             return data;
           } catch (e) {
-            console.warn('[CMS Draft] preSave error:', e);
+            console.error('[CMS Draft] preSave error:', e);
+            throw e;
           }
         },
       });
