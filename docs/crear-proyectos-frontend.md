@@ -27,7 +27,7 @@ En Netlify, ve a **Site settings → Environment variables** y añade:
 | Variable | Valor | Obligatoria |
 |---|---|---|
 | `GITHUB_TOKEN` | Token de GitHub con scope `repo` | Sí |
-| `GITHUB_REPO` | `Noisk8/test-simposio-memorias-participativas` | No (hay valor por defecto) |
+| `GITHUB_REPO` | `Noisk8/simposio-memorias-participativas` | No (hay valor por defecto) |
 | `GITHUB_BRANCH` | `main` | No (valor por defecto `main`) |
 
 ### Cómo crear el token de GitHub

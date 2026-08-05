@@ -59,7 +59,7 @@ export const handler = async (event: any, context: any) => {
   }
 
   const githubToken = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO || 'Noisk8/test-simposio-memorias-participativas';
+  const repo = process.env.GITHUB_REPO || 'Noisk8/simposio-memorias-participativas';
   const branch = process.env.GITHUB_BRANCH || 'main';
 
   if (!githubToken) {
