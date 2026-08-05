@@ -11,9 +11,9 @@ const catTitles = slugTitleMap(await getCategorias());
 const tagTitles = slugTitleMap(await getEtiquetas());
 const simposios = await getSimposios();
 
-const allProyectos = await getCollection('proyectos');
-const todos = filterPublished(allProyectos);
-const proyectos = todos.sort((a, b) => b.data.number - a.data.number).slice(0, PAGE_SIZE);
+const allMemorias = await getCollection('memorias');
+const todos = filterPublished(allMemorias);
+const memorias = todos.sort((a, b) => b.data.number - a.data.number).slice(0, PAGE_SIZE);
 
 const totalPages = Math.ceil(todos.length / PAGE_SIZE);
 const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
@@ -72,12 +72,12 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
     </div>
   </section>
 
-  <!-- Grid de proyectos -->
+  <!-- Grid de memorias -->
   <section class="py-16 bg-white">
     <div class="max-w-6xl mx-auto px-4">
-      <div id="proyectos-grid" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {proyectos.map((entry) => (
-          <article class="proyecto-card card-shadow bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-ugr-green/30 transition-all duration-300 group" data-simposio={entry.data.simposio}>
+      <div id="memorias-grid" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {memorias.map((entry) => (
+          <article class="memoria-card card-shadow bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-ugr-green/30 transition-all duration-300 group" data-simposio={entry.data.simposio}>
             <a href={`/museo-memorias/${entry.data.number}`} class="block relative h-48 overflow-hidden">
               <img src={entry.data.image} alt={entry.data.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div class="absolute top-3 left-3">
@@ -106,7 +106,7 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
         ))}
       </div>
 
-      <p id="no-results" class="hidden text-center text-ugr-text-light py-16">No hay proyectos para el filtro seleccionado.</p>
+      <p id="no-results" class="hidden text-center text-ugr-text-light py-16">No hay memorias para el filtro seleccionado.</p>
 
       <!-- Paginación -->
       <nav class="mt-12 flex justify-center items-center gap-2">
@@ -127,7 +127,7 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
 <script is:inline>
   (function () {
     const buttons = document.querySelectorAll('.simposio-filter');
-    const cards = document.querySelectorAll('.proyecto-card');
+    const cards = document.querySelectorAll('.memoria-card');
     const noResults = document.getElementById('no-results');
 
     buttons.forEach((btn) => {

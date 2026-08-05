@@ -1,10 +1,7 @@
+import { getCorsHeaders, getVerifiedUser, hasRole } from '../security';
+
 export const handler = async (event: any, context: any) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
-  };
+  const headers = getCorsHeaders(event, 'POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers };
@@ -14,13 +11,12 @@ export const handler = async (event: any, context: any) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Método no permitido' }) };
   }
 
-  const { user } = context.clientContext || {};
-  const roles = user?.app_metadata?.roles || user?.roles || [];
-  const adminEmails = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = roles.includes('admin') || adminEmails.includes((user?.email || '').toLowerCase());
+  const user = getVerifiedUser(context);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
+  }
+
+  const isAdmin = hasRole(user, 'admin');
 
   if (!isAdmin) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear colecciones.' }) };
@@ -40,8 +36,26 @@ export const handler = async (event: any, context: any) => {
   }
 
   const safeName = String(name).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '');
-  if (!safeName) {
+  const safeLabel = String(label).trim();
+  const safeFolder = String(folder).trim().replace(/\\/g, '/').replace(/\/+$/, '');
+  const safeSlug = String(slug).trim();
+  const rawFields = String(fields || '').trim();
+  const invalidFields = /(^|\n)\s*(?:collections|backend|publish_mode|local_backend|export|import)\s*:/i.test(rawFields);
+
+  if (!safeName || safeName.length > 64) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'El nombre interno no es válido.' }) };
+  }
+  if (!safeLabel || safeLabel.length > 120 || /[\r\n]/.test(safeLabel)) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'La etiqueta visible no es válida.' }) };
+  }
+  if (!/^src\/content\/[a-z0-9-]+$/i.test(safeFolder) || safeFolder !== `src/content/${safeName}`) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'La carpeta debe corresponder a src/content/<nombre>.' }) };
+  }
+  if (!safeSlug || safeSlug.length > 120 || /[\r\n]/.test(safeSlug)) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'El patrón de slug no es válido.' }) };
+  }
+  if (rawFields.length > 12000 || invalidFields) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'La definición de campos no es válida.' }) };
   }
 
   const githubToken = process.env.GITHUB_TOKEN;
@@ -110,10 +124,10 @@ export const handler = async (event: any, context: any) => {
     const newCollectionYaml = `
 collections:
   - name: "${safeName}"
-    label: "${label}"
-    folder: "${folder}"
+    label: ${JSON.stringify(safeLabel)}
+    folder: ${JSON.stringify(safeFolder)}
     create: true
-    slug: "${slug}"
+    slug: ${JSON.stringify(safeSlug)}
 ${indentedFields}
 `;
 
@@ -143,7 +157,7 @@ ${indentedFields}
     const newCollections = currentCollections + `, ${safeName}`;
 
     const newCollectionTs = `const ${safeName} = defineCollection({
-  loader: glob({ pattern: '*.md', base: './${folder}' }),
+  loader: glob({ pattern: '*.md', base: './${safeFolder}' }),
   schema: z.object({
     simposio: z.string().default('2026'),
     title: z.string(),
@@ -160,7 +174,7 @@ ${indentedFields}
     );
 
     // 4. Crear archivo de ejemplo en la nueva carpeta
-    const sampleFilePath = `${folder.replace(/^src\//, '')}/ejemplo.md`.replace(/\/+/g, '/');
+    const sampleFilePath = `${safeFolder.replace(/^src\//, '')}/ejemplo.md`.replace(/\/+/g, '/');
     const sampleContent = `---
 title: "Ejemplo de ${label}"
 image: ""

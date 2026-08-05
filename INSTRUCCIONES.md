@@ -18,7 +18,7 @@ simposio-memorias/
 │       └── config.yml          # Configuración Decap CMS
 ├── netlify/functions/          # Funciones serverless
 │   ├── create-coleccion.ts
-│   ├── create-proyecto.ts
+│   ├── create-proyecto.ts # Endpoint legacy; guarda en la colección memorias
 │   ├── identity-signup.ts
 │   └── manage-users.ts
 ├── scripts/
@@ -36,11 +36,11 @@ simposio-memorias/
 │   │   ├── entradas/           # Listado y detalle de entradas
 │   │   ├── categorias/         # Archivos de categorías
 │   │   ├── etiquetas/          # Archivos de etiquetas
-│   │   ├── museo-memorias/     # Proyectos del Museo
+│   │   ├── museo-memorias/     # Memorias del Museo
 │   │   └── admin/              # Páginas de gestión de admin
 │   ├── content/                # Colecciones de contenido Markdown
 │   │   ├── entradas/
-│   │   ├── proyectos/
+│   │   ├── memorias/
 │   │   ├── categorias/
 │   │   ├── etiquetas/
 │   │   └── pages/
@@ -58,17 +58,18 @@ El CMS está organizado como en WordPress:
 | Colección | Tipo | Descripción |
 |-----------|------|-------------|
 | **Entradas** | Posts | Noticias y artículos con fecha, autor, categorías y etiquetas. |
-| **Proyectos** | Custom post type | Proyectos del *Museo de Memorias Vivas*. |
+| **Memorias** | Custom post type | Memorias del *Museo de Memorias Vivas*. |
 | **Categorías** | Taxonomía jerárquica | Clasificación en árbol padre/hijo. |
 | **Etiquetas** | Taxonomía plana | Palabras clave. |
 | **Borradores · Entradas** | Filtro | Entradas con `draft: true`. |
-| **Borradores · Proyectos** | Filtro | Proyectos con `draft: true`. |
+| **Borradores · Memorias** | Filtro | Memorias con `draft: true`. |
 
 Los borradores usan el mismo almacenamiento que el contenido publicado, pero se filtran por el campo `draft`. El panel de *Borradores recientes* en `/admin/` permite accesos rápidos.
 
-## Instrucciones de Despliegue
+## Manual de usuario y despliegue
 
-Ver [`GUIA-DESPLIEGUE.md`](./GUIA-DESPLIEGUE.md) para el despliegue paso a paso en Netlify.
+- [`docs/MANUAL-USUARIO.md`](./docs/MANUAL-USUARIO.md) explica cómo gestionar entradas, memorias, páginas, taxonomías y borradores desde el CMS.
+- Ver [`GUIA-DESPLIEGUE.md`](./GUIA-DESPLIEGUE.md) para el despliegue paso a paso en Netlify.
 
 ## Comandos Útiles
 
@@ -106,7 +107,7 @@ Los colores principales se definen en `src/styles/global.css`:
 ### Agregar Contenido
 
 1. Acceder al CMS en `/admin/`.
-2. Seleccionar la colección (Entradas, Proyectos, Categorías, Etiquetas).
+2. Seleccionar la colección (Entradas, Memorias, Categorías, Etiquetas).
 3. Crear nueva entrada.
 4. Pulsar **Publish** para publicar o **Guardar como borrador** para guardar como borrador.
 

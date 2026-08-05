@@ -2,25 +2,25 @@
 import Layout from '../../layouts/Layout.astro';
 ---
 
-<Layout title="Crear proyecto - Admin">
+<Layout title="Crear memoria - Admin">
   <section class="py-16 bg-white min-h-[60vh]">
     <div class="max-w-2xl mx-auto px-4">
       <h1 class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
-        Crear nuevo proyecto
+        Crear nueva memoria
       </h1>
       <p class="text-ugr-text-light mb-8">
-        Solo los usuarios con rol <strong>admin</strong> pueden crear proyectos desde aquí. El cambio se guardará en el repositorio y Netlify desplegará el sitio automáticamente.
+        Solo los usuarios con rol <strong>admin</strong> pueden crear memorias desde aquí. El cambio se guardará en el repositorio y Netlify desplegará el sitio automáticamente.
       </p>
 
       <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6">
-        No tienes permiso para crear proyectos. Inicia sesión con una cuenta de administrador.
+        No tienes permiso para crear memorias. Inicia sesión con una cuenta de administrador.
       </div>
 
       <div id="loading" class="text-ugr-text-light mb-6">
         Verificando sesión...
       </div>
 
-      <form id="proyecto-form" class="hidden space-y-6">
+      <form id="memoria-form" class="hidden space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-semibold text-ugr-text mb-1" for="number">Número</label>
@@ -50,9 +50,9 @@ import Layout from '../../layouts/Layout.astro';
 
         <div>
           <label class="block text-sm font-semibold text-ugr-text mb-1" for="image">Imagen</label>
-          <input type="text" id="image" name="image" required placeholder="/images/proyecto-30.jpg" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green" />
+          <input type="text" id="image" name="image" required placeholder="/images/memoria-30.jpg" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green" />
           <p class="text-xs text-ugr-text-light mt-1">
-            Sube la imagen a <code>/public/images/</code> y escribe la ruta pública, por ejemplo <code>/images/proyecto-30.jpg</code>.
+            Sube la imagen a <code>/public/images/</code> y escribe la ruta pública, por ejemplo <code>/images/memoria-30.jpg</code>.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ import Layout from '../../layouts/Layout.astro';
 
         <div class="flex items-center gap-4">
           <button type="submit" class="btn-green">
-            Crear proyecto
+            Crear memoria
           </button>
           <span id="status" class="text-sm font-medium"></span>
         </div>
@@ -79,7 +79,7 @@ import Layout from '../../layouts/Layout.astro';
 
 <script is:inline>
   // @ts-nocheck
-  const form = document.getElementById('proyecto-form');
+  const form = document.getElementById('memoria-form');
   const notAllowed = document.getElementById('not-allowed');
   const loading = document.getElementById('loading');
   const status = document.getElementById('status');
@@ -189,11 +189,11 @@ import Layout from '../../layouts/Layout.astro';
       var result = await response.json();
 
       if (response.ok) {
-        status.textContent = 'Proyecto creado. Redesplegando...';
+        status.textContent = 'Memoria creada. Redesplegando...';
         status.className = 'text-sm font-medium text-green-600';
         form.reset();
       } else {
-        status.textContent = result.error || 'Error al crear el proyecto.';
+        status.textContent = result.error || 'Error al crear la memoria.';
         status.className = 'text-sm font-medium text-red-600';
       }
     } catch (err) {

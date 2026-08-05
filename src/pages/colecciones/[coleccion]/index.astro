@@ -2,7 +2,7 @@
 /**
  * /colecciones/[coleccion]/
  * Lista todas las entradas de cualquier colección genérica.
- * Las colecciones especiales (proyectos, museo-memorias) tienen sus propias páginas.
+ * Las colecciones especiales (memorias, museo-memorias) tienen sus propias páginas.
  */
 import Layout from '../../../layouts/Layout.astro';
 import TermPills from '../../../components/TermPills.astro';
@@ -13,7 +13,7 @@ import path from 'node:path';
 import { getCategorias, getEtiquetas, slugTitleMap, formatDate, sortByDateDesc } from '../../../lib/taxonomies';
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const SPECIAL = ['simposios', 'paginas', 'proyectos', 'categorias', 'etiquetas'];
+  const SPECIAL = ['simposios', 'paginas', 'memorias', 'categorias', 'etiquetas'];
   const contentDir = path.resolve('src/content');
   const folders = fs
     .readdirSync(contentDir, { withFileTypes: true })

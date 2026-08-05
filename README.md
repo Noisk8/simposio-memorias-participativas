@@ -1,76 +1,183 @@
 # I Simposio sobre Memorias Participativas
 
-Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build) y gestionado con [Decap CMS](https://decapcms.org) (anteriormente Netlify CMS).
+Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build), gestionado con [Decap CMS](https://decapcms.org) y desplegado en [Netlify](https://www.netlify.com/).
 
 ## Tecnologías
 
-- **Framework**: Astro 7
-- **UI**: React 19 + Tailwind CSS 4
-- **CMS**: Decap CMS con autenticación Netlify Identity
-- **Backend serverless**: Netlify Functions
-- **Hosting**: Netlify
+- **Framework:** Astro 7.
+- **Interfaz:** React 19 y Tailwind CSS 4.
+- **CMS:** Decap CMS con Netlify Identity y Git Gateway.
+- **Contenido:** Markdown mediante Astro Content Collections.
+- **Funciones serverless:** Netlify Functions.
+- **Búsqueda:** Pagefind.
+- **Hosting:** Netlify.
 
 ## Arquitectura de contenido
 
-El proyecto sigue una arquitectura tipo **WordPress**:
+El proyecto sigue una arquitectura editorial inspirada en WordPress:
 
-- **Entradas**: posts genéricos (noticias, artículos) con fecha, autor, categorías y etiquetas.
-- **Proyectos**: custom post type del *Museo de Memorias Vivas*.
-- **Categorías**: taxonomía jerárquica.
-- **Etiquetas**: taxonomía plana de palabras clave.
-- **Borradores**: colecciones filtradas por `draft: true` para gestión de borradores.
+- **Entradas:** noticias, artículos y novedades generales.
+- **Memorias del Museo:** piezas, experiencias y registros del [Museo de Memorias Vivas](https://simposio-memorias-participativas.netlify.app/museo-memorias/). En WordPress equivalen a un tipo de contenido personalizado.
+- **Páginas informativas:** páginas estructurales como El Simposio, Organización, Programa y Contacto.
+- **Ediciones de simposio:** información general de cada edición, año, lugar, tema, cartel y programa.
+- **Categorías:** taxonomía jerárquica para clasificar temáticamente entradas y memorias.
+- **Etiquetas:** taxonomía plana para palabras clave.
+- **Borradores:** colecciones filtradas mediante `draft: true`; no aparecen en el sitio público.
 
-## Scripts disponibles
+Las colecciones principales se encuentran en:
+
+```text
+src/content/
+├── entradas/
+├── memorias/
+├── paginas/
+├── simposios/
+├── categorias/
+├── etiquetas/
+└── menus/
+```
+
+La página pública `/museo-memorias/` funciona como archivo de las memorias. Las rutas públicas de cada memoria se mantienen en `/museo-memorias/:number`.
+
+## Desarrollo local
+
+### Sitio Astro
+
+Para trabajar en páginas, estilos y contenido sin funciones Netlify:
 
 ```bash
-npm run dev          # Servidor de desarrollo
-npm run build        # Build de producción
-npm run preview      # Vista previa del build
-npm run check        # Type-check con astro check
-npm run lint         # ESLint
-npm run lint:fix     # ESLint con auto-fix
-npm run format       # Formatear con Prettier
-npm run format:check # Verificar formato con Prettier
-npm run sync         # Sincronizar content.config.ts y config.yml
+npm run dev
+```
+
+### CMS local y Netlify Dev
+
+Para trabajar simultáneamente con Decap CMS, `decap-server`, Astro y Netlify Functions:
+
+```bash
+npm run dev:netlify-cms
+```
+
+Después abre:
+
+```text
+http://localhost:8888/admin/
+```
+
+El proxy local de Decap funciona en el puerto `8081`. Este flujo permite guardar contenido localmente sin depender de Git Gateway.
+
+### CMS local solamente
+
+```bash
+npm run dev:cms
+```
+
+Este comando inicia `decap-server` junto con Astro.
+
+### Otros comandos
+
+```bash
+npm run cms            # Inicia únicamente decap-server
+npm run sync           # Sincroniza colecciones con Astro y Decap
+npm run build          # Genera el sitio y el índice de Pagefind
+npm run preview        # Previsualiza el build de producción
+npm run check          # Ejecuta lint de taxonomías y astro check
+npm run lint           # Ejecuta ESLint
+npm run lint:fix       # Corrige problemas de ESLint cuando es posible
+npm run format         # Formatea el proyecto
+npm run format:check  # Comprueba el formato
 ```
 
 ## Estructura del proyecto
 
-```
+```text
 simposio-memorias/
 ├── public/
-│   └── admin/              # Interfaz de Decap CMS
-│       ├── index.html      # UI custom: previews, borradores, admin overlay
-│       └── config.yml      # Configuración de colecciones
-├── netlify/functions/      # Funciones serverless (gestión de usuarios, colecciones)
-├── scripts/
-│   └── sync-collections.mjs # Sincroniza carpetas de src/content con config
+│   ├── admin/
+│   │   ├── index.html          # Interfaz personalizada de Decap CMS
+│   │   └── config.yml          # Colecciones, campos y filtros del CMS
+│   └── images/                 # Imágenes públicas del sitio y del CMS
 ├── src/
-│   ├── components/         # Componentes Astro/React
-│   ├── content/            # Colecciones de contenido (Markdown)
-│   ├── layouts/            # Layouts Astro
-│   ├── lib/                # Utilidades (taxonomías, fechas)
-│   ├── pages/              # Páginas y rutas dinámicas
-│   └── styles/             # Estilos globales + Tailwind
+│   ├── assets/                 # Fuentes y recursos procesados por Astro
+│   ├── components/             # Componentes reutilizables Astro/React
+│   ├── content/                # Colecciones Markdown
+│   │   ├── categorias/
+│   │   ├── entradas/
+│   │   ├── etiquetas/
+│   │   ├── memorias/
+│   │   ├── menus/
+│   │   ├── paginas/
+│   │   └── simposios/
+│   ├── layouts/                # Layouts generales del sitio
+│   ├── lib/                    # Taxonomías, fechas y utilidades
+│   ├── pages/                  # Rutas públicas y administrativas
+│   │   ├── admin/              # Gestión adicional del CMS
+│   │   ├── categorias/
+│   │   ├── entradas/
+│   │   ├── etiquetas/
+│   │   ├── ediciones/
+│   │   ├── museo-memorias/
+│   │   └── simposios.astro
+│   └── styles/                 # Estilos globales y Tailwind
+├── netlify/
+│   └── functions/              # Funciones serverless
+├── scripts/
+│   ├── lint-taxonomies.mjs     # Valida categorías y etiquetas
+│   └── sync-collections.mjs    # Sincroniza carpetas y configuraciones
+├── docs/
+│   ├── MANUAL-USUARIO.md       # Manual de gestión de contenidos
+│   └── ...                     # Documentación técnica adicional
 ├── astro.config.mjs
 ├── netlify.toml
-└── package.json
+├── package.json
+└── tsconfig.json
 ```
 
-## Documentación adicional
+## Panel de administración
 
-- [`INSTRUCCIONES.md`](./INSTRUCCIONES.md) — Guía rápida de uso y despliegue.
-- [`GUIA-DESPLIEGUE.md`](./GUIA-DESPLIEGUE.md) — Despliegue paso a paso en Netlify.
-- [`docs/`](./docs/) — Documentación técnica adicional.
+El panel está disponible en:
 
-## Calidad de código
+```text
+/admin/
+```
 
-El proyecto incluye:
+Las secciones principales son:
 
-- `astro check` para type-checking de archivos `.astro` y TypeScript.
-- ESLint con `eslint-plugin-astro` y `@typescript-eslint`.
-- Prettier con `prettier-plugin-astro`.
+- **Entradas**
+- **Memorias del Museo de Memorias Vivas**
+- **Páginas informativas**
+- **Ediciones de simposio**
+- **Categorías**
+- **Etiquetas**
+- **Borradores · Entradas**
+- **Borradores · Memorias**
+- **Borradores · Páginas**
 
----
+La página administrativa adicional para crear una memoria es:
 
-Generado a partir del template [Astro Starter Kit: Blog](https://github.com/withastro/astro/tree/main/examples/blog).
+```text
+/admin/crear-memoria
+```
+
+La ruta anterior `/admin/crear-proyecto` redirige a la nueva para mantener compatibilidad.
+
+## Documentación
+
+- **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md):** guía práctica para acceder al panel y gestionar entradas, memorias, páginas, taxonomías, imágenes y borradores.
+- **[Instrucciones generales](./INSTRUCCIONES.md):** estructura, comandos y operaciones básicas.
+- **[Guía de despliegue](./GUIA-DESPLIEGUE.md):** configuración y publicación en Netlify.
+- **[Documentación técnica](./docs/):** colecciones, roles, creación de contenido y configuración del proyecto.
+- **[Seguridad del CMS](./docs/SEGURIDAD.md):** autenticación, funciones administrativas, variables y checklist de seguridad.
+
+Si una persona solo necesita gestionar contenidos, debe comenzar por el **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md)**.
+
+## Calidad y validación
+
+Antes de publicar cambios técnicos, se recomienda ejecutar:
+
+```bash
+npm run lint
+npm run check
+npm run build
+```
+
+El proyecto incluye ESLint, `astro check`, Prettier, validación de taxonomías y Pagefind.

@@ -2,9 +2,11 @@ backend:
   name: git-gateway
   branch: main
 
-# Los cambios pasan por flujo editorial: draft → in_review → ready → publish.
-# Solo los usuarios con permisos de merge en el repo pueden publicar en main.
-publish_mode: editorial_workflow
+# Flujo simple de Decap: los cambios se guardan directamente en la rama main.
+# Los borradores NO usan el editorial_workflow de Decap (que crearía PRs en ramas
+# separadas); se gestionan con el campo `draft` y las colecciones borradores-*.
+#  - "Publish" → draft: false (visible en el sitio).
+#  - "Guardar como borrador" → draft: true (oculto del sitio, listado en Borradores).
 
 # Backend local para desarrollo: solo se activa en localhost y permite
 # editar los archivos del repo local sin Netlify Identity (requiere `npx decap-server`).
@@ -53,7 +55,7 @@ collections:
     folder: "src/content/categorias"
     create: true
     slug: "{{slug}}"
-    description: "Taxonomía jerárquica para clasificar entradas y proyectos (equivalente a Categorías de WordPress)."
+    description: "Taxonomía jerárquica para clasificar entradas y memorias (equivalente a Categorías de WordPress)."
     view_filters:
       - label: "Raíces"
         field: parent
@@ -78,16 +80,16 @@ collections:
     folder: "src/content/etiquetas"
     create: true
     slug: "{{slug}}"
-    description: "Taxonomía plana de palabras clave para entradas y proyectos (equivalente a Tags de WordPress)."
+    description: "Taxonomía plana de palabras clave para entradas y memorias (equivalente a Tags de WordPress)."
     fields:
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Slug (opcional)", name: "slug", widget: "string", required: false, hint: "Identificador URL-friendly. Si se deja vacío se usa el título." }
       - { label: "Descripción", name: "description", widget: "text", required: false }
 
-  # Custom Post Type: Proyectos del Museo de Memorias Vivas
-  - name: "proyectos"
-    label: "Proyectos del Museo de Memorias Vivas"
-    folder: "src/content/proyectos"
+  # Colección: Memorias del Museo de Memorias Vivas
+  - name: "memorias"
+    label: "Memorias del Museo de Memorias Vivas"
+    folder: "src/content/memorias"
     create: true
     slug: "{{number}}-{{slug}}"
     # Solo entradas publicadas: los borradores viven en su propia colección
@@ -119,7 +121,7 @@ collections:
         display_fields: ["title", "year"]
         required: false
         default: "2026"
-        hint: "Edición del simposio a la que pertenece este proyecto."
+        hint: "Edición del simposio a la que pertenece esta memoria."
       - { label: "Número", name: "number", widget: "number", value_type: "int" }
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Lugar", name: "place", widget: "string" }
@@ -134,7 +136,7 @@ collections:
         display_fields: ["title"]
         multiple: true
         required: false
-        hint: "Selecciona una o varias categorías para clasificar este proyecto."
+        hint: "Selecciona una o varias categorías para clasificar esta memoria."
       - label: "Etiquetas"
         name: "tags"
         widget: "relation"
@@ -144,7 +146,7 @@ collections:
         display_fields: ["title"]
         multiple: true
         required: false
-        hint: "Añade palabras clave relacionadas con este proyecto."
+        hint: "Añade palabras clave relacionadas con esta memoria."
       - { label: "Imagen", name: "image", widget: "image" }
       - { label: "Descripción corta (para tarjetas)", name: "description", widget: "text", required: false, default: "" }
       - { label: "Texto completo (Markdown)", name: "body", widget: "markdown", required: false }
@@ -272,13 +274,13 @@ collections:
       - { label: "Extracto", name: "description", widget: "text", required: false }
       - { label: "Contenido", name: "body", widget: "markdown", required: false }
 
-  - name: "borradores-proyectos"
-    label: "Borradores · Proyectos"
-    label_singular: "Borrador de proyecto"
-    folder: "src/content/proyectos"
+  - name: "borradores-memorias"
+    label: "Borradores · Memorias"
+    label_singular: "Borrador de memoria"
+    folder: "src/content/memorias"
     create: false
     slug: "{{number}}-{{slug}}"
-    description: "Proyectos guardados como borrador. Para publicar: abre el borrador y pulsa Publish."
+    description: "Memorias guardadas como borrador. Para publicar: abre el borrador y pulsa Publish."
     filter: { field: draft, value: true }
     sortable_fields: ["number", "title", "place"]
     fields:
@@ -291,7 +293,7 @@ collections:
         date_format: "DD/MM/YYYY"
         time_format: "HH:mm"
         required: false
-        hint: "Si se establece una fecha futura, el proyecto no se publicará hasta esa fecha."
+        hint: "Si se establece una fecha futura, la memoria no se publicará hasta esa fecha."
       - label: "Simposio"
         name: "simposio"
         widget: "relation"
@@ -301,7 +303,7 @@ collections:
         display_fields: ["title", "year"]
         required: false
         default: "2026"
-        hint: "Edición del simposio a la que pertenece este proyecto."
+        hint: "Edición del simposio a la que pertenece esta memoria."
       - { label: "Número", name: "number", widget: "number", value_type: "int" }
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Lugar", name: "place", widget: "string" }

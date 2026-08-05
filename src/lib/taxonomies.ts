@@ -17,6 +17,10 @@ export interface TaxonomyTerm {
   parent?: string;
 }
 
+export type TaxonomyTreeTerm = TaxonomyTerm & {
+  children: TaxonomyTreeTerm[];
+};
+
 export async function getCategorias(): Promise<TaxonomyTerm[]> {
   const entries = await getCollection('categorias');
   return entries.map((e) => ({
@@ -52,9 +56,9 @@ export function resolveTermTitle(slug: string, map: Map<string, string>): string
   return map.get(slug) || slug;
 }
 
-export function buildTree(terms: TaxonomyTerm[]): TaxonomyTerm[] {
-  const map = new Map<string, TaxonomyTerm & { children: TaxonomyTerm[] }>();
-  const roots: (TaxonomyTerm & { children: TaxonomyTerm[] })[] = [];
+export function buildTree(terms: TaxonomyTerm[]): TaxonomyTreeTerm[] {
+  const map = new Map<string, TaxonomyTreeTerm>();
+  const roots: TaxonomyTreeTerm[] = [];
 
   for (const t of terms) {
     map.set(t.slug, { ...t, children: [] });

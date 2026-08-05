@@ -108,7 +108,7 @@
         }
       });
 
-      var ProyectoPreview = createClass({
+      var MemoriaPreview = createClass({
         render: function () {
           var entry = this.props.entry;
           var number = entry.getIn(['data', 'number']);
@@ -142,11 +142,11 @@
       });
 
       CMS.registerPreviewTemplate('entradas', EntradaPreview);
-      CMS.registerPreviewTemplate('proyectos', ProyectoPreview);
+      CMS.registerPreviewTemplate('memorias', MemoriaPreview);
       // Las colecciones de borradores comparten carpeta y campos, así que
       // usan las mismas vistas previas que sus colecciones publicadas.
       CMS.registerPreviewTemplate('borradores-entradas', EntradaPreview);
-      CMS.registerPreviewTemplate('borradores-proyectos', ProyectoPreview);
+      CMS.registerPreviewTemplate('borradores-memorias', MemoriaPreview);
 
       /* ===== Guardar como borrador (hook oficial de Decap) =====
        * El estado se encapsula en window.__cmsDraftState con un ID de
@@ -194,10 +194,12 @@
           };
         }
       }
+      window.setDraftState = setDraftState;
 
       function isDraftSaveActive() {
         return window.__cmsDraftState && window.__cmsDraftState.active === true;
       }
+      window.isDraftSaveActive = isDraftSaveActive;
 
       // Colecciones que solo pueden editar los administradores.
       var ADMIN_ONLY_COLLECTIONS = ['simposios', 'categorias', 'etiquetas', 'paginas', 'borradores-paginas'];
@@ -284,27 +286,14 @@
       CMS.registerEventListener({
         name: 'prePublish',
         handler: function (event) {
-          var collection = event.entry.get('collection');
+          if (isDraftSaveActive()) return;
+
           if (!currentUserHasRole('admin')) {
             throw new Error('Solo los administradores pueden publicar. Los editores pueden guardar borradores o revisiones.');
           }
         },
       });
 
-      CMS.registerEventListener({
-        name: 'preDelete',
-        handler: function (event) {
-          try {
-            var collection = event.entry.get('collection');
-            if (!currentUserHasRole('admin') && ADMIN_ONLY_COLLECTIONS.indexOf(collection) !== -1) {
-              throw new Error('Solo los administradores pueden eliminar la colección "' + collection + '".');
-            }
-          } catch (e) {
-            console.warn('[CMS RBAC] preDelete error:', e);
-            throw e;
-          }
-        },
-      });
     })();
   </script>
   <style>
@@ -1601,6 +1590,12 @@
     nav[class*="sidebar" i] h3 {
       color: var(--sidebar-heading) !important;
     }
+    .theme-light .wp-sidebar-organized .wp-menu-group-label {
+      color: #111827 !important;
+    }
+    .theme-dark .wp-sidebar-organized .wp-menu-group-label {
+      color: #f8fafc !important;
+    }
     aside a, nav[class*="sidebar" i] a, div[class*="sidebar" i] a {
       color: var(--sidebar-text) !important;
       background: transparent !important;
@@ -1722,6 +1717,231 @@
     }
     .cms-sidebar-actions a, .cms-floating-actions a { color: var(--text) !important; }
     .cms-sidebar-actions a:hover, .cms-floating-actions a:hover { background: var(--surface-alt) !important; color: var(--text) !important; }
+
+    #wp-admin-bar {
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14) !important;
+    }
+    #wp-admin-bar .bar-item,
+    #wp-admin-bar .site-name,
+    #wp-admin-bar .bar-user {
+      border-radius: 12px !important;
+    }
+    #wp-admin-bar .bar-item:hover {
+      transform: translateY(-1px);
+    }
+
+    .wp-sidebar-organized {
+      padding: 8px !important;
+    }
+    .wp-sidebar-organized .wp-menu-group-label {
+      padding: 16px 12px 7px !important;
+      font-size: 10px !important;
+      letter-spacing: 0.1em !important;
+    }
+    .wp-sidebar-organized a {
+      margin: 3px 0 !important;
+      padding: 10px 12px !important;
+      border-radius: 12px !important;
+      gap: 10px !important;
+      transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease !important;
+    }
+    .wp-sidebar-organized a:hover {
+      transform: translateX(2px) !important;
+    }
+    .wp-sidebar-organized a[aria-current="page"],
+    .wp-sidebar-organized a.active {
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.2) !important;
+    }
+    .wp-menu-separator {
+      border-top: 0 !important;
+      height: 1px !important;
+      margin: 10px 8px !important;
+      background: var(--border) !important;
+      opacity: 0.7;
+    }
+
+    [class*="SidebarContainer"] {
+      border-radius: 18px !important;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+      margin: 10px !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+    }
+    [class*="SidebarContainer"] [class*="SidebarNavLink"],
+    [class*="SidebarContainer"] a {
+      border-radius: 10px !important;
+      margin: 2px 8px !important;
+      transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease !important;
+    }
+    [class*="SidebarContainer"] [class*="SidebarNavLink"]:hover,
+    [class*="SidebarContainer"] a:hover {
+      transform: translateX(2px);
+    }
+    [class*="SidebarContainer"] input,
+    aside input[type="search"],
+    aside input[type="text"],
+    nav[class*="sidebar" i] input {
+      border-radius: 11px !important;
+      min-height: 40px !important;
+    }
+
+    div[class*="CollectionTop"]:not([class*="CollectionTopHeading"]):not([class*="CollectionTopDescription"]) {
+      margin: 10px 12px 16px !important;
+      padding: 0 !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 18px !important;
+      background: var(--surface) !important;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+      overflow: hidden !important;
+    }
+    [class*="CollectionTopHeading"] {
+      padding: 20px 20px 6px !important;
+      margin: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      border-radius: 0 !important;
+    }
+    [class*="CollectionTopDescription"] {
+      padding: 0 20px 20px !important;
+      margin: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      border-radius: 0 !important;
+    }
+
+    button,
+    input[type="button"],
+    input[type="submit"],
+    a[class*="button" i],
+    a[role="button"],
+    [role="button"],
+    .button,
+    .btn {
+      border-radius: 10px !important;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease !important;
+    }
+    button:hover,
+    input[type="button"]:hover,
+    input[type="submit"]:hover,
+    a[class*="button" i]:hover,
+    a[role="button"]:hover,
+    .button:hover,
+    .btn:hover {
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12) !important;
+      transform: translateY(-1px);
+    }
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    [role="button"]:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--primary) 24%, transparent) !important;
+      outline-offset: 2px !important;
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select,
+    [class*="Control"] input,
+    [class*="Control"] textarea,
+    [class*="Control"] select {
+      border-radius: 11px !important;
+      min-height: 42px;
+      border-color: var(--input-border) !important;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
+    }
+    textarea {
+      min-height: 110px;
+    }
+    input:not([type="checkbox"]):not([type="radio"]):focus,
+    textarea:focus,
+    select:focus,
+    [class*="Control"] input:focus,
+    [class*="Control"] textarea:focus,
+    [class*="Control"] select:focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent) !important;
+      outline: none !important;
+    }
+
+    [class*="card" i],
+    article[class],
+    [class*="EntryCard"],
+    [class*="CollectionCard"] {
+      border-radius: 16px !important;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
+      overflow: hidden;
+    }
+    [class*="card" i]:hover,
+    article[class]:hover,
+    [class*="EntryCard"]:hover,
+    [class*="CollectionCard"]:hover {
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1) !important;
+    }
+    [class*="CollectionTopHeading"],
+    [class*="CollectionTopDescription"] {
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+    table {
+      border-radius: 14px !important;
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      overflow: hidden !important;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
+    }
+    th:first-child { border-top-left-radius: 14px !important; }
+    th:last-child { border-top-right-radius: 14px !important; }
+    tr:last-child td:first-child { border-bottom-left-radius: 14px !important; }
+    tr:last-child td:last-child { border-bottom-right-radius: 14px !important; }
+
+    .cms-admin-panel {
+      border-radius: 20px !important;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22) !important;
+    }
+    .cms-admin-header,
+    .cms-admin-tabs {
+      padding: 1rem 1.25rem !important;
+    }
+    .cms-admin-tab {
+      border-radius: 9px !important;
+      border-bottom: 0 !important;
+      padding: 0.55rem 0.85rem !important;
+    }
+    .cms-admin-tab.active {
+      background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+    }
+    .cms-admin-list a,
+    .cms-drafts-panel,
+    .cms-draft-item,
+    .cms-sidebar-actions,
+    .cms-floating-actions,
+    .cms-user-name-floating,
+    .cms-user-name-inline {
+      border-radius: 14px !important;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+    }
+    .cms-draft-item {
+      margin: 5px 0 !important;
+    }
+    .cms-toast {
+      border-radius: 12px !important;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2) !important;
+    }
+
+    @media (max-width: 782px) {
+      .wp-sidebar-organized a {
+        padding: 11px 10px !important;
+      }
+      [class*="SidebarContainer"] {
+        margin: 6px !important;
+        border-radius: 14px !important;
+      }
+      .cms-admin-panel {
+        border-radius: 16px !important;
+      }
+    }
   </style>
   <script>
     (function () {
@@ -2395,7 +2615,7 @@
         if (!collection || !slug) {
           body.innerHTML =
             '<h3>Historial de revisiones</h3>' +
-            '<p class="cms-admin-muted">Abre una entrada o proyecto para ver su historial de cambios.</p>' +
+            '<p class="cms-admin-muted">Abre una entrada o memoria para ver su historial de cambios.</p>' +
             '<p class="cms-admin-muted" style="margin-top:0.5rem;">Selecciona una entrada desde la lista de colecciones y vuelve a abrir esta pestaña.</p>';
           return;
         }
@@ -2813,7 +3033,7 @@
         list.innerHTML = '';
         drafts.forEach(function (d) {
           // Los borradores viven en su propia colección filtrada (borradores-*)
-          var linkCollection = (d.collection === 'entradas' || d.collection === 'proyectos')
+          var linkCollection = (d.collection === 'entradas' || d.collection === 'memorias')
             ? 'borradores-' + d.collection
             : d.collection;
           var link = '#/collections/' + linkCollection + '/entries/' + d.slug;
@@ -3024,13 +3244,20 @@
         log('entrada publicada, retirada de borradores recientes:', details.slug);
       };
 
+      function normalizeMenuText(txt) {
+        return (txt || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      }
+
       function findPublishNowItem(root) {
+        var labels = ['publish now', 'publicar ahora'];
         var candidates = root.querySelectorAll('div[role="menuitem"], [role="menuitem"], li, button, div');
         for (var i = 0; i < candidates.length; i++) {
           var el = candidates[i];
-          var txt = (el.textContent || '').trim();
-          if ((txt === 'Publish now' || txt === 'Publicar ahora') && el.children.length <= 3) {
-            return el;
+          var txt = normalizeMenuText(el.textContent || '');
+          for (var j = 0; j < labels.length; j++) {
+            if (txt.indexOf(labels[j]) !== -1) {
+              return el;
+            }
           }
         }
         return null;
@@ -3041,8 +3268,8 @@
         var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
         var t;
         while ((t = walker.nextNode())) {
-          var val = (t.nodeValue || '').trim();
-          if (val === 'Publish now' || val === 'Publicar ahora') {
+          var val = normalizeMenuText(t.nodeValue || '');
+          if (val === 'publish now' || val === 'publicar ahora') {
             t.nodeValue = newText;
             return true;
           }
@@ -3061,6 +3288,7 @@
         var item = publishNow.cloneNode(true);
         item.setAttribute('data-cms-draft-item', 'true');
         replaceItemText(item, 'Guardar como borrador');
+        item.className = publishNow.className || '';
         // Quitar iconos svg del clon para diferenciar la opción
         var svgs = item.querySelectorAll('svg');
         for (var s = 0; s < svgs.length; s++) svgs[s].remove();
@@ -3073,12 +3301,26 @@
           item.addEventListener(evName, function (e) { e.stopPropagation(); }, true);
         });
 
+        function dispatchClick(target) {
+          if (!target) return false;
+          try {
+            if (typeof target.click === 'function') {
+              target.click();
+              return true;
+            }
+            var event = document.createEvent('MouseEvents');
+            event.initMouseEvent('click', true, true, window);
+            target.dispatchEvent(event);
+            return true;
+          } catch (err) {
+            return false;
+          }
+        }
+
         item.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
 
-          // Evitar race condition: si ya hay un guardado de borrador en curso,
-          // no permitir otro clic hasta que termine.
           if (isDraftSaveActive()) {
             showToast('Ya se está guardando un borrador. Espera un momento.', 'warn');
             return;
@@ -3088,11 +3330,11 @@
           var info = getCurrentEntryInfo();
           setDraftState(true, { collection: info.collection, slug: info.slug });
 
-          // Disparar el flujo nativo de guardado SINCRÓNICAMENTE, mientras el
-          // item original "Publish now" sigue montado en el DOM. El hook
-          // preSave fuerza draft: true en los datos antes de persistir.
           try {
-            publishNow.click();
+            var clicked = dispatchClick(publishNow);
+            if (!clicked) {
+              throw new Error('No se pudo activar el botón Publish now');
+            }
             log('Publish now disparado con draft forzado');
           } catch (err) {
             setDraftState(false);
@@ -3100,9 +3342,6 @@
             return;
           }
 
-          // Red de seguridad: si el guardado falla (validación, error de red),
-          // postSave nunca se dispara y el estado podría quedar pillado.
-          // Limpiarlo tras un tiempo prudente para no afectar futuros guardados.
           var txId = window.__cmsDraftState.transactionId;
           setTimeout(function () {
             var state = window.__cmsDraftState || {};
@@ -3271,9 +3510,9 @@
           '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>' +
           '    Entradas' +
           '  </a>' +
-          '  <a href="#/collections/proyectos" class="bar-item">' +
+          '  <a href="#/collections/memorias" class="bar-item">' +
           '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>' +
-          '    Proyectos' +
+          '    Memorias' +
           '  </a>' +
           '  <a href="#/collections/paginas" class="bar-item">' +
           '    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>' +
@@ -3310,12 +3549,12 @@
       var sidebarGroups = {
         'contenido': {
           label: 'CONTENIDO',
-          collections: ['entradas', 'proyectos', 'paginas', 'menus', 'simposios'],
+          collections: ['entradas', 'memorias', 'paginas', 'menus', 'simposios'],
           icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>'
         },
         'borradores': {
           label: 'BORRADORES',
-          collections: ['borradores-entradas', 'borradores-proyectos', 'borradores-paginas'],
+          collections: ['borradores-entradas', 'borradores-memorias', 'borradores-paginas'],
           icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>'
         },
         'taxonomias': {
@@ -3359,6 +3598,7 @@
         // Add each group
         Object.keys(sidebarGroups).forEach(function(groupKey) {
           var group = sidebarGroups[groupKey];
+          if (group.collections.length === 0) return;
 
           // Group label
           var label = document.createElement('div');

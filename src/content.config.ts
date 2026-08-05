@@ -66,8 +66,8 @@ const paginas = defineCollection({
   }),
 });
 
-const proyectos = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/proyectos' }),
+const memorias = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/memorias' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
     publish_date: dateField,
@@ -120,4 +120,4 @@ const menus = defineCollection({
   }),
 });
 
-export const collections = { simposios, categorias, etiquetas, paginas, proyectos, entradas, menus };
+export const collections = { simposios, categorias, etiquetas, paginas, memorias, entradas, menus };

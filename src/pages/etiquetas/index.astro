@@ -1,21 +1,21 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
-import { getEtiquetas, slugify } from '../../lib/taxonomies';
+import { getEtiquetas } from '../../lib/taxonomies';
 
 const etiquetas = await getEtiquetas();
 const entradas = await getCollection('entradas', ({ data }) => !data.draft);
-const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
+const memorias = await getCollection('memorias', ({ data }) => !data.draft);
 
 const usadas = new Set<string>();
 for (const e of entradas) (e.data.tags || []).forEach((t) => usadas.add(t));
-for (const p of proyectos) (p.data.tags || []).forEach((t) => usadas.add(t));
+for (const p of memorias) (p.data.tags || []).forEach((t) => usadas.add(t));
 
 const terms = new Map<string, { title: string; slug: string; count: number }>();
 function countFor(slug: string) {
   return (
     entradas.filter((e) => e.data.tags?.includes(slug)).length +
-    proyectos.filter((p) => p.data.tags?.includes(slug)).length
+    memorias.filter((p) => p.data.tags?.includes(slug)).length
   );
 }
 for (const t of etiquetas) terms.set(t.slug, { title: t.title, slug: t.slug, count: countFor(t.slug) });

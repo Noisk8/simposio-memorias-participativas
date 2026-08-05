@@ -1,11 +1,7 @@
-// eslint-disable-next-line no-unused-vars
-export const handler = async (event: any, _context: any) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Content-Type': 'application/json',
-  };
+import { getCorsHeaders, getVerifiedUser, hasRole, isSafeContentPath } from '../security';
+
+export const handler = async (event: any, context: any) => {
+  const headers = getCorsHeaders(event, 'GET, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers };
@@ -19,14 +15,22 @@ export const handler = async (event: any, _context: any) => {
     };
   }
 
+  const user = getVerifiedUser(context);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
+  }
+  if (!hasRole(user, 'admin') && !hasRole(user, 'editor')) {
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Permisos insuficientes.' }) };
+  }
+
   const params = event.queryStringParameters || {};
   const filePath = params.path;
 
-  if (!filePath) {
+  if (!isSafeContentPath(filePath)) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'Falta el parámetro "path".' }),
+      body: JSON.stringify({ error: 'La ruta solicitada no es válida.' }),
     };
   }
 
@@ -39,9 +43,17 @@ export const handler = async (event: any, _context: any) => {
     };
   }
 
-  const repoOwner = process.env.GITHUB_REPO_OWNER || 'noisk8';
-  const repoName = process.env.GITHUB_REPO_NAME || 'simposio-memorias';
-  const branch = 'main';
+  const repo = process.env.GITHUB_REPO || '';
+  const [repoOwner, repoName] = repo.split('/');
+  const branch = process.env.GITHUB_BRANCH || 'main';
+
+  if (!repoOwner || !repoName) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'GITHUB_REPO no está configurado correctamente.' }),
+    };
+  }
 
   try {
     const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${encodeURIComponent(filePath)}&sha=${branch}&per_page=30`;

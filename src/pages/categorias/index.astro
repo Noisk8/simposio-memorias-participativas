@@ -7,12 +7,12 @@ const categorias = await getCategorias();
 const arbol = buildTree(categorias);
 
 const entradas = await getCollection('entradas', ({ data }) => !data.draft);
-const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
+const memorias = await getCollection('memorias', ({ data }) => !data.draft);
 
 function countFor(slug: string) {
   return (
     entradas.filter((e) => e.data.categories?.includes(slug)).length +
-    proyectos.filter((p) => p.data.categories?.includes(slug)).length
+    memorias.filter((p) => p.data.categories?.includes(slug)).length
   );
 }
 ---

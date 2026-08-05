@@ -18,12 +18,12 @@ Además del CMS en `/admin`, el sitio tiene una página de gestión de coleccion
 1. Inicia sesión en el sitio con un usuario que tenga rol `admin`.
 2. En el header aparecerá el enlace **Admin**.
 3. Haz clic en **Admin** y elige:
-   - **Crear nuevo proyecto** (añade un ítem a la colección existente).
+   - **Crear nuevo memoria** (añade un ítem a la colección existente).
    - **Gestionar colecciones** (ver colecciones y crear nuevas).
 
 También puedes acceder directamente a:
 
-- `/admin/crear-proyecto` — crear un ítem en la colección `proyectos`.
+- `/admin/crear-memoria` — crear un ítem en la colección `memorias`.
 - `/admin/gestion-colecciones` — gestionar colecciones.
 
 ---
@@ -63,7 +63,7 @@ const ponentes = defineCollection({
   }),
 });
 
-export const collections = { proyectos, ponentes };
+export const collections = { memorias, ponentes };
 ```
 
 > Si necesitas campos adicionales o más específicos en el esquema de Astro, edita `src/content.config.ts` manualmente después de crear la colección.

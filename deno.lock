@@ -23,6 +23,8 @@
         "npm:@typescript-eslint/eslint-plugin@^8.62.1",
         "npm:@typescript-eslint/parser@^8.62.1",
         "npm:astro@^7.0.3",
+        "npm:concurrently@^9.1.2",
+        "npm:decap-server@^3.2.1",
         "npm:eslint-plugin-astro@^1.7.0",
         "npm:eslint@^10.6.0",
         "npm:pagefind@^1.5.2",

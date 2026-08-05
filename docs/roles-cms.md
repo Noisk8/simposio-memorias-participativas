@@ -9,7 +9,7 @@ El CMS usa **Decap CMS** (antes Netlify CMS) con autenticación mediante **Netli
 Este proyecto maneja dos roles principales:
 
 - **`admin`**: acceso total al CMS.
-- **`editor`**: acceso limitado, por ejemplo solo a crear y editar proyectos.
+- **`editor`**: acceso limitado, por ejemplo solo a crear y editar memorias.
 
 ---
 
@@ -24,7 +24,7 @@ El panel de Netlify ya no permite editar roles directamente, así que el proyect
 3. Inicia sesión y ve a `/admin/gestion-usuarios`.
 4. Verás la lista de usuarios registrados y podrás asignar o quitar los roles `admin` y `editor` con un clic.
 
-> La página usa la Netlify Function `manage-users`, que permite gestionar usuarios si tu email está en `ADMIN_EMAILS` o si ya tienes el rol `admin`.
+> La página usa la Netlify Function `manage-users`, que exige que el token verificado de Netlify Identity incluya el rol `admin`. `ADMIN_EMAILS` se utiliza únicamente por el hook de registro para asignar el rol inicial.
 
 ### Opción B: Asignación automática al registrarse
 
@@ -49,13 +49,13 @@ Edita `public/admin/config.yml`.
 
 ### Restringir una colección completa
 
-En la colección `proyectos`, ambos roles pueden trabajar:
+En la colección `memorias`, ambos roles pueden trabajar:
 
 ```yaml
 collections:
-  - name: "proyectos"
-    label: "Proyectos del Museo de Memorias Vivas"
-    folder: "src/content/proyectos"
+  - name: "memorias"
+    label: "Memorias del Museo de Memorias Vivas"
+    folder: "src/content/memorias"
     create: true
     roles: ["admin", "editor"]
     fields:
@@ -83,9 +83,9 @@ fields:
 
 ```yaml
 collections:
-  - name: "proyectos"
-    label: "Proyectos"
-    folder: "src/content/proyectos"
+  - name: "memorias"
+    label: "Memorias"
+    folder: "src/content/memorias"
     create: true
     roles: ["admin", "editor"]
     fields:
@@ -104,8 +104,8 @@ collections:
 ```
 
 Con esta configuración:
-- `admin` ve **Proyectos** y **Configuración**.
-- `editor` solo ve **Proyectos**.
+- `admin` ve **Memorias** y **Configuración**.
+- `editor` solo ve **Memorias**.
 
 ---
 

@@ -7,7 +7,6 @@ import {
   getCategorias,
   getEtiquetas,
   slugTitleMap,
-  slugify,
   formatDate,
   sortByDateDesc,
   getParentChain,
@@ -27,11 +26,11 @@ type Props = {
 export const getStaticPaths: GetStaticPaths = async () => {
   const categorias = await getCategorias();
   const entradas = await getCollection('entradas', ({ data }) => !data.draft);
-  const proyectos = await getCollection('proyectos', ({ data }) => !data.draft);
+  const memorias = await getCollection('memorias', ({ data }) => !data.draft);
 
   const usados = new Set<string>();
   for (const e of entradas) (e.data.categories || []).forEach((c) => usados.add(c));
-  for (const p of proyectos) (p.data.categories || []).forEach((c) => usados.add(c));
+  for (const p of memorias) (p.data.categories || []).forEach((c) => usados.add(c));
 
   const terms = new Map<string, TermProps>();
   for (const c of categorias) terms.set(c.slug, { title: c.title, slug: c.slug, description: c.description, parent: c.parent });
@@ -48,14 +47,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
 const { term } = Astro.props;
 
 const entradas = await getCollection('entradas', ({ data }) => !data.draft && data.categories?.includes(term.slug));
-const proyectos = await getCollection('proyectos', ({ data }) => !data.draft && data.categories?.includes(term.slug));
+const memorias = await getCollection('memorias', ({ data }) => !data.draft && data.categories?.includes(term.slug));
 sortByDateDesc(entradas);
-proyectos.sort((a, b) => b.data.number - a.data.number);
+memorias.sort((a, b) => b.data.number - a.data.number);
 
 const catTitles = slugTitleMap(await getCategorias());
 const tagTitles = slugTitleMap(await getEtiquetas());
 const allCategorias = await getCategorias();
-const total = entradas.length + proyectos.length;
+const total = entradas.length + memorias.length;
 
 const breadcrumbs = getParentChain(term.slug, allCategorias);
 ---
@@ -135,11 +134,11 @@ const breadcrumbs = getParentChain(term.slug, allCategorias);
         </div>
       )}
 
-      {proyectos.length > 0 && (
+      {memorias.length > 0 && (
         <div>
-          <h2 class="text-2xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">Proyectos del Museo</h2>
+          <h2 class="text-2xl font-bold text-ugr-green-dark mb-6 font-[family-name:var(--font-heading)]">Memorias del Museo</h2>
           <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {proyectos.map((entry) => (
+            {memorias.map((entry) => (
               <a
                 href={`/museo-memorias/${entry.data.number}`}
                 class="block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-ugr-green/30 transition-all duration-300 group"

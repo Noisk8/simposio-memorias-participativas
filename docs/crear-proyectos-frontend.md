@@ -1,12 +1,12 @@
-# Crear proyectos desde el frontend
+# Crear memorias desde el frontend
 
-Esta funcionalidad permite que un usuario con rol `admin` cree nuevos proyectos directamente desde el sitio web, sin entrar al CMS. El formulario envía los datos a una **Netlify Function** que crea el archivo Markdown en GitHub y dispara un nuevo deploy.
+Esta funcionalidad permite que un usuario con rol `admin` cree nuevos memorias directamente desde el sitio web, sin entrar al CMS. El formulario envía los datos a una **Netlify Function** que crea el archivo Markdown en GitHub y dispara un nuevo deploy.
 
 ---
 
 ## Componentes
 
-- **Página frontend:** `src/pages/admin/crear-proyecto.astro`
+- **Página frontend:** `src/pages/admin/crear-memoria.astro`
 - **Netlify Function:** `netlify/functions/create-proyecto.ts`
 - **Configuración:** `netlify.toml`
 
@@ -33,14 +33,14 @@ En Netlify, ve a **Site settings → Environment variables** y añade:
 ### Cómo crear el token de GitHub
 
 1. Ve a GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic).
-2. Genera un token con el scope `repo`.
-3. Copia el token y guárdalo en Netlify como `GITHUB_TOKEN`.
+2. Genera un token fine-grained limitado a este repositorio, con permiso `Contents: Read and write`.
+3. Copia el token y guárdalo en Netlify como `GITHUB_TOKEN`. Nunca lo guardes en el repositorio.
 
 ---
 
 ## Cómo funciona
 
-1. El admin visita `/admin/crear-proyecto`.
+1. El admin visita `/admin/crear-memoria`.
 2. El frontend verifica el rol usando `window.netlifyIdentity`.
 3. Si el usuario es admin, se muestra el formulario.
 4. Al enviar, el frontend obtiene el JWT de Netlify Identity y lo envía en la cabecera `Authorization`.
@@ -51,7 +51,7 @@ En Netlify, ve a **Site settings → Environment variables** y añade:
 
 ## Formato del archivo creado
 
-La función genera un archivo en `src/content/proyectos/{numero}-{slug}.md` con este formato:
+La función genera un archivo en `src/content/memorias/{numero}-{slug}.md` con este formato:
 
 ```md
 ---
@@ -72,7 +72,7 @@ Texto completo en Markdown.
 ## Limitaciones
 
 - El formulario no sube imágenes automáticamente. Debes subir la imagen a `public/images/` manualmente o mediante el CMS, y luego escribir la ruta pública en el campo.
-- Solo los usuarios con rol `admin` pueden crear proyectos. Los usuarios con rol `editor` no verán el formulario.
+- Solo los usuarios con rol `admin` pueden crear memorias. Los usuarios con rol `editor` no verán el formulario.
 - El número del proyecto debe ser único dentro de la colección para evitar colisiones.
 
 ---

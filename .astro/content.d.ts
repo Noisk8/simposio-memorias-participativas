@@ -155,6 +155,14 @@ declare module 'astro:content' {
   rendered?: RenderedContent;
   filePath?: string;
 }>;
+"memorias": Record<string, {
+  id: string;
+  body?: string;
+  collection: "memorias";
+  data: InferEntrySchema<"memorias">;
+  rendered?: RenderedContent;
+  filePath?: string;
+}>;
 "menus": Record<string, {
   id: string;
   body?: string;
@@ -168,14 +176,6 @@ declare module 'astro:content' {
   body?: string;
   collection: "paginas";
   data: InferEntrySchema<"paginas">;
-  rendered?: RenderedContent;
-  filePath?: string;
-}>;
-"proyectos": Record<string, {
-  id: string;
-  body?: string;
-  collection: "proyectos";
-  data: InferEntrySchema<"proyectos">;
   rendered?: RenderedContent;
   filePath?: string;
 }>;

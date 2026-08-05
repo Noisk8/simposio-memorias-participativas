@@ -1,10 +1,7 @@
+import { getCorsHeaders, getVerifiedUser, hasRole } from '../security';
+
 export const handler = async (event: any, context: any) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
-  };
+  const headers = getCorsHeaders(event, 'POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers };
@@ -14,16 +11,15 @@ export const handler = async (event: any, context: any) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Método no permitido' }) };
   }
 
-  const { user } = context.clientContext || {};
-  const roles = user?.app_metadata?.roles || user?.roles || [];
-  const adminEmails = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = roles.includes('admin') || adminEmails.includes((user?.email || '').toLowerCase());
+  const user = getVerifiedUser(context);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
+  }
+
+  const isAdmin = hasRole(user, 'admin');
 
   if (!isAdmin) {
-    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear proyectos.' }) };
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear memorias.' }) };
   }
 
   let payload;
@@ -34,12 +30,26 @@ export const handler = async (event: any, context: any) => {
   }
 
   const { number, title, place, author, collective, image, description, body } = payload;
+  const textFields = { title, place, author, collective, image, description, body };
+  const maxLengths = { title: 180, place: 180, author: 180, collective: 240, image: 180, description: 1000, body: 100000 };
 
-  if (!number || !title || !place || !image) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Faltan campos obligatorios: número, título, lugar e imagen.' }) };
+  if (!Number.isInteger(number) || number < 1 || number > 999999) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'El número debe ser un entero positivo.' }) };
+  }
+  if (!title || !place || !image) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Faltan campos obligatorios: título, lugar e imagen.' }) };
+  }
+  for (const [field, value] of Object.entries(textFields)) {
+    if (value !== undefined && value !== null && String(value).length > maxLengths[field as keyof typeof maxLengths]) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: `El campo ${field} excede su longitud máxima.` }) };
+    }
+  }
+  if (!/^\/images\/[a-z0-9][a-z0-9_./-]*\.(?:avif|gif|jpe?g|png|webp)$/i.test(String(image).trim())) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'La imagen debe ser una ruta pública válida dentro de /images/.' }) };
   }
 
   const safeTitle = String(title).trim();
+  const yamlString = (value: unknown) => JSON.stringify(String(value ?? '').trim());
   const slug = safeTitle
     .toLowerCase()
     .normalize('NFD')
@@ -47,18 +57,18 @@ export const handler = async (event: any, context: any) => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-  const fileName = `${number}-${slug || 'proyecto'}.md`;
-  const filePath = `src/content/proyectos/${fileName}`;
+  const fileName = `${number}-${slug || 'memoria'}.md`;
+  const filePath = `src/content/memorias/${fileName}`;
 
   const frontmatter = [
     '---',
     `number: ${number}`,
-    `title: "${safeTitle}"`,
-    `place: "${String(place).trim()}"`,
-    `author: "${String(author || '').trim()}"`,
-    `collective: "${String(collective || '').trim()}"`,
-    `image: "${String(image).trim()}"`,
-    `description: "${String(description || '').trim()}"`,
+    `title: ${yamlString(safeTitle)}`,
+    `place: ${yamlString(place)}`,
+    `author: ${yamlString(author)}`,
+    `collective: ${yamlString(collective)}`,
+    `image: ${yamlString(image)}`,
+    `description: ${yamlString(description)}`, 
     '---',
     '',
     String(body || '').trim(),
@@ -84,15 +94,15 @@ export const handler = async (event: any, context: any) => {
         'X-GitHub-Api-Version': '2022-11-28',
       },
       body: JSON.stringify({
-        message: `Crear proyecto desde el frontend: ${safeTitle}`,
+        message: `Crear memoria desde el frontend: ${safeTitle}`,
         content,
         branch,
       }),
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      return { statusCode: response.status, headers, body: JSON.stringify({ error: 'Error de GitHub', details: text }) };
+      console.error('[create-memoria] GitHub API error:', response.status);
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'No se pudo guardar la memoria.' }) };
     }
 
     const data = await response.json();

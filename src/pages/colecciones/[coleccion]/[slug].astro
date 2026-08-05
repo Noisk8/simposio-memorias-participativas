@@ -13,7 +13,7 @@ type Props = {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const SPECIAL = ['simposios', 'paginas', 'proyectos', 'categorias', 'etiquetas'];
+  const SPECIAL = ['simposios', 'paginas', 'memorias', 'categorias', 'etiquetas'];
   const contentDir = path.resolve('src/content');
   const folders = fs
     .readdirSync(contentDir, { withFileTypes: true })

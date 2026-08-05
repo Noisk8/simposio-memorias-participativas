@@ -24,7 +24,7 @@ export async function getSimposioBySlug(slug: string): Promise<Simposio | null> 
   return simposios.find((s) => s.data.slug === slug) || null;
 }
 
-/** Filtra un array de entradas/proyectos/páginas por el slug de un simposio. */
+/** Filtra un array de entradas/memorias/páginas por el slug de un simposio. */
 export function filterBySimposio<T extends { data: { simposio?: string } }>(
   entries: T[],
   slug: string

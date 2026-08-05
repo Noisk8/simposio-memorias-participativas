@@ -6,7 +6,7 @@
  *
  * A diferencia de la versión anterior, este script:
  *   - No destruye esquemas existentes: solo añade carpetas nuevas.
- *   - Respeta la arquitectura tipo WordPress (categorias, etiquetas, entradas, proyectos).
+ *   - Respeta la arquitectura tipo WordPress (categorias, etiquetas, entradas, memorias).
  *   - Genera un esquema genérico para cualquier carpeta nueva que no tenga esquema conocido.
  *
  * Uso: node scripts/sync-collections.mjs
@@ -94,8 +94,8 @@ const KNOWN_SCHEMAS = {
     description: z.string().optional().default(''),
   }),
 });`,
-  proyectos: `const proyectos = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/proyectos' }),
+  memorias: `const memorias = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/memorias' }),
   schema: z.object({
     draft: z.boolean().optional().default(false),
     publish_date: dateField,

@@ -16,6 +16,7 @@ export default defineConfig({
     '/noticias': '/entradas',
     '/noticias/[slug]': '/entradas/[slug]',
     '/admin': '/admin/index.html',
+    '/admin/crear-proyecto': '/admin/crear-memoria',
   },
 
   fonts: [

@@ -9,6 +9,7 @@
     "sync": "node scripts/sync-collections.mjs",
     "dev": "node scripts/sync-collections.mjs && astro dev",
     "dev:cms": "node scripts/sync-collections.mjs && concurrently -k \"decap-server\" \"astro dev\"",
+    "dev:netlify-cms": "node scripts/sync-collections.mjs && concurrently -k \"decap-server\" \"netlify dev\"",
     "cms": "decap-server",
     "build": "node scripts/sync-collections.mjs && astro build && npx pagefind --site dist",
     "preview": "astro preview",

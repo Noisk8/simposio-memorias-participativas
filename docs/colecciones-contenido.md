@@ -14,7 +14,7 @@ Las colecciones son grupos de archivos de contenido (por defecto Markdown) ubica
 
 ---
 
-## Colección actual: `proyectos`
+## Colección actual: `memorias`
 
 ### Definición en `src/content.config.ts`
 
@@ -23,8 +23,8 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
-const proyectos = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/proyectos' }),
+const memorias = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/memorias' }),
   schema: z.object({
     number: z.number(),
     title: z.string(),
@@ -36,12 +36,12 @@ const proyectos = defineCollection({
   }),
 });
 
-export const collections = { proyectos };
+export const collections = { memorias };
 ```
 
 ### Estructura de un archivo de la colección
 
-Ubicación: `src/content/proyectos/1-arte-sacro-social.md`
+Ubicación: `src/content/memorias/1-arte-sacro-social.md`
 
 ```md
 ---
@@ -86,7 +86,7 @@ const publicaciones = defineCollection({
   }),
 });
 
-export const collections = { proyectos, publicaciones };
+export const collections = { memorias, publicaciones };
 ```
 
 ### 3. Crear archivos de contenido
@@ -197,7 +197,7 @@ El proyecto usa Tailwind CSS. Para mantener la coherencia visual, se recomienda 
 - Botones: `btn-green`.
 - Tarjetas: `card-shadow`.
 
-Ejemplo de tarjeta para la colección `proyectos`:
+Ejemplo de tarjeta para la colección `memorias`:
 
 ```astro
 <div class="card-shadow bg-white rounded-xl overflow-hidden">

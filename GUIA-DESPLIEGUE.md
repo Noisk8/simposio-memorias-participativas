@@ -166,10 +166,10 @@ El CMS incluye las siguientes colecciones (equivalentes a WordPress):
 |-----------|-------------|
 | **Categorías** | Taxonomía jerárquica (padre/hijo). |
 | **Etiquetas** | Taxonomía plana de palabras clave. |
-| **Proyectos** | Custom post type del Museo de Memorias Vivas. |
+| **Memorias** | Custom post type del Museo de Memorias Vivas. |
 | **Entradas** | Posts genéricos del sitio. |
 | **Borradores · Entradas** | Filtro de entradas con `draft: true`. |
-| **Borradores · Proyectos** | Filtro de proyectos con `draft: true`. |
+| **Borradores · Memorias** | Filtro de memorias con `draft: true`. |
 
 > El campo `draft` es interno y se gestiona automáticamente con **Publish** (publica) y **Guardar como borrador** (borrador).
 
@@ -179,9 +179,9 @@ El CMS incluye las siguientes colecciones (equivalentes a WordPress):
 2. Login con el email invitado en Netlify Identity
 3. Ver el panel con las colecciones:
    - **Entradas**: crear/editar posts
-   - **Proyectos del Museo de Memorias Vivas**: crear/editar proyectos
+   - **Memorias del Museo de Memorias Vivas**: crear/editar memorias
    - **Categorías/Etiquetas**: gestionar taxonomías
-   - **Borradores · Entradas/Proyectos**: gestionar borradores
+   - **Borradores · Entradas/Memorias**: gestionar borradores
 
 ### Cómo crear contenido
 

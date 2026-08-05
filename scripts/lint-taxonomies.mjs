@@ -3,8 +3,8 @@
  *
  * Valida la integridad de las relaciones entre taxonomías y contenido.
  * Detecta:
- *   1. Categorías/etiquetas usadas en entradas o proyectos sin documento .md propio.
- *   2. Documentos de taxonomía sin ninguna entrada o proyecto asociado.
+ *   1. Categorías/etiquetas usadas en entradas o memorias sin documento .md propio.
+ *   2. Documentos de taxonomía sin ninguna entrada o memoria asociado.
  *   3. Posibles duplicados (mismo slug o mismo title).
  *
  * Uso: node scripts/lint-taxonomies.mjs
@@ -35,7 +35,6 @@ function parseFrontmatter(content) {
   const data = {};
   const lines = yaml.split('\n');
   let currentKey = null;
-  let currentArray = null;
   for (const line of lines) {
     if (/^\s*#/.test(line)) continue;
     const arrayItem = line.match(/^\s*-\s+(.+)/);
@@ -82,7 +81,7 @@ function main() {
   const categorias = readDirFiles('categorias');
   const etiquetas = readDirFiles('etiquetas');
   const entradas = readDirFiles('entradas');
-  const proyectos = readDirFiles('proyectos');
+  const memorias = readDirFiles('memorias');
 
   // Build slug→term maps
   const catBySlug = new Map();
@@ -105,7 +104,7 @@ function main() {
   const usedCatSlugs = new Set();
   const usedTagSlugs = new Set();
 
-  for (const entry of [...entradas, ...proyectos]) {
+  for (const entry of [...entradas, ...memorias]) {
     const cats = entry.data.categories || [];
     const tags = entry.data.tags || [];
     for (const c of cats) usedCatSlugs.add(c);
@@ -129,13 +128,13 @@ function main() {
   // 2. Documentos de taxonomía sin uso
   for (const [slug, c] of catBySlug) {
     if (!usedCatSlugs.has(slug)) {
-      console.warn(`⚠ Categoría "${c.data.title}" (slug: ${slug}) no tiene ninguna entrada o proyecto asociado`);
+      console.warn(`⚠ Categoría "${c.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`);
       warnings++;
     }
   }
   for (const [slug, t] of tagBySlug) {
     if (!usedTagSlugs.has(slug)) {
-      console.warn(`⚠ Etiqueta "${t.data.title}" (slug: ${slug}) no tiene ninguna entrada o proyecto asociado`);
+      console.warn(`⚠ Etiqueta "${t.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`);
       warnings++;
     }
   }

@@ -9,56 +9,25 @@
  *      (context.clientContext.identity.token), que es el único con permisos
  *      para el endpoint /admin/users.
  */
+import { getCorsHeaders, getVerifiedUser, hasRole } from '../security';
+
 export const handler = async (event: any, context: any) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Content-Type': 'application/json',
-  };
+  const headers = getCorsHeaders(event, 'GET, POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers };
   }
 
-  // ── Extraer el JWT del header Authorization ──────────────────────────────
-  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
-  const userToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  if (!userToken) {
+  const clientUser = getVerifiedUser(context);
+  if (!clientUser) {
     return {
       statusCode: 401,
       headers,
-      body: JSON.stringify({ error: 'Debes iniciar sesión.' }),
+      body: JSON.stringify({ error: 'Autenticación requerida.' }),
     };
   }
 
-  // ── Verificar que el usuario tiene rol admin ──────────────────────────────
-  // En Netlify Functions, clientContext.user contiene los datos del JWT verificados.
-  const clientUser = context?.clientContext?.user;
-
-  // Fallback: decodificar el JWT manualmente (solo payload, sin verificar firma)
-  // para obtener email y roles cuando estamos en local sin clientContext.
-  let email = clientUser?.email || '';
-  let roles: string[] = clientUser?.app_metadata?.roles || clientUser?.roles || [];
-
-  if (!clientUser) {
-    try {
-      const payloadB64 = userToken.split('.')[1];
-      const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString('utf-8'));
-      email = payload.email || payload.sub || '';
-      roles = payload.app_metadata?.roles || payload['https://netlify/roles'] || [];
-    } catch {
-      // Si no se puede decodificar, seguimos con arrays vacíos
-    }
-  }
-
-  const adminEmails = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  const isAdmin = roles.includes('admin') || adminEmails.includes(email.toLowerCase());
+  const isAdmin = hasRole(clientUser, 'admin');
 
   if (!isAdmin) {
     return {
@@ -89,10 +58,14 @@ export const handler = async (event: any, context: any) => {
   }
 
   const identity = context?.clientContext?.identity;
-  const identityUrl =
-    identity?.url ||
-    process.env.IDENTITY_URL ||
-    `https://${process.env.URL?.replace(/^https?:\/\//, '') || 'test-smp-v1.netlify.app'}/.netlify/identity`;
+  const identityUrl = identity?.url || process.env.IDENTITY_URL || '';
+  if (!identityUrl) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Identity no está configurado en este entorno.' }),
+    };
+  }
 
   // El token de operador de Identity puede venir como string o como objeto
   // con propiedad access_token (GoTrue JS).
@@ -155,7 +128,7 @@ export const handler = async (event: any, context: any) => {
       }
 
       const { userId, roles: newRoles } = payload;
-      if (!userId || !Array.isArray(newRoles)) {
+      if (typeof userId !== 'string' || !userId || !Array.isArray(newRoles)) {
         return {
           statusCode: 400,
           headers,
@@ -164,16 +137,57 @@ export const handler = async (event: any, context: any) => {
       }
 
       const allowedRoles = ['admin', 'editor'];
-      const invalid = newRoles.filter((r: string) => !allowedRoles.includes(r));
-      if (invalid.length > 0) {
+      const invalid = newRoles.filter((role: unknown) => typeof role !== 'string' || !allowedRoles.includes(role));
+      if (invalid.length > 0 || newRoles.length > allowedRoles.length) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: `Roles no válidos: ${invalid.join(', ')}` }),
+          body: JSON.stringify({ error: 'La lista de roles no es válida.' }),
         };
       }
 
-      const res = await fetch(`${identityUrl}/admin/users/${userId}`, {
+      const currentUserId = clientUser.id || clientUser.sub;
+      if (currentUserId && userId === currentUserId && !newRoles.includes('admin')) {
+        return {
+          statusCode: 409,
+          headers,
+          body: JSON.stringify({ error: 'No puedes quitarte tu propio rol de administrador.' }),
+        };
+      }
+
+      const usersRes = await fetch(`${identityUrl}/admin/users?per_page=100`, {
+        headers: adminHeaders,
+      });
+      if (!usersRes.ok) {
+        return {
+          statusCode: 502,
+          headers,
+          body: JSON.stringify({ error: 'No se pudo comprobar el estado actual de los usuarios.' }),
+        };
+      }
+      const usersData = await usersRes.json();
+      const targetUser = (usersData.users || []).find((user: any) => user.id === userId);
+      if (!targetUser) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Usuario no encontrado.' }),
+        };
+      }
+
+      const adminCount = (usersData.users || []).filter((user: any) =>
+        Array.isArray(user.app_metadata?.roles) && user.app_metadata.roles.includes('admin')
+      ).length;
+      const targetIsAdmin = Array.isArray(targetUser.app_metadata?.roles) && targetUser.app_metadata.roles.includes('admin');
+      if (targetIsAdmin && !newRoles.includes('admin') && adminCount <= 1) {
+        return {
+          statusCode: 409,
+          headers,
+          body: JSON.stringify({ error: 'Debe existir al menos un administrador activo.' }),
+        };
+      }
+
+      const res = await fetch(`${identityUrl}/admin/users/${encodeURIComponent(userId)}`, {
         method: 'PUT',
         headers: adminHeaders,
         body: JSON.stringify({ app_metadata: { roles: newRoles } }),
