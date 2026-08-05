@@ -26,8 +26,9 @@ Los paneles propios (`/admin/gestion-usuarios`, `/admin/gestion-colecciones`, `/
 2. Añade tu email a la tabla `public.admin_emails` **antes** de registrarte, para recibir el rol `admin` al crear la cuenta.
 3. Inicia sesión y ve a `/admin/gestion-usuarios`.
 4. Verás la lista de usuarios registrados en Supabase y podrás asignar o quitar los roles `admin` y `editor` con un clic.
+5. En el formulario **Crear usuario**, introduce nombre, email, contraseña y rol inicial. El usuario se crea confirmado y puede iniciar sesión inmediatamente.
 
-> La página usa la Netlify Function `manage-users`, que verifica el JWT de Supabase y exige rol `admin` (leído de `public.user_roles`).
+> La página usa la Netlify Function `manage-users`, que verifica el JWT de Supabase y exige rol `admin` (leído de `public.user_roles`). La contraseña solo viaja por HTTPS hasta la función y nunca se registra en logs.
 
 ### Opción B: Asignación automática al registrarse
 

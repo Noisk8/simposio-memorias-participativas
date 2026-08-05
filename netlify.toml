@@ -7,3 +7,8 @@
 
 [functions]
   directory = "netlify/functions"
+
+[dev]
+  command = "astro dev"
+  targetPort = 4321
+  port = 8888

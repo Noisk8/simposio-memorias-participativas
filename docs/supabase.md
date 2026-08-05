@@ -48,6 +48,7 @@ Las mismas variables; Astro y Netlify CLI las cargan automáticamente.
 2. Verás el formulario de **Iniciar sesión**: usa **Sign up** creando la cuenta desde la página (si el proveedor Email está activo en **Auth → Providers**, que es lo habitual).
 3. Confirma el email si la confirmación está habilitada (**Auth → Sign In / Up → Confirm email**).
 4. Al entrar se muestra el panel. Si tu email estaba en `admin_emails`, el trigger ya te dio rol `admin` y podrás asignar roles a otros usuarios.
+5. Desde la tarjeta **Crear usuario** del panel puedes crear cuentas confirmadas con rol inicial `admin` o `editor`.
 
 ## 6. Opciones de Auth recomendadas
 

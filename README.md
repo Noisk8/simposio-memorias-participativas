@@ -49,6 +49,24 @@ Para trabajar en páginas, estilos y contenido sin funciones Netlify:
 npm run dev
 ```
 
+### Backend local con Supabase y Netlify Functions
+
+Para ejecutar Astro junto con las Netlify Functions —incluidos los endpoints que validan usuarios y roles contra Supabase— copia `.env.example` a `.env` y completa las variables. La clave `SUPABASE_SERVICE_ROLE_KEY` solo debe existir en `.env` o en Netlify; nunca se expone al navegador.
+
+```bash
+cp .env.example .env
+# Edita .env y añade las credenciales de tu proyecto Supabase
+npm run dev:netlify
+```
+
+Abre la aplicación en:
+
+```text
+http://localhost:8888
+```
+
+El backend local queda disponible bajo `/.netlify/functions/*`. La URL pública y la anon key se inyectan también en `/admin/supabase-config.js`, mientras que la service role key solo la usa el backend.
+
 ### CMS local y Netlify Dev
 
 Para trabajar simultáneamente con Decap CMS, `decap-server`, Astro y Netlify Functions:

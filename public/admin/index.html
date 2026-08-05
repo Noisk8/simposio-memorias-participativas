@@ -652,6 +652,15 @@
       color: #72aee6 !important;
     }
 
+    .wp-sidebar-search-top {
+      order: -1 !important;
+      display: block !important;
+      width: auto !important;
+      margin: 0.75rem 0.85rem 0.9rem !important;
+      padding: 0 !important;
+    }
+    .wp-sidebar-search-top input { margin-top: 0 !important; }
+
     /* Sidebar separator */
     .wp-menu-separator {
       border-top: 1px solid #2c3338 !important;
@@ -1015,6 +1024,92 @@
     }
     .theme-dark .cms-admin-overlay {
       background: rgba(15, 23, 42, 0.92) !important;
+    }
+    .cms-welcome-dashboard {
+      position: fixed;
+      top: var(--wp-admin-bar-height);
+      left: 230px;
+      right: 0;
+      bottom: 0;
+      z-index: 8000;
+      overflow-y: auto;
+      padding: clamp(1.5rem, 4vw, 3.5rem);
+      background: var(--bg) !important;
+      color: var(--text) !important;
+    }
+    .cms-welcome-inner { max-width: 1080px; margin: 0 auto; }
+    .cms-welcome-hero {
+      padding: clamp(1.5rem, 4vw, 2.5rem);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    }
+    .cms-welcome-eyebrow { margin: 0 0 0.45rem; color: var(--primary); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .cms-welcome-hero h1 { margin: 0; color: var(--text); font-size: clamp(1.6rem, 3vw, 2.35rem); line-height: 1.15; }
+    .cms-welcome-hero p { margin: 0.75rem 0 0; color: var(--muted); font-size: 1rem; }
+    .cms-welcome-section { margin-top: 1.75rem; }
+    .cms-welcome-section h2 { margin: 0 0 0.8rem; color: var(--text); font-size: 1.05rem; }
+    .cms-welcome-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem; }
+    .cms-welcome-card {
+      display: block;
+      min-height: 115px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.8rem;
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      text-decoration: none !important;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
+    .cms-welcome-card:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1); }
+    .cms-welcome-card strong { display: block; margin-bottom: 0.35rem; color: var(--text); font-size: 0.98rem; }
+    .cms-welcome-card span { display: block; color: var(--muted); font-size: 0.82rem; line-height: 1.4; }
+    .cms-welcome-card.primary { border-color: var(--primary); background: var(--primary) !important; color: var(--primary-contrast) !important; }
+    .cms-welcome-card.primary strong, .cms-welcome-card.primary span { color: var(--primary-contrast) !important; }
+    .cms-welcome-note { margin: 1.5rem 0 0; color: var(--muted); font-size: 0.82rem; }
+    .cms-welcome-dismiss {
+      float: right;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.7rem;
+      background: var(--surface) !important;
+      color: var(--muted) !important;
+      cursor: pointer;
+      font-size: 0.78rem;
+    }
+    .cms-welcome-dismiss:hover { border-color: var(--primary); color: var(--text) !important; }
+    .cms-welcome-tour-button { margin-top: 1.25rem; border: 0; border-radius: 0.55rem; padding: 0.7rem 1rem; background: var(--primary); color: var(--primary-contrast); cursor: pointer; font-weight: 700; }
+    .cms-tour-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.68);
+    }
+    .cms-tour-dialog { width: min(100%, 560px); overflow: hidden; border: 1px solid var(--border); border-radius: 1rem; background: var(--surface) !important; color: var(--text) !important; box-shadow: 0 24px 70px rgba(0,0,0,0.3); }
+    .cms-tour-progress { height: 5px; background: var(--surface-alt); }
+    .cms-tour-progress span { display: block; height: 100%; background: var(--primary); transition: width 0.2s ease; }
+    .cms-tour-content { padding: 1.75rem; }
+    .cms-tour-content h2 { margin: 0 0 0.7rem; color: var(--text); font-size: 1.35rem; }
+    .cms-tour-content p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
+    .cms-tour-step { margin-bottom: 1.5rem; color: var(--primary); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .cms-tour-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.75rem; border-top: 1px solid var(--border); background: var(--surface-alt) !important; }
+    .cms-tour-footer button { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.6rem 0.9rem; background: var(--surface) !important; color: var(--text) !important; cursor: pointer; font-weight: 600; }
+    .cms-tour-footer button:hover { border-color: var(--primary); }
+    .cms-tour-preference { display: flex; align-items: flex-start; gap: 0.45rem; max-width: 250px; color: var(--muted); font-size: 0.72rem; line-height: 1.3; cursor: pointer; }
+    .cms-tour-preference input { margin-top: 0.1rem; accent-color: var(--primary); }
+    .cms-tour-footer .cms-tour-next { border-color: var(--primary); background: var(--primary) !important; color: var(--primary-contrast) !important; }
+    .cms-tour-skip { border: 0 !important; background: transparent !important; color: var(--muted) !important; font-size: 0.8rem; }
+    @media (max-width: 782px) {
+      .cms-welcome-dashboard { left: 0; padding: 1rem; }
     }
     .cms-admin-panel {
       background: var(--surface) !important;
@@ -2469,6 +2564,187 @@
         if (overlay) overlay.remove();
       }
 
+      var CMS_WELCOME_DISMISSED_KEY = 'cms_welcome_dismissed_';
+      var CMS_TOUR_COMPLETED_KEY = 'cms_admin_tour_completed_';
+      var CMS_TOUR_SUPPRESSED_KEY = 'cms_admin_tour_suppressed_';
+
+      function userStorageKey(prefix, user) {
+        return prefix + ((user && (user.id || user.email)) || 'guest');
+      }
+
+      function readStorageFlag(key) {
+        try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
+      }
+
+      function writeStorageFlag(key) {
+        try { localStorage.setItem(key, '1'); } catch (e) {}
+      }
+
+      function isWelcomeDismissed(user) {
+        return readStorageFlag(userStorageKey(CMS_WELCOME_DISMISSED_KEY, user));
+      }
+
+      function isTourCompleted(user) {
+        return readStorageFlag(userStorageKey(CMS_TOUR_COMPLETED_KEY, user));
+      }
+
+      function isTourSuppressed(user) {
+        return readStorageFlag(userStorageKey(CMS_TOUR_SUPPRESSED_KEY, user));
+      }
+
+      function dismissWelcome(user) {
+        writeStorageFlag(userStorageKey(CMS_WELCOME_DISMISSED_KEY, user));
+        var dashboard = document.querySelector('.cms-welcome-dashboard');
+        if (dashboard) dashboard.remove();
+      }
+
+      function bindWelcomeEscape() {
+        if (window.__cmsWelcomeEscapeBound) return;
+        window.__cmsWelcomeEscapeBound = true;
+        document.addEventListener('keydown', function (event) {
+          if (event.key !== 'Escape') return;
+          var tour = document.querySelector('.cms-tour-overlay');
+          if (tour) {
+            var skip = tour.querySelector('.cms-tour-skip');
+            if (skip) skip.click();
+            return;
+          }
+          var dashboard = document.querySelector('.cms-welcome-dashboard');
+          if (dashboard) dashboard.remove();
+        });
+      }
+
+      function startWelcomeTour(user) {
+        bindWelcomeEscape();
+        if (!user || document.querySelector('.cms-tour-overlay')) return;
+        var admin = isAdmin(user);
+        var steps = [
+          { title: 'Bienvenido/a al panel', text: 'Este panel sirve para gestionar los contenidos de la Red Internacional de Memorias Participativas. En cada paso te explicaremos qué puedes hacer y dónde encontrarlo.' },
+          { title: 'La pantalla de Inicio', text: 'Aquí encontrarás accesos directos para crear contenidos y enlaces agrupados por finalidad. Si cierras esta pantalla, puedes volver a Inicio desde la barra superior.' },
+          { title: 'Crear una entrada', text: 'Pulsa Crear entrada para redactar una noticia, artículo o novedad. Completa el título, el contenido y las categorías antes de guardar.' },
+          { title: 'Añadir una memoria', text: 'Pulsa Añadir memoria para incorporar una pieza al Museo de Memorias Vivas. Puedes añadir su título, descripción, imagen y contenido.' },
+          { title: 'Guardar y revisar', text: 'Si eres editor, guarda el trabajo como borrador para que un administrador lo revise. Los borradores aparecen en el grupo BORRADORES del menú lateral.' },
+          { title: 'Buscar contenidos', text: 'Utiliza el buscador situado en la parte superior del menú lateral para localizar rápidamente una entrada, memoria, página o colección.' },
+        ];
+        if (admin) steps.push({ title: 'Gestionar el sitio', text: 'Como administrador puedes crear usuarios, asignar los roles admin o editor, gestionar colecciones y publicar los contenidos revisados.' });
+        steps.push({ title: 'Ya puedes empezar', text: admin ? 'Elige una acción para comenzar. Puedes repetir esta guía desde el menú de usuario → Guía de uso.' : 'Elige una acción para comenzar. Puedes repetir esta guía desde el menú de usuario → Guía de uso.' });
+
+        var current = 0;
+        var overlay = document.createElement('div');
+        overlay.className = 'cms-tour-overlay';
+        overlay.innerHTML =
+          '<div class="cms-tour-dialog" role="dialog" aria-modal="true" aria-labelledby="cms-tour-title">' +
+          '  <div class="cms-tour-progress"><span></span></div>' +
+          '  <div class="cms-tour-content"><div class="cms-tour-step"></div><h2 id="cms-tour-title"></h2><p></p></div>' +
+          '  <div class="cms-tour-footer"><label class="cms-tour-preference"><input type="checkbox" class="cms-tour-dont-show" /> No mostrar automáticamente en mi próximo inicio de sesión</label><div><button type="button" class="cms-tour-skip">Saltar guía</button> <button type="button" class="cms-tour-back">Atrás</button> <button type="button" class="cms-tour-next">Siguiente</button></div></div>' +
+          '</div>';
+        document.body.appendChild(overlay);
+
+        var progress = overlay.querySelector('.cms-tour-progress span');
+        var stepLabel = overlay.querySelector('.cms-tour-step');
+        var title = overlay.querySelector('#cms-tour-title');
+        var text = overlay.querySelector('.cms-tour-content p');
+        var back = overlay.querySelector('.cms-tour-back');
+        var next = overlay.querySelector('.cms-tour-next');
+        var dontShow = overlay.querySelector('.cms-tour-dont-show');
+
+        function finish(completed) {
+          if (completed || dontShow.checked) writeStorageFlag(userStorageKey(CMS_TOUR_COMPLETED_KEY, user));
+          if (dontShow.checked) writeStorageFlag(userStorageKey(CMS_TOUR_SUPPRESSED_KEY, user));
+          overlay.remove();
+        }
+        function renderStep() {
+          var step = steps[current];
+          stepLabel.textContent = 'Guía de inicio · ' + (current + 1) + ' de ' + steps.length;
+          title.textContent = step.title;
+          text.textContent = step.text;
+          progress.style.width = ((current + 1) / steps.length * 100) + '%';
+          back.style.visibility = current === 0 ? 'hidden' : 'visible';
+          next.textContent = current === steps.length - 1 ? 'Terminar' : 'Siguiente';
+        }
+        overlay.querySelector('.cms-tour-skip').addEventListener('click', function () { finish(false); });
+        back.addEventListener('click', function () { if (current > 0) { current--; renderStep(); } });
+        next.addEventListener('click', function () { if (current < steps.length - 1) { current++; renderStep(); } else finish(true); });
+        overlay.addEventListener('click', function (event) { if (event.target === overlay) finish(false); });
+        renderStep();
+      }
+
+      function isWelcomeRoute() {
+        var hash = window.location.hash || '';
+        return hash === '' || hash === '#' || hash === '#/';
+      }
+
+      function renderWelcomeDashboard(user) {
+        bindWelcomeEscape();
+        var existing = document.querySelector('.cms-welcome-dashboard');
+        if (existing) existing.remove();
+        if (!user || !isWelcomeRoute() || isWelcomeDismissed(user)) return;
+
+        var admin = isAdmin(user);
+        var name = getUserName(user).split(/\s+/)[0];
+        var dashboard = document.createElement('section');
+        dashboard.className = 'cms-welcome-dashboard';
+        dashboard.setAttribute('aria-label', 'Inicio del panel');
+        dashboard.innerHTML =
+          '<div class="cms-welcome-inner">' +
+          '  <div class="cms-welcome-hero">' +
+          '    <button type="button" class="cms-welcome-dismiss" id="cms-welcome-dismiss">No volver a mostrar</button>' +
+          '    <p class="cms-welcome-eyebrow">Panel de administración</p>' +
+          '    <h1>Hola, ' + escapeHtml(name) + '</h1>' +
+          '    <p>Elige una tarea para empezar a trabajar con las memorias y contenidos de la Red.</p>' +
+          '    <button type="button" class="cms-welcome-tour-button" id="cms-welcome-tour">Ver guía paso a paso</button>' +
+          '  </div>' +
+          '  <section class="cms-welcome-section" aria-labelledby="cms-welcome-actions-title">' +
+          '    <h2 id="cms-welcome-actions-title">Acciones frecuentes</h2>' +
+          '    <div class="cms-welcome-grid">' +
+          '      <a class="cms-welcome-card primary" href="#/collections/entradas/new"><strong>+ Crear entrada</strong><span>Publicar una noticia, artículo o novedad.</span></a>' +
+          '      <a class="cms-welcome-card primary" href="#/collections/memorias/new"><strong>+ Añadir memoria</strong><span>Incorporar una pieza al Museo de Memorias Vivas.</span></a>' +
+          '      <a class="cms-welcome-card" href="#/collections/borradores-entradas"><strong>Ver borradores</strong><span>Revisar contenidos guardados antes de publicar.</span></a>' +
+          '    </div>' +
+          '  </section>' +
+          '  <section class="cms-welcome-section" aria-labelledby="cms-welcome-content-title">' +
+          '    <h2 id="cms-welcome-content-title">Contenido del sitio</h2>' +
+          '    <div class="cms-welcome-grid">' +
+          '      <a class="cms-welcome-card" href="#/collections/entradas"><strong>Entradas</strong><span>Noticias, artículos y novedades generales.</span></a>' +
+          '      <a class="cms-welcome-card" href="#/collections/memorias"><strong>Memorias</strong><span>Piezas y experiencias del museo.</span></a>' +
+          '      <a class="cms-welcome-card" href="#/collections/paginas"><strong>Páginas</strong><span>Contenido informativo del sitio.</span></a>' +
+          '      <a class="cms-welcome-card" href="#/collections/simposios"><strong>Ediciones del simposio</strong><span>Organizar años, lugares y programas.</span></a>' +
+          '    </div>' +
+          '  </section>' +
+          (admin ?
+            '  <section class="cms-welcome-section" aria-labelledby="cms-welcome-admin-title">' +
+            '    <h2 id="cms-welcome-admin-title">Administración</h2>' +
+            '    <div class="cms-welcome-grid">' +
+            '      <button type="button" class="cms-welcome-card" data-welcome-tab="usuarios"><strong>Usuarios y roles</strong><span>Crear usuarios y gestionar permisos.</span></button>' +
+            '      <button type="button" class="cms-welcome-card" data-welcome-tab="colecciones"><strong>Gestionar colecciones</strong><span>Configurar los tipos de contenido del sitio.</span></button>' +
+            '    </div>' +
+            '  </section>' : '') +
+          '  <p class="cms-welcome-note">' + (admin ? 'Tienes permisos de administrador.' : 'Puedes crear borradores y enviarlos a revisión.') + '</p>' +
+          '</div>';
+
+        dashboard.querySelector('#cms-welcome-dismiss').addEventListener('click', function () {
+          dismissWelcome(user);
+        });
+        dashboard.querySelector('#cms-welcome-tour').addEventListener('click', function () {
+          startWelcomeTour(user);
+        });
+        dashboard.querySelectorAll('a').forEach(function (link) {
+          link.addEventListener('click', function () { dashboard.remove(); });
+        });
+        dashboard.querySelectorAll('[data-welcome-tab]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            dashboard.remove();
+            openAdminPanel(button.getAttribute('data-welcome-tab'));
+          });
+        });
+        document.body.appendChild(dashboard);
+        if (!isTourCompleted(user) && !isTourSuppressed(user)) {
+          window.setTimeout(function () {
+            if (document.querySelector('.cms-welcome-dashboard')) startWelcomeTour(user);
+          }, 6000);
+        }
+      }
+
       function openAdminPanel(tab) {
         closeAdminPanel();
 
@@ -2631,19 +2907,76 @@
       }
 
       /* --- Tab: Usuarios y roles --- */
+      function getSupabaseAdmin() {
+        if (!window.__supabaseAdminClientPromise) {
+          window.__supabaseAdminClientPromise = Promise.all([
+            fetch('/admin/supabase-config.js').then(function (res) { return res.json(); }),
+            import('https://esm.sh/@supabase/supabase-js@2.112.0'),
+          ]).then(function (result) {
+            var config = result[0];
+            if (!config.url || !config.anonKey) throw new Error('Supabase no está configurado para el panel.');
+            return result[1].createClient(config.url, config.anonKey);
+          });
+        }
+        return window.__supabaseAdminClientPromise;
+      }
+
+      function showSupabaseLogin(body, errorMessage) {
+        body.innerHTML = '<h3>Usuarios registrados</h3>' +
+          '<p class="cms-admin-muted">Inicia sesión con tu cuenta de Supabase para cargar los usuarios.</p>' +
+          '<form id="cms-supabase-login" class="cms-admin-form">' +
+          '<label for="cms-supabase-email">Email</label><input id="cms-supabase-email" type="email" required autocomplete="email" />' +
+          '<label for="cms-supabase-password">Contraseña</label><input id="cms-supabase-password" type="password" required autocomplete="current-password" />' +
+          '<button class="cms-admin-submit" type="submit">Iniciar sesión</button>' +
+          '<p class="cms-admin-status err" id="cms-supabase-login-error">' + escapeHtml(errorMessage || '') + '</p></form>';
+        var form = body.querySelector('#cms-supabase-login');
+        var error = body.querySelector('#cms-supabase-login-error');
+        if (!errorMessage) error.className = 'cms-admin-status';
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          var button = form.querySelector('button');
+          button.disabled = true;
+          error.textContent = 'Iniciando sesión...';
+          error.className = 'cms-admin-status';
+          getSupabaseAdmin().then(function (client) {
+            return client.auth.signInWithPassword({
+              email: form.querySelector('#cms-supabase-email').value.trim(),
+              password: form.querySelector('#cms-supabase-password').value,
+            });
+          }).then(function (result) {
+            if (result.error) throw result.error;
+            renderUsuarios(body);
+          }).catch(function (err) {
+            button.disabled = false;
+            error.textContent = 'No se pudo iniciar sesión: ' + err.message;
+            error.className = 'cms-admin-status err';
+          });
+        });
+      }
+
+      async function getSupabaseToken() {
+        var client = await getSupabaseAdmin();
+        var result = await client.auth.getSession();
+        return { client: client, token: result.data.session && result.data.session.access_token };
+      }
+
       function renderUsuarios(body) {
         body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-muted">Cargando usuarios...</p>';
-        var token = getToken();
-        if (!token) {
-          body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-status err">No hay sesión activa.</p>';
-          return;
-        }
-
-        fetch('/.netlify/functions/manage-users', {
-          headers: { 'Authorization': 'Bearer ' + token },
+        getSupabaseToken().then(function (auth) {
+          if (!auth.token) {
+            showSupabaseLogin(body);
+            return null;
+          }
+          return fetch('/.netlify/functions/manage-users', {
+            headers: { 'Authorization': 'Bearer ' + auth.token },
+          });
         })
-          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (res) {
+            if (!res) return null;
+            return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+          })
           .then(function (r) {
+            if (!r) return;
             if (!r.ok) {
               body.innerHTML = '<h3>Usuarios registrados</h3><p class="cms-admin-status err">' + escapeHtml(r.data.error || 'Error al cargar usuarios.') + '</p>';
               return;
@@ -2658,6 +2991,16 @@
             }
             var users = r.data.users || [];
             var html = '<h3>Usuarios registrados</h3>' +
+              '<button type="button" class="cms-admin-submit cms-admin-create-toggle" id="cms-create-user-toggle" aria-expanded="false" style="margin-top:0;margin-bottom:1.25rem;">+ Crear usuario</button>' +
+              '<div id="cms-create-user-panel" hidden style="margin:1rem 0 1.5rem;padding:1rem;border:1px solid #e5e7eb;border-radius:0.5rem;">' +
+              '<form id="cms-create-user" class="cms-admin-form">' +
+              '<strong>Crear usuario</strong>' +
+              '<label for="cms-create-user-name">Nombre</label><input id="cms-create-user-name" type="text" maxlength="100" autocomplete="name" />' +
+              '<label for="cms-create-user-email">Email</label><input id="cms-create-user-email" type="email" required maxlength="254" autocomplete="email" />' +
+              '<label for="cms-create-user-password">Contraseña</label><input id="cms-create-user-password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" />' +
+              '<label for="cms-create-user-role">Rol inicial</label><select id="cms-create-user-role"><option value="editor">Editor</option><option value="admin">Administrador</option></select>' +
+              '<button class="cms-admin-submit" type="submit">Crear usuario</button>' +
+              '<p class="cms-admin-status" id="cms-create-user-status"></p></form></div>' +
               '<table class="cms-admin-table"><thead><tr><th>Usuario</th><th>Roles</th><th>Acciones</th></tr></thead><tbody>';
             users.forEach(function (u, idx) {
               var rolesHtml = u.roles.length
@@ -2676,6 +3019,51 @@
               '<p class="cms-admin-muted">Tras cambiar un rol, el usuario debe cerrar sesión y volver a entrar.</p>';
             body.innerHTML = html;
 
+            var createToggle = body.querySelector('#cms-create-user-toggle');
+            var createPanel = body.querySelector('#cms-create-user-panel');
+            var createForm = body.querySelector('#cms-create-user');
+            var createStatus = body.querySelector('#cms-create-user-status');
+            createToggle.addEventListener('click', function () {
+              var isOpen = !createPanel.hidden;
+              createPanel.hidden = isOpen;
+              createToggle.setAttribute('aria-expanded', String(!isOpen));
+              createToggle.textContent = isOpen ? '+ Crear usuario' : '− Ocultar formulario';
+            });
+            createForm.addEventListener('submit', function (event) {
+              event.preventDefault();
+              var createButton = createForm.querySelector('button');
+              createButton.disabled = true;
+              createStatus.textContent = 'Creando usuario...';
+              createStatus.className = 'cms-admin-status';
+              getSupabaseToken().then(function (auth) {
+                if (!auth.token) throw new Error('La sesión de Supabase ha caducado.');
+                return fetch('/.netlify/functions/manage-users', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + auth.token,
+                  },
+                  body: JSON.stringify({
+                    action: 'create',
+                    name: createForm.querySelector('#cms-create-user-name').value.trim(),
+                    email: createForm.querySelector('#cms-create-user-email').value.trim(),
+                    password: createForm.querySelector('#cms-create-user-password').value,
+                    role: createForm.querySelector('#cms-create-user-role').value,
+                  }),
+                });
+              })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                  if (!result.ok) throw new Error(result.data.error || 'No se pudo crear el usuario.');
+                  renderUsuarios(body);
+                })
+                .catch(function (err) {
+                  createButton.disabled = false;
+                  createStatus.textContent = err.message;
+                  createStatus.className = 'cms-admin-status err';
+                });
+            });
+
             var statusEl = body.querySelector('#cms-users-status');
             var buttons = body.querySelectorAll('.cms-admin-rolebtn');
             for (var i = 0; i < buttons.length; i++) {
@@ -2691,13 +3079,16 @@
                   statusEl.textContent = 'Actualizando ' + u.email + '...';
                   statusEl.className = 'cms-admin-status';
 
-                  fetch('/.netlify/functions/manage-users', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': 'Bearer ' + getToken(),
-                    },
-                    body: JSON.stringify({ userId: u.id, roles: newRoles }),
+                  getSupabaseToken().then(function (auth) {
+                    if (!auth.token) throw new Error('La sesión de Supabase ha caducado.');
+                    return fetch('/.netlify/functions/manage-users', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + auth.token,
+                      },
+                      body: JSON.stringify({ userId: u.id, roles: newRoles }),
+                    });
                   })
                     .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
                     .then(function (r2) {
@@ -3530,10 +3921,18 @@
       waitForIdentity(function (identity) {
         log('configurando identity events');
 
+        if (!window.__cmsWelcomeBound) {
+          window.__cmsWelcomeBound = true;
+          window.addEventListener('hashchange', function () {
+            renderWelcomeDashboard(identity.currentUser());
+          });
+        }
+
         function onUserReady(user) {
           if (user) {
             log('usuario listo:', user.email, '| admin:', isAdmin(user));
             injectAdminBar(user);
+            renderWelcomeDashboard(user);
             ensureFloatingUserName(user);
             watchUserName(user);
             watchSidebar();
@@ -3555,6 +3954,10 @@
           stopPublishDropdownWatcher();
           stopDraftsPanelWatcher();
           closeAdminPanel();
+          var welcomeDashboard = document.querySelector('.cms-welcome-dashboard');
+          if (welcomeDashboard) welcomeDashboard.remove();
+          var tourOverlay = document.querySelector('.cms-tour-overlay');
+          if (tourOverlay) tourOverlay.remove();
           var sidebarActions = document.querySelector('.cms-sidebar-actions');
           if (sidebarActions) sidebarActions.remove();
           var floatingActions = document.querySelector('.cms-floating-actions');
@@ -3652,8 +4055,12 @@
           '    <div id="cms-user-dropdown" class="cms-user-dropdown" role="menu" aria-label="Menú de usuario">' +
           '      <a href="/admin/" role="menuitem">' +
           '        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9M9 19v-5h6v5"/></svg>' +
-          '        Dashboard' +
+          '        Inicio' +
           '      </a>' +
+          '      <button id="cms-tour-launch" type="button" role="menuitem">' +
+          '        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>' +
+          '        Guía de uso' +
+          '      </button>' +
           '      <button id="cms-logout" type="button" role="menuitem">' +
           '        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M21 3v18"/></svg>' +
           '        Cerrar sesión' +
@@ -3684,6 +4091,7 @@
         var userMenu = document.querySelector('.cms-user-menu');
         var userTrigger = document.getElementById('cms-user-trigger');
         var userDropdown = document.getElementById('cms-user-dropdown');
+        var tourLaunchButton = document.getElementById('cms-tour-launch');
         var logoutButton = document.getElementById('cms-logout');
 
         var userMenuPinned = false;
@@ -3718,6 +4126,12 @@
         document.addEventListener('keydown', function (event) {
           if (event.key === 'Escape') setUserMenuOpen(false, false);
         });
+        if (tourLaunchButton) {
+          tourLaunchButton.addEventListener('click', function () {
+            setUserMenuOpen(false, false);
+            startWelcomeTour(user);
+          });
+        }
         if (logoutButton) {
           logoutButton.addEventListener('click', function () {
             if (window.netlifyIdentity) window.netlifyIdentity.logout();
@@ -3752,6 +4166,16 @@
       function reorganizeSidebar() {
         var sidebar = findSidebar();
         if (!sidebar || sidebar.dataset.wpOrganized === 'true') return;
+
+        // Move the CMS search control to the top of the sidebar, before groups.
+        var searchInput = sidebar.querySelector('input[type="search"], input[placeholder*="Search" i], input[placeholder*="Buscar" i]');
+        if (searchInput) {
+          var searchWrapper = searchInput.closest('form') || searchInput.parentElement;
+          if (searchWrapper && searchWrapper !== sidebar) {
+            searchWrapper.classList.add('wp-sidebar-search-top');
+            sidebar.insertBefore(searchWrapper, sidebar.firstChild);
+          }
+        }
 
         // Find the collections heading
         var heading = findCollectionsHeading();

@@ -11,6 +11,10 @@ import { getCorsHeaders, getVerifiedUserWithRoles, hasRole, checkRateLimit, getC
 
 const ALLOWED_ROLES = ['admin', 'editor'];
 
+function isValidEmail(email: unknown): email is string {
+  return typeof email === 'string' && email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export const handler = async (event: any) => {
   const headers = getCorsHeaders(event, 'GET, POST, OPTIONS');
 
@@ -86,6 +90,75 @@ export const handler = async (event: any) => {
           statusCode: 400,
           headers,
           body: JSON.stringify({ error: 'Cuerpo de la petición inválido.' }),
+        };
+      }
+
+      if (payload.action === 'create') {
+        const email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : '';
+        const password = typeof payload.password === 'string' ? payload.password : '';
+        const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+        const role = payload.role || 'editor';
+
+        if (!isValidEmail(email)) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Introduce un email válido.' }),
+          };
+        }
+        if (password.length < 8 || password.length > 72) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'La contraseña debe tener entre 8 y 72 caracteres.' }),
+          };
+        }
+        if (name.length > 100) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'El nombre no puede superar los 100 caracteres.' }),
+          };
+        }
+        if (typeof role !== 'string' || !ALLOWED_ROLES.includes(role)) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'El rol inicial no es válido.' }),
+          };
+        }
+
+        const { data: created, error: createError } = await client.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: name ? { full_name: name } : {},
+        });
+        if (createError || !created.user) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: createError?.message || 'No se pudo crear el usuario.' }),
+          };
+        }
+
+        const { error: roleError } = await client
+          .from('user_roles')
+          .update({ email, roles: [role], updated_at: new Date().toISOString() })
+          .eq('user_id', created.user.id);
+        if (roleError) {
+          await client.auth.admin.deleteUser(created.user.id);
+          throw roleError;
+        }
+
+        logAudit('create-user', clientUser, { targetUserId: created.user.id, email, roles: [role] });
+        return {
+          statusCode: 201,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            user: { id: created.user.id, email, name, roles: [role] },
+          }),
         };
       }
 
