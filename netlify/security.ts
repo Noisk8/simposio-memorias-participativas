@@ -1,3 +1,4 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createRateLimiter } from '../shared/lib.mjs';
 
 const DEFAULT_SITE_ORIGIN = 'https://simposio-memorias-participativas.netlify.app';
@@ -27,12 +28,65 @@ export function getCorsHeaders(event: any, methods: string) {
   };
 }
 
-export function getVerifiedUser(context: any) {
-  return context?.clientContext?.user || null;
+// ── Supabase ─────────────────────────────────────────────────────────────────
+
+let adminClient: SupabaseClient | null = null;
+
+export function getAdminClient(): SupabaseClient | null {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  if (!adminClient) {
+    adminClient = createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+  return adminClient;
+}
+
+export function isSupabaseConfigured(): boolean {
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function bearerToken(event: any): string {
+  const header = event.headers?.authorization || event.headers?.Authorization || '';
+  return header.replace(/^Bearer\s+/i, '').trim();
+}
+
+/** Verifica el JWT de Supabase del request y devuelve el usuario autenticado. */
+export async function getVerifiedUser(event: any): Promise<any | null> {
+  const token = bearerToken(event);
+  if (!token) return null;
+
+  const client = getAdminClient();
+  if (!client) return null;
+
+  const { data, error } = await client.auth.getUser(token);
+  if (error || !data.user) return null;
+  return data.user;
+}
+
+/** Como getVerifiedUser, pero adjunta los roles desde user_roles. */
+export async function getVerifiedUserWithRoles(event: any): Promise<any | null> {
+  const user = await getVerifiedUser(event);
+  if (!user) return null;
+
+  const client = getAdminClient();
+  if (client) {
+    const { data } = await client
+      .from('user_roles')
+      .select('roles')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    user.roles = Array.isArray(data?.roles) ? data.roles : [];
+  } else {
+    user.roles = [];
+  }
+  return user;
 }
 
 export function getRoles(user: any): string[] {
-  const roles = user?.app_metadata?.roles || user?.roles || [];
+  const roles = user?.roles || user?.app_metadata?.roles || [];
   return Array.isArray(roles) ? roles : [];
 }
 
@@ -43,6 +97,8 @@ export function hasRole(user: any, role: string): boolean {
 export function isSafeContentPath(filePath: unknown): filePath is string {
   return typeof filePath === 'string' && /^src\/content\/[a-z0-9_-]+\/[a-z0-9][a-z0-9._-]*\.md$/i.test(filePath);
 }
+
+// ── Rate limiting y auditoría ────────────────────────────────────────────────
 
 export function getClientIp(event: any): string {
   return (
@@ -65,15 +121,31 @@ export function rateLimitHeaders(result: { retryAfterMs: number }, headers: Reco
   return headers;
 }
 
+/** Registra la acción en los logs de la función y, si hay Supabase, en audit_log. */
 export function logAudit(action: string, user: any, details: Record<string, unknown> = {}) {
-  console.log(
-    JSON.stringify({
-      type: 'audit',
-      timestamp: new Date().toISOString(),
+  const entry = {
+    type: 'audit',
+    timestamp: new Date().toISOString(),
+    action,
+    user: user?.id || user?.sub || 'unknown',
+    email: user?.email || '',
+    ...details,
+  };
+
+  console.log(JSON.stringify(entry));
+
+  const client = getAdminClient();
+  if (!client) return;
+  void client
+    .from('audit_log')
+    .insert({
       action,
-      user: user?.id || user?.sub || 'unknown',
+      user_id: user?.id || null,
       email: user?.email || '',
-      ...details,
+      details,
     })
-  );
+    .then(
+      () => {},
+      (err: unknown) => console.error('[audit] no se pudo guardar en audit_log:', (err as Error)?.message || err),
+    );
 }

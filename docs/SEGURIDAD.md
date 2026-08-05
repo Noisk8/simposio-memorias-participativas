@@ -2,7 +2,7 @@
 
 ## Principios actuales
 
-Las funciones administrativas deben ejecutarse únicamente en Netlify o mediante `netlify dev` con un contexto de Identity válido. La autorización se basa en el usuario verificado por Netlify (`context.clientContext.user`) y en los roles incluidos en `app_metadata.roles`.
+Las funciones administrativas se ejecutan únicamente en Netlify o mediante `netlify dev`. La autorización se basa en el usuario verificado contra **Supabase Auth** (endpoint `/auth/v1/user` con el JWT del header `Authorization: Bearer`) y en los roles leídos de la tabla `public.user_roles` en cada petición.
 
 No se debe confiar en un JWT decodificado manualmente ni en datos enviados por el navegador para decidir si una persona es administradora.
 
@@ -14,7 +14,9 @@ Configura en Netlify, nunca en el repositorio:
 - `GITHUB_REPO`: repositorio en formato `organizacion/repositorio`.
 - `GITHUB_BRANCH`: normalmente `main`.
 - `SITE_URL`: origen público autorizado para CORS.
-- `ADMIN_EMAILS`: solo para asignar el rol inicial durante el registro de usuarios.
+- `SUPABASE_URL`: URL del proyecto Supabase.
+- `SUPABASE_SERVICE_ROLE_KEY`: clave `service_role` (nunca exponer en el cliente).
+- `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY`: versiones públicas usadas solo en el navegador para login de los paneles.
 
 No compartas ni imprimas valores de estas variables en logs, capturas o incidencias.
 
@@ -30,8 +32,8 @@ Las funciones administrativas actuales son:
 Todas deben validar:
 
 1. método HTTP;
-2. usuario verificado por Netlify Identity;
-3. rol requerido;
+2. JWT de Supabase verificado (`getVerifiedUserWithRoles` en `netlify/security.ts`);
+3. rol requerido, leído de `public.user_roles`;
 4. formato y tamaño de los datos recibidos;
 5. rutas permitidas antes de consultar o escribir en GitHub.
 
@@ -56,7 +58,7 @@ Las funciones administrativas limitan el ritmo de peticiones por usuario (e IP d
 
 Al superar el límite se responde `429` con la cabecera `Retry-After`. El límite es por instancia serverless: suficiente como control básico, pero no sustituye a un límite distribuido.
 
-Cada acción de escritura emite un evento de auditoría (`logAudit`) en los logs de la función con formato JSON (`type: "audit"`), incluyendo acción, usuario, email y detalle. No se registran tokens ni cabeceras `Authorization`.
+Cada acción de escritura emite un evento de auditoría (`logAudit`) en los logs de la función con formato JSON (`type: "audit"`), incluyendo acción, usuario, email y detalle. Si Supabase está configurado, también se inserta una fila en `public.audit_log`. No se registran tokens ni cabeceras `Authorization`.
 
 ## Reglas para cambios futuros
 
@@ -80,12 +82,11 @@ npm run build
 
 Además, comprueba en Netlify que:
 
-- Identity está habilitado;
+- las variables de entorno de Supabase y GitHub tienen el alcance de Functions;
+- el esquema de Supabase (`supabase/schema.sql`) está aplicado y los emails de administrador están en `admin_emails`;
 - Git Gateway o el backend de Decap configurado está operativo;
-- las variables de entorno tienen el alcance de Functions;
-- el usuario administrador conserva su rol;
 - el token de GitHub sigue limitado al repositorio correcto.
 
 ## Riesgos pendientes
 
-Git Gateway y Netlify Identity son dependencias que deben revisarse porque su soporte y evolución pueden cambiar. Antes de ampliar el CMS, conviene definir una estrategia de migración hacia un backend de autenticación y escritura con soporte vigente.
+Git Gateway y Netlify Identity siguen siendo dependencias para el editor Decap (`/admin/`) y deben revisarse porque su soporte y evolución pueden cambiar. Los paneles propios ya no dependen de ellos (Supabase Auth). Conviene vigilar los límites del plan de Supabase y la caducidad de la clave `service_role`.

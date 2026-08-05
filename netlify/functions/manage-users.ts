@@ -1,24 +1,24 @@
 /**
  * manage-users.ts
  *
- * Gestión de usuarios de Netlify Identity: listar y asignar roles.
+ * Gestión de usuarios de Supabase Auth: listar y asignar roles.
  * Estrategia de autenticación:
- *   1. Lee el JWT del header Authorization: Bearer <token>
- *   2. Verifica admin via context.clientContext.user (inyectado por Netlify)
- *   3. Llama a la API GoTrue con el token de operador de Netlify Identity
- *      (context.clientContext.identity.token), que es el único con permisos
- *      para el endpoint /admin/users.
+ *   1. Verifica el JWT de Supabase del header Authorization: Bearer <token>
+ *   2. Comprueba que el usuario tiene rol admin (desde public.user_roles)
+ *   3. Opera con el cliente service_role (SUPABASE_SERVICE_ROLE_KEY)
  */
-import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
+import { getCorsHeaders, getVerifiedUserWithRoles, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders, getAdminClient } from '../security';
 
-export const handler = async (event: any, context: any) => {
+const ALLOWED_ROLES = ['admin', 'editor'];
+
+export const handler = async (event: any) => {
   const headers = getCorsHeaders(event, 'GET, POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers };
   }
 
-  const clientUser = getVerifiedUser(context);
+  const clientUser = await getVerifiedUserWithRoles(event);
   if (!clientUser) {
     return {
       statusCode: 401,
@@ -27,9 +27,7 @@ export const handler = async (event: any, context: any) => {
     };
   }
 
-  const isAdmin = hasRole(clientUser, 'admin');
-
-  if (!isAdmin) {
+  if (!hasRole(clientUser, 'admin')) {
     return {
       statusCode: 403,
       headers,
@@ -37,7 +35,7 @@ export const handler = async (event: any, context: any) => {
     };
   }
 
-  const limitKey = `users:${clientUser.id || clientUser.sub || getClientIp(event)}`;
+  const limitKey = `users:${clientUser.id || getClientIp(event)}`;
   const limitKind = event.httpMethod === 'GET' ? 'read' : 'write';
   const limit = checkRateLimit(limitKind, limitKey);
   if (!limit.allowed) {
@@ -48,84 +46,37 @@ export const handler = async (event: any, context: any) => {
     };
   }
 
-  // ── URL y token de administración de Netlify Identity ───────────────────────
-  // En producción: context.clientContext.identity.url / .token
-  // En local: la URL del site en Netlify (desde variable de entorno o hardcodeada)
-  // Detectar entorno local: en local la URL es localhost o la variable NETLIFY_DEV está presente
-  const isLocal =
-    process.env.NETLIFY_DEV === 'true' ||
-    (event.headers?.host || '').includes('localhost') ||
-    (event.headers?.host || '').includes('127.0.0.1');
-
-  if (isLocal) {
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        users: [],
-        _dev_notice: 'La gestión de usuarios no está disponible en local (limitación de Netlify Identity). Usa el deploy en producción para gestionar usuarios.',
-      }),
-    };
-  }
-
-  const identity = context?.clientContext?.identity;
-  const identityUrl = identity?.url || process.env.IDENTITY_URL || '';
-  if (!identityUrl) {
+  const client = getAdminClient();
+  if (!client) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Identity no está configurado en este entorno.' }),
+      body: JSON.stringify({ error: 'Supabase no está configurado en este entorno.' }),
     };
   }
-
-  // El token de operador de Identity puede venir como string o como objeto
-  // con propiedad access_token (GoTrue JS).
-  const rawIdentityToken = identity?.token;
-  const identityToken =
-    typeof rawIdentityToken === 'string' ? rawIdentityToken : rawIdentityToken?.access_token;
-
-  if (!identityToken) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        error: 'No se pudo obtener el token de administrador de Netlify Identity. Asegúrate de que Identity está habilitado y la función se ejecuta en el sitio de Netlify.',
-      }),
-    };
-  }
-
-  const adminHeaders = {
-    'Authorization': `Bearer ${identityToken}`,
-    'Content-Type': 'application/json',
-  };
 
   try {
-    // GET: listar usuarios
     if (event.httpMethod === 'GET') {
-      const res = await fetch(`${identityUrl}/admin/users?per_page=100`, {
-        headers: adminHeaders,
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        return {
-          statusCode: res.status,
-          headers,
-          body: JSON.stringify({ error: `Error listando usuarios: ${res.status} ${text}` }),
-        };
-      }
-      const data = await res.json();
-      const users = (data.users || []).map((u: any) => ({
-        id: u.id,
-        email: u.email,
-        name: u.user_metadata?.full_name || u.user_metadata?.name || '',
-        roles: u.app_metadata?.roles || [],
-        created_at: u.created_at,
-        last_login: u.last_login || null,
+      const { data: authUsers, error: listError } = await client.auth.admin.listUsers({ perPage: 100 });
+      if (listError) throw listError;
+
+      const { data: roleRows, error: rolesError } = await client.from('user_roles').select('user_id, email, roles');
+      if (rolesError) throw rolesError;
+
+      const rolesByUser = new Map((roleRows || []).map((row: any) => [row.user_id, row.roles || []]));
+
+      const users = (authUsers.users || []).map((user: any) => ({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        roles: rolesByUser.get(user.id) || [],
+        created_at: user.created_at,
+        last_login: user.last_sign_in_at || null,
       }));
+
       return { statusCode: 200, headers, body: JSON.stringify({ users }) };
     }
 
-    // POST: asignar roles. Body: { userId, roles: ["admin"] }
     if (event.httpMethod === 'POST') {
       let payload: any;
       try {
@@ -147,9 +98,8 @@ export const handler = async (event: any, context: any) => {
         };
       }
 
-      const allowedRoles = ['admin', 'editor'];
-      const invalid = newRoles.filter((role: unknown) => typeof role !== 'string' || !allowedRoles.includes(role));
-      if (invalid.length > 0 || newRoles.length > allowedRoles.length) {
+      const invalid = newRoles.filter((role: unknown) => typeof role !== 'string' || !ALLOWED_ROLES.includes(role));
+      if (invalid.length > 0 || newRoles.length > ALLOWED_ROLES.length) {
         return {
           statusCode: 400,
           headers,
@@ -157,8 +107,7 @@ export const handler = async (event: any, context: any) => {
         };
       }
 
-      const currentUserId = clientUser.id || clientUser.sub;
-      if (currentUserId && userId === currentUserId && !newRoles.includes('admin')) {
+      if (clientUser.id === userId && !newRoles.includes('admin')) {
         return {
           statusCode: 409,
           headers,
@@ -166,19 +115,12 @@ export const handler = async (event: any, context: any) => {
         };
       }
 
-      const usersRes = await fetch(`${identityUrl}/admin/users?per_page=100`, {
-        headers: adminHeaders,
-      });
-      if (!usersRes.ok) {
-        return {
-          statusCode: 502,
-          headers,
-          body: JSON.stringify({ error: 'No se pudo comprobar el estado actual de los usuarios.' }),
-        };
-      }
-      const usersData = await usersRes.json();
-      const targetUser = (usersData.users || []).find((user: any) => user.id === userId);
-      if (!targetUser) {
+      const { data: roleRows, error: rolesError } = await client.from('user_roles').select('user_id, email, roles');
+      if (rolesError) throw rolesError;
+
+      const rolesByUser = new Map((roleRows || []).map((row: any) => [row.user_id, row.roles || []]));
+      const targetRoles = rolesByUser.get(userId);
+      if (targetRoles === undefined) {
         return {
           statusCode: 404,
           headers,
@@ -186,10 +128,8 @@ export const handler = async (event: any, context: any) => {
         };
       }
 
-      const adminCount = (usersData.users || []).filter((user: any) =>
-        Array.isArray(user.app_metadata?.roles) && user.app_metadata.roles.includes('admin')
-      ).length;
-      const targetIsAdmin = Array.isArray(targetUser.app_metadata?.roles) && targetUser.app_metadata.roles.includes('admin');
+      const adminCount = Array.from(rolesByUser.values()).filter((roles) => roles.includes('admin')).length;
+      const targetIsAdmin = targetRoles.includes('admin');
       if (targetIsAdmin && !newRoles.includes('admin') && adminCount <= 1) {
         return {
           statusCode: 409,
@@ -198,22 +138,15 @@ export const handler = async (event: any, context: any) => {
         };
       }
 
-      const res = await fetch(`${identityUrl}/admin/users/${encodeURIComponent(userId)}`, {
-        method: 'PUT',
-        headers: adminHeaders,
-        body: JSON.stringify({ app_metadata: { roles: newRoles } }),
-      });
+      const { error: updateError } = await client
+        .from('user_roles')
+        .update({ roles: newRoles, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+      if (updateError) throw updateError;
 
-      if (!res.ok) {
-        const text = await res.text();
-        return {
-          statusCode: res.status,
-          headers,
-          body: JSON.stringify({ error: `Error actualizando usuario: ${res.status} ${text}` }),
-        };
-      }
+      const { data: userData, error: userError } = await client.auth.admin.getUserById(userId);
+      if (userError) throw userError;
 
-      const updated = await res.json();
       logAudit('assign-roles', clientUser, { targetUserId: userId, roles: newRoles });
       return {
         statusCode: 200,
@@ -221,9 +154,9 @@ export const handler = async (event: any, context: any) => {
         body: JSON.stringify({
           success: true,
           user: {
-            id: updated.id,
-            email: updated.email,
-            roles: updated.app_metadata?.roles || [],
+            id: userId,
+            email: userData.user?.email || '',
+            roles: newRoles,
           },
         }),
       };

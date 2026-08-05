@@ -224,14 +224,17 @@ En **Site settings** → **Environment variables**:
 
 ```
 NODE_VERSION=22.12.0
-# Variables opcionales para funciones de admin:
-# ADMIN_EMAILS=admin@ejemplo.com,otro@ejemplo.com
+# Variables para las funciones de admin (paneles con Supabase):
+# SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+# SUPABASE_SERVICE_ROLE_KEY=eyJ...
+# PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+# PUBLIC_SUPABASE_ANON_KEY=eyJ...
 # GITHUB_TOKEN=...                # Solo si usas create-coleccion desde el frontend
 # GITHUB_REPO=usuario/repo
 # GITHUB_BRANCH=main
 ```
 
-Netlify Identity y Git Gateway se configuran desde la interfaz.
+Los paneles de administración usan Supabase Auth (ver `docs/supabase.md`). Netlify Identity y Git Gateway se configuran desde la interfaz y solo se usan para el editor Decap (`/admin/`).
 
 ---
 

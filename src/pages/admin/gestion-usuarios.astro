@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import SupabaseAuth from '../../components/SupabaseAuth.astro';
 ---
 
 <Layout title="Gestionar usuarios - Admin">
@@ -11,6 +12,8 @@ import Layout from '../../layouts/Layout.astro';
       <p class="text-ugr-text-light mb-8">
         Asigna los roles <strong>admin</strong> o <strong>editor</strong> a los usuarios registrados. Solo los administradores pueden acceder a esta página.
       </p>
+
+      <SupabaseAuth intro="Inicia sesión con una cuenta de administrador para gestionar usuarios." />
 
       <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6"></div>
 
@@ -56,17 +59,17 @@ import Layout from '../../layouts/Layout.astro';
   const actionStatus = document.getElementById('action-status');
   const refreshBtn = document.getElementById('refresh-btn');
 
-  function waitForIdentity(callback) {
-    if (window.netlifyIdentity) {
-      callback(window.netlifyIdentity);
+  function waitForAuth(callback) {
+    if (window.supabaseAuth) {
+      callback(window.supabaseAuth);
       return;
     }
     var attempts = 0;
     var interval = setInterval(function () {
       attempts++;
-      if (window.netlifyIdentity) {
+      if (window.supabaseAuth) {
         clearInterval(interval);
-        callback(window.netlifyIdentity);
+        callback(window.supabaseAuth);
       } else if (attempts > 60) {
         clearInterval(interval);
         loading.textContent = 'No se pudo cargar la autenticación.';
@@ -74,9 +77,9 @@ import Layout from '../../layouts/Layout.astro';
     }, 100);
   }
 
-  function getToken() {
-    var user = window.netlifyIdentity?.currentUser?.();
-    return user?.token?.access_token || null;
+  async function getToken() {
+    var auth = window.supabaseAuth;
+    return auth ? await auth.getToken() : null;
   }
 
   async function loadUsers() {
@@ -84,7 +87,7 @@ import Layout from '../../layouts/Layout.astro';
     usersError.classList.add('hidden');
     usersTable.classList.add('hidden');
 
-    var token = getToken();
+    var token = await getToken();
     if (!token) {
       usersError.textContent = 'No se encontró el token de sesión.';
       usersError.classList.remove('hidden');
@@ -183,7 +186,7 @@ import Layout from '../../layouts/Layout.astro';
     actionStatus.textContent = 'Actualizando roles de ' + user.email + '...';
     actionStatus.className = 'mt-4 text-sm font-medium text-ugr-text-light';
 
-    var token = getToken();
+    var token = await getToken();
     if (!token) {
       actionStatus.textContent = 'No se encontró el token de sesión.';
       actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
@@ -221,28 +224,25 @@ import Layout from '../../layouts/Layout.astro';
     return div.innerHTML;
   }
 
-  waitForIdentity(function (identity) {
-    function checkUser(user) {
-      if (!user) {
+  waitForAuth(function (auth) {
+    function refresh() {
+      auth.getUser().then(function (user) {
         loading.classList.add('hidden');
-        adminPanel.classList.add('hidden');
-        notAllowed.classList.remove('hidden');
-        notAllowed.textContent = 'Debes iniciar sesión para acceder.';
-        return;
-      }
+        if (!user) {
+          adminPanel.classList.add('hidden');
+          notAllowed.classList.add('hidden');
+          return;
+        }
 
-      // El acceso real lo valida la Netlify Function; aquí solo mostramos el panel.
-      loading.classList.add('hidden');
-      notAllowed.classList.add('hidden');
-      adminPanel.classList.remove('hidden');
-      loadUsers();
+        // El acceso real lo valida la Netlify Function; aquí solo mostramos el panel.
+        notAllowed.classList.add('hidden');
+        adminPanel.classList.remove('hidden');
+        loadUsers();
+      });
     }
 
-    identity.on('init', checkUser);
-    identity.on('login', checkUser);
-    identity.on('logout', function () {
-      checkUser(null);
-    });
+    auth.ready.then(refresh);
+    window.addEventListener('supabase-auth', refresh);
   });
 
   refreshBtn?.addEventListener('click', loadUsers);

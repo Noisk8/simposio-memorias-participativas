@@ -1,6 +1,6 @@
-import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
+import { getCorsHeaders, getVerifiedUserWithRoles, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
 
-export const handler = async (event: any, context: any) => {
+export const handler = async (event: any) => {
   const headers = getCorsHeaders(event, 'POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
@@ -11,7 +11,7 @@ export const handler = async (event: any, context: any) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Método no permitido' }) };
   }
 
-  const user = getVerifiedUser(context);
+  const user = await getVerifiedUserWithRoles(event);
   if (!user) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
   }

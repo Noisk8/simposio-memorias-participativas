@@ -1,6 +1,6 @@
-import { getCorsHeaders, getVerifiedUser, hasRole, checkRateLimit, getClientIp, rateLimitHeaders, isSafeContentPath } from '../security';
+import { getCorsHeaders, getVerifiedUserWithRoles, hasRole, checkRateLimit, getClientIp, rateLimitHeaders, isSafeContentPath } from '../security';
 
-export const handler = async (event: any, context: any) => {
+export const handler = async (event: any) => {
   const headers = getCorsHeaders(event, 'GET, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
@@ -15,7 +15,7 @@ export const handler = async (event: any, context: any) => {
     };
   }
 
-  const user = getVerifiedUser(context);
+  const user = await getVerifiedUserWithRoles(event);
   if (!user) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
   }

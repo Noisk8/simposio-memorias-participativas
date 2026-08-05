@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import SupabaseAuth from '../../components/SupabaseAuth.astro';
 ---
 
 <Layout title="Crear memoria - Admin">
@@ -11,6 +12,8 @@ import Layout from '../../layouts/Layout.astro';
       <p class="text-ugr-text-light mb-8">
         Solo los usuarios con rol <strong>admin</strong> pueden crear memorias desde aquí. El cambio se guardará en el repositorio y Netlify desplegará el sitio automáticamente.
       </p>
+
+      <SupabaseAuth intro="Inicia sesión con una cuenta de administrador para crear memorias." />
 
       <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6">
         No tienes permiso para crear memorias. Inicia sesión con una cuenta de administrador.
@@ -84,17 +87,17 @@ import Layout from '../../layouts/Layout.astro';
   const loading = document.getElementById('loading');
   const status = document.getElementById('status');
 
-  function waitForIdentity(callback) {
-    if (window.netlifyIdentity) {
-      callback(window.netlifyIdentity);
+  function waitForAuth(callback) {
+    if (window.supabaseAuth) {
+      callback(window.supabaseAuth);
       return;
     }
     var attempts = 0;
     var interval = setInterval(function () {
       attempts++;
-      if (window.netlifyIdentity) {
+      if (window.supabaseAuth) {
         clearInterval(interval);
-        callback(window.netlifyIdentity);
+        callback(window.supabaseAuth);
       } else if (attempts > 60) {
         clearInterval(interval);
         loading.textContent = 'No se pudo cargar la autenticación.';
@@ -102,47 +105,29 @@ import Layout from '../../layouts/Layout.astro';
     }, 100);
   }
 
-  function isAdmin(user) {
-    if (!user) return false;
-    var metadata = user.app_metadata || user.user_metadata || {};
-    var roles = metadata.roles || user.roles || [];
-    return roles.includes('admin');
+  async function getToken() {
+    var auth = window.supabaseAuth;
+    return auth ? await auth.getToken() : null;
   }
 
-  function getUserName(user) {
-    var metadata = user.user_metadata || user.app_metadata || {};
-    return metadata.full_name || metadata.name || user.email;
-  }
-
-  waitForIdentity(function (identity) {
-    function checkUser(user) {
-      if (!user) {
+  waitForAuth(function (auth) {
+    function refresh() {
+      auth.getUser().then(function (user) {
         loading.classList.add('hidden');
-        form.classList.add('hidden');
-        notAllowed.classList.remove('hidden');
-        notAllowed.textContent = 'Debes iniciar sesión para acceder.';
-        return;
-      }
+        if (!user) {
+          form.classList.add('hidden');
+          notAllowed.classList.add('hidden');
+          return;
+        }
 
-      loading.classList.add('hidden');
-      form.classList.remove('hidden');
-
-      // Si el rol admin no está en el token, mostrar aviso sin bloquear:
-      // la Netlify Function valida el permiso real (rol o ADMIN_EMAILS).
-      if (!isAdmin(user)) {
-        notAllowed.classList.remove('hidden');
-        notAllowed.textContent = 'Hola ' + getUserName(user) + '. Tu token no incluye el rol admin; si eres administrador (ADMIN_EMAILS), las acciones funcionarán igualmente.';
-      } else {
+        // El acceso real lo valida la Netlify Function; aquí solo mostramos el formulario.
+        form.classList.remove('hidden');
         notAllowed.classList.add('hidden');
-      }
+      });
     }
 
-    // Esperar a que Netlify Identity termine de inicializar la sesión.
-    identity.on('init', checkUser);
-    identity.on('login', checkUser);
-    identity.on('logout', function () {
-      checkUser(null);
-    });
+    auth.ready.then(refresh);
+    window.addEventListener('supabase-auth', refresh);
   });
 
   form?.addEventListener('submit', async function (e) {
@@ -150,15 +135,7 @@ import Layout from '../../layouts/Layout.astro';
     status.textContent = 'Enviando...';
     status.className = 'text-sm font-medium text-ugr-text-light';
 
-    var identity = window.netlifyIdentity;
-    var user = identity?.currentUser?.();
-    if (!user) {
-      status.textContent = 'Debes iniciar sesión.';
-      status.className = 'text-sm font-medium text-red-600';
-      return;
-    }
-
-    var token = user.token?.access_token;
+    var token = await getToken();
     if (!token) {
       status.textContent = 'No se encontró el token de sesión.';
       status.className = 'text-sm font-medium text-red-600';
