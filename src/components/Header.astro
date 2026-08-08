@@ -40,9 +40,9 @@ import DynamicMenu from './DynamicMenu.astro';
       <!-- Usuario -->
       <div class="flex items-center gap-2 flex-shrink-0 order-2 md:order-3">
         <!-- Estado: no autenticado -->
-        <button id="login-btn" class="text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
+        <a href="/admin/login" id="login-btn" class="text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200">
           Entrar
-        </button>
+        </a>
 
         <!-- Estado: autenticado — dropdown hover -->
         <div id="user-info" class="hidden relative group">
@@ -163,8 +163,10 @@ import DynamicMenu from './DynamicMenu.astro';
   }
 </style>
 
-<script is:inline>
+<script>
   // @ts-nocheck
+  import { getSupabaseBrowserClient } from '../lib/supabase-browser.ts';
+
   const btn = document.getElementById('mobile-menu-btn');
   const nav = btn?.closest('nav')?.querySelector('.md\\:hidden.flex-col') || document.querySelector('nav .md\\:hidden');
   btn?.addEventListener('click', () => {
@@ -204,13 +206,6 @@ import DynamicMenu from './DynamicMenu.astro';
     }
   });
 
-  function isAdmin(user) {
-    if (!user) return false;
-    const metadata = user.app_metadata || user.user_metadata || {};
-    const roles = metadata.roles || user.roles || [];
-    return roles.includes('admin');
-  }
-
   function updateUserUI(user) {
     if (user && userName) {
       const metadata = user.user_metadata || user.app_metadata || {};
@@ -218,53 +213,34 @@ import DynamicMenu from './DynamicMenu.astro';
       userName.textContent = displayName;
       userInfo?.classList.remove('hidden');
       loginBtn?.classList.add('hidden');
-      if (isAdmin(user)) {
-        adminLink?.classList.remove('hidden');
-        adminLink?.classList.add('block');
-      } else {
-        adminLink?.classList.add('hidden');
-        adminLink?.classList.remove('block');
-      }
+      adminLink?.classList.remove('hidden');
+      adminLink?.classList.add('block');
     } else {
       userInfo?.classList.add('hidden');
       loginBtn?.classList.remove('hidden');
+      adminLink?.classList.add('hidden');
+      adminLink?.classList.remove('block');
     }
   }
 
-  function setupIdentity() {
-    const identity = window.netlifyIdentity;
-    if (!identity) return;
-
-    identity.on('init', (user) => updateUserUI(user));
-    identity.on('login', (user) => updateUserUI(user));
-    identity.on('logout', () => {
+  async function setupSupabase() {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
       updateUserUI(null);
-      document.location.href = '/';
-    });
-
-    loginBtn?.addEventListener('click', () => identity.open('login'));
-    logoutBtn?.addEventListener('click', () => identity.logout());
-
-    updateUserUI(identity.currentUser());
-  }
-
-  function waitForIdentity(callback) {
-    if (window.netlifyIdentity) {
-      callback();
       return;
     }
-    let attempts = 0;
-    const maxAttempts = 50;
-    const interval = setInterval(() => {
-      attempts++;
-      if (window.netlifyIdentity) {
-        clearInterval(interval);
-        callback();
-      } else if (attempts >= maxAttempts) {
-        clearInterval(interval);
-      }
-    }, 100);
+
+    const session = (await supabase.auth.getSession()).data.session;
+    updateUserUI(session?.user || null);
+    supabase.auth.onAuthStateChange((_event, nextSession) => {
+      updateUserUI(nextSession?.user || null);
+    });
+
+    logoutBtn?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.assign('/');
+    });
   }
 
-  waitForIdentity(setupIdentity);
+  setupSupabase();
 </script>

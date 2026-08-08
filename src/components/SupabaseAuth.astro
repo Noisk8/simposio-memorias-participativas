@@ -1,18 +1,31 @@
 ---
 interface Props {
   intro?: string;
+  redirectUnauthenticated?: boolean;
+  redirectAfterLogin?: string;
 }
 
-const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel.' } = Astro.props;
+const {
+  intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel.',
+  redirectUnauthenticated = false,
+  redirectAfterLogin = '',
+} = Astro.props;
 ---
 
-<div id="supabase-auth" class="hidden">
+<div
+  id="supabase-auth"
+  class="hidden"
+  data-redirect-unauthenticated={String(redirectUnauthenticated)}
+  data-redirect-after-login={redirectAfterLogin}
+>
   <div class="max-w-md mx-auto p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
     <h2 class="text-lg font-semibold text-ugr-text mb-2">Iniciar sesión</h2>
     <p class="text-sm text-ugr-text-light mb-4">{intro}</p>
     <form id="supabase-login-form" class="space-y-4">
       <div>
-        <label class="block text-sm font-semibold text-ugr-text mb-1" for="supabase-email">Email</label>
+        <label class="block text-sm font-semibold text-ugr-text mb-1" for="supabase-email"
+          >Email</label
+        >
         <input
           type="email"
           id="supabase-email"
@@ -22,7 +35,9 @@ const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel
         />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-ugr-text mb-1" for="supabase-password">Contraseña</label>
+        <label class="block text-sm font-semibold text-ugr-text mb-1" for="supabase-password"
+          >Contraseña</label
+        >
         <input
           type="password"
           id="supabase-password"
@@ -38,11 +53,13 @@ const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel
 </div>
 
 <p id="supabase-user-info" class="hidden text-sm text-ugr-text-light mb-4"></p>
-<button id="supabase-signout" class="hidden text-sm text-ugr-green hover:underline font-medium">Cerrar sesión</button>
+<button id="supabase-signout" class="hidden text-sm text-ugr-green hover:underline font-medium"
+  >Cerrar sesión</button
+>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
   import type { User } from '@supabase/supabase-js';
+  import { getSupabaseBrowserClient, safeAdminRedirect } from '../lib/supabase-browser.ts';
 
   type SupabaseAuthApi = {
     ready: Promise<boolean>;
@@ -55,19 +72,32 @@ const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel
     return window as unknown as { supabaseAuth?: SupabaseAuthApi };
   }
 
-  const url = import.meta.env.PUBLIC_SUPABASE_URL;
-  const anonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-
   const root = document.getElementById('supabase-auth');
   const form = document.getElementById('supabase-login-form');
   const errorBox = document.getElementById('supabase-login-error');
   const userInfo = document.getElementById('supabase-user-info');
   const signOutBtn = document.getElementById('supabase-signout');
 
-  let supabase: ReturnType<typeof createClient> | null = null;
+  const redirectUnauthenticated = root?.dataset.redirectUnauthenticated === 'true';
+  const configuredRedirect = root?.dataset.redirectAfterLogin || '';
+  const supabase = getSupabaseBrowserClient();
+
+  function isLoginPage(): boolean {
+    return window.location.pathname.replace(/\/+$/, '') === '/admin/login';
+  }
+
+  function loginRedirect(): string {
+    const queryRedirect = new URLSearchParams(window.location.search).get('next');
+    return safeAdminRedirect(queryRedirect, safeAdminRedirect(configuredRedirect || null));
+  }
 
   function updateUI(session: { user: { email?: string } } | null) {
     if (!session) {
+      if (redirectUnauthenticated && !isLoginPage()) {
+        const next = `${window.location.pathname}${window.location.search}`;
+        window.location.replace(`/admin/login?next=${encodeURIComponent(next)}`);
+        return;
+      }
       root?.classList.remove('hidden');
       userInfo?.classList.add('hidden');
       signOutBtn?.classList.add('hidden');
@@ -78,12 +108,15 @@ const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel
         userInfo.classList.remove('hidden');
       }
       signOutBtn?.classList.remove('hidden');
+      if (isLoginPage()) {
+        window.location.replace(loginRedirect());
+      }
     }
   }
 
   async function init() {
     const win = getWindow();
-    if (!url || !anonKey) {
+    if (!supabase) {
       win.supabaseAuth = {
         ready: Promise.resolve(false),
         getToken: async () => null,
@@ -92,22 +125,25 @@ const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel
       };
       root?.classList.remove('hidden');
       if (errorBox) {
-        errorBox.textContent = 'Supabase no está configurado (faltan PUBLIC_SUPABASE_URL y PUBLIC_SUPABASE_ANON_KEY).';
+        errorBox.textContent =
+          'Supabase no está configurado (faltan PUBLIC_SUPABASE_URL y PUBLIC_SUPABASE_ANON_KEY).';
         errorBox.classList.remove('hidden');
       }
       return;
     }
 
-    supabase = createClient(url, anonKey);
-
     win.supabaseAuth = {
       ready: supabase.auth.getSession().then(() => true),
-      getToken: async () => (await supabase!.auth.getSession()).data.session?.access_token ?? null,
-      getUser: async () => (await supabase!.auth.getSession()).data.session?.user ?? null,
+      getToken: async () => (await supabase.auth.getSession()).data.session?.access_token ?? null,
+      getUser: async () => (await supabase.auth.getSession()).data.session?.user ?? null,
       signOut: async () => {
-        await supabase!.auth.signOut();
+        await supabase.auth.signOut();
+        window.location.assign('/admin/login');
       },
     };
+
+    const initialSession = (await supabase.auth.getSession()).data.session;
+    updateUI(initialSession);
 
     supabase.auth.onAuthStateChange((_event, session) => {
       updateUI(session);
@@ -116,13 +152,15 @@ const { intro = 'Inicia sesión con tu cuenta del simposio para acceder al panel
 
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!supabase) return;
-      const email = (document.getElementById('supabase-email') as HTMLInputElement | null)?.value.trim() ?? '';
-      const password = (document.getElementById('supabase-password') as HTMLInputElement | null)?.value ?? '';
+      const email =
+        (document.getElementById('supabase-email') as HTMLInputElement | null)?.value.trim() ?? '';
+      const password =
+        (document.getElementById('supabase-password') as HTMLInputElement | null)?.value ?? '';
       errorBox?.classList.add('hidden');
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error && errorBox) {
-        errorBox.textContent = 'No se pudo iniciar sesión: ' + (error.message || 'revisa email y contraseña.');
+        errorBox.textContent =
+          'No se pudo iniciar sesión: ' + (error.message || 'revisa email y contraseña.');
         errorBox.classList.remove('hidden');
       }
     });

@@ -1,19 +1,23 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import SupabaseAuth from '../../components/SupabaseAuth.astro';
 ---
 
-<Layout title="Gestionar usuarios - Admin">
+<AdminLayout title="Gestionar usuarios - Admin">
   <section class="py-16 bg-white min-h-[60vh]">
     <div class="max-w-4xl mx-auto px-4">
-      <h1 class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+      <h1
+        class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+      >
         Gestionar usuarios y roles
       </h1>
       <p class="text-ugr-text-light mb-8">
-        Asigna los roles <strong>admin</strong> o <strong>editor</strong> a los usuarios registrados. Solo los administradores pueden acceder a esta página.
+        Asigna roles granulares a los usuarios registrados. Solo quienes tengan el permiso <strong
+          >users.manage</strong
+        > pueden modificarlos.
       </p>
 
-      <SupabaseAuth intro="Inicia sesión con una cuenta de administrador para gestionar usuarios." />
+      <SupabaseAuth redirectUnauthenticated />
 
       <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6"></div>
 
@@ -22,7 +26,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       <div id="admin-panel" class="hidden">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-semibold text-ugr-text">Usuarios registrados</h2>
-          <button id="refresh-btn" class="text-sm text-ugr-green hover:underline">Actualizar lista</button>
+          <button id="refresh-btn" class="text-sm text-ugr-green hover:underline"
+            >Actualizar lista</button
+          >
         </div>
 
         <div id="users-loading" class="text-ugr-text-light mb-4">Cargando usuarios...</div>
@@ -45,7 +51,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       </div>
     </div>
   </section>
-</Layout>
+</AdminLayout>
 
 <script is:inline>
   // @ts-nocheck
@@ -97,7 +103,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 
     try {
       var res = await fetch('/.netlify/functions/manage-users', {
-        headers: { 'Authorization': 'Bearer ' + token },
+        headers: { Authorization: 'Bearer ' + token },
       });
 
       // Si el servidor no es Netlify (p. ej. `astro dev` puro), la ruta
@@ -105,7 +111,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       var contentType = res.headers.get('content-type') || '';
       if (contentType.indexOf('application/json') === -1) {
         usersLoading.classList.add('hidden');
-        usersError.textContent = 'Las funciones de Netlify no están disponibles en este servidor. Abre esta página desde "netlify dev" (http://localhost:8888) o desde el sitio en producción.';
+        usersError.textContent =
+          'Las funciones de Netlify no están disponibles en este servidor. Abre esta página desde "netlify dev" (http://localhost:8888) o desde el sitio en producción.';
         usersError.classList.remove('hidden');
         return;
       }
@@ -115,7 +122,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       usersLoading.classList.add('hidden');
 
       if (!res.ok) {
-        usersError.textContent = data.error || 'Error al cargar los usuarios.';
+        usersError.textContent =
+          (data.error && data.error.message) || 'Error al cargar los usuarios.';
         usersError.classList.remove('hidden');
         return;
       }
@@ -138,8 +146,12 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       var tdUser = document.createElement('td');
       tdUser.className = 'px-4 py-3';
       tdUser.innerHTML =
-        '<div class="font-medium text-ugr-text">' + escapeHtml(u.name || u.email) + '</div>' +
-        '<div class="text-xs text-ugr-text-light">' + escapeHtml(u.email) + '</div>';
+        '<div class="font-medium text-ugr-text">' +
+        escapeHtml(u.name || u.email) +
+        '</div>' +
+        '<div class="text-xs text-ugr-text-light">' +
+        escapeHtml(u.email) +
+        '</div>';
 
       var tdRoles = document.createElement('td');
       tdRoles.className = 'px-4 py-3';
@@ -147,7 +159,13 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         tdRoles.innerHTML = u.roles
           .map(function (r) {
             var color = r === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
-            return '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mr-1 ' + color + '">' + escapeHtml(r) + '</span>';
+            return (
+              '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mr-1 ' +
+              color +
+              '">' +
+              escapeHtml(r) +
+              '</span>'
+            );
           })
           .join('');
       } else {
@@ -156,8 +174,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 
       var tdActions = document.createElement('td');
       tdActions.className = 'px-4 py-3';
-      tdActions.appendChild(roleButton(u, 'admin'));
-      tdActions.appendChild(roleButton(u, 'editor'));
+      ['superadmin', 'admin', 'editor', 'reviewer', 'author', 'read_only'].forEach(function (role) {
+        tdActions.appendChild(roleButton(u, role));
+      });
 
       tr.appendChild(tdUser);
       tr.appendChild(tdRoles);
@@ -175,7 +194,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       : 'text-xs px-3 py-1.5 rounded-lg border border-ugr-green text-ugr-green hover:bg-green-50 mr-2 transition-colors';
     btn.addEventListener('click', function () {
       var newRoles = hasRole
-        ? user.roles.filter(function (r) { return r !== role; })
+        ? user.roles.filter(function (r) {
+            return r !== role;
+          })
         : user.roles.concat([role]);
       setRoles(user, newRoles);
     });
@@ -198,7 +219,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify({ userId: user.id, roles: roles }),
       });
@@ -209,7 +230,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         actionStatus.className = 'mt-4 text-sm font-medium text-green-600';
         loadUsers();
       } else {
-        actionStatus.textContent = data.error || 'Error al actualizar los roles.';
+        actionStatus.textContent =
+          (data.error && data.error.message) || 'Error al actualizar los roles.';
         actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
       }
     } catch (err) {

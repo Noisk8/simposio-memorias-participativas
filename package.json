@@ -8,27 +8,23 @@
   "scripts": {
     "sync": "node scripts/sync-collections.mjs",
     "dev": "node scripts/sync-collections.mjs && astro dev",
-    "dev:cms": "node scripts/sync-collections.mjs && concurrently -k \"decap-server\" \"astro dev\"",
     "dev:netlify": "node scripts/sync-collections.mjs && netlify dev",
-    "dev:netlify-cms": "node scripts/sync-collections.mjs && concurrently -k \"decap-server\" \"netlify dev\"",
-    "cms": "decap-server",
     "build": "node scripts/sync-collections.mjs && astro build && npx pagefind --site dist",
     "preview": "astro preview",
     "astro": "astro",
     "check": "node scripts/lint-taxonomies.mjs && astro check",
     "check:taxonomies": "node scripts/lint-taxonomies.mjs",
-    "test": "node --test \"tests/*.test.mjs\"",
+    "test": "node --experimental-strip-types --test \"tests/*.test.mjs\"",
     "lint": "eslint src scripts netlify shared tests",
     "lint:fix": "eslint src scripts netlify shared tests --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check netlify shared/auth shared/content-model shared/observability shared/supabase scripts/sync-collections.mjs src/content.config.ts src/lib/supabase-browser.ts src/pages/admin/index.astro src/pages/admin/login.astro tests/security.test.mjs package.json README.md GUIA-DESPLIEGUE.md docs/SEGURIDAD.md docs/roles-cms.md docs/supabase.md docs/FASE-1-RBAC.md docs/colecciones-contenido.md docs/crear-proyectos-frontend.md docs/MANUAL-USUARIO.md"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.0",
     "@astrojs/react": "^6.0.0",
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.3",
-    "@netlify/identity": "^1.2.0",
     "@supabase/supabase-js": "^2.112.0",
     "@tailwindcss/vite": "^4.3.2",
     "@types/react": "^19.2.17",
@@ -37,14 +33,13 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sharp": "^0.34.3",
-    "tailwindcss": "^4.3.2"
+    "tailwindcss": "^4.3.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
-    "concurrently": "^9.1.2",
-    "decap-server": "^3.2.1",
     "eslint": "^10.6.0",
     "eslint-plugin-astro": "^1.7.0",
     "pagefind": "^1.5.2",

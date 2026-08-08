@@ -1,101 +1,90 @@
-import { getCorsHeaders, getVerifiedUserWithRoles, hasRole, checkRateLimit, getClientIp, logAudit, rateLimitHeaders } from '../security';
-import { slugify, isValidPublicImagePath } from '../../shared/lib.mjs';
+import { getCorsHeaders, checkRateLimit, errorResponse } from '../security';
+import { slugify } from '../../shared/lib.mjs';
+import { memoriaCreateInputSchema } from '../../shared/content-model/memoria.ts';
+import { requirePermission } from '../../shared/auth/require-permission.ts';
+import { recordAudit } from '../../shared/observability/audit.ts';
+import { getRequestId } from '../../shared/observability/request-id.ts';
+import {
+  ConfigurationError,
+  GitHubError,
+  RateLimitError,
+  ValidationError,
+  AppError,
+} from '../../shared/observability/errors.ts';
 
 export const handler = async (event: any) => {
-  const headers = getCorsHeaders(event, 'POST, OPTIONS');
+  let requestId = getRequestId(event);
+  let headers = getCorsHeaders(event, 'POST, OPTIONS', requestId);
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers };
   }
 
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Método no permitido' }) };
-  }
-
-  const user = await getVerifiedUserWithRoles(event);
-  if (!user) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
-  }
-
-  const isAdmin = hasRole(user, 'admin');
-
-  if (!isAdmin) {
-    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Solo los administradores pueden crear memorias.' }) };
-  }
-
-  const limit = checkRateLimit('write', `memoria:${user.id || user.sub || getClientIp(event)}`);
-  if (!limit.allowed) {
-    return {
-      statusCode: 429,
-      headers: rateLimitHeaders(limit, headers),
-      body: JSON.stringify({ error: 'Demasiadas peticiones. Inténtalo de nuevo en un momento.' }),
-    };
-  }
-
-  let payload;
   try {
-    payload = JSON.parse(event.body);
-  } catch {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo de la petición inválido' }) };
-  }
-
-  const { number, title, place, author, collective, image, description, body } = payload;
-  const textFields = { title, place, author, collective, image, description, body };
-  const maxLengths = { title: 180, place: 180, author: 180, collective: 240, image: 180, description: 1000, body: 100000 };
-
-  if (!Number.isInteger(number) || number < 1 || number > 999999) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'El número debe ser un entero positivo.' }) };
-  }
-  if (!title || !place || !image) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Faltan campos obligatorios: título, lugar e imagen.' }) };
-  }
-  for (const [field, value] of Object.entries(textFields)) {
-    if (value !== undefined && value !== null && String(value).length > maxLengths[field as keyof typeof maxLengths]) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: `El campo ${field} excede su longitud máxima.` }) };
+    if (event.httpMethod !== 'POST') {
+      throw new AppError('METHOD_NOT_ALLOWED', 'Método no permitido.', 405);
     }
-  }
-  if (!isValidPublicImagePath(String(image).trim())) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'La imagen debe ser una ruta pública válida dentro de /images/.' }) };
-  }
 
-  const safeTitle = String(title).trim();
-  const yamlString = (value: unknown) => JSON.stringify(String(value ?? '').trim());
-  const slug = slugify(safeTitle);
+    const auth = await requirePermission(event, 'memoria.create');
+    requestId = auth.requestId;
+    headers = getCorsHeaders(event, 'POST, OPTIONS', requestId);
 
-  const fileName = `${number}-${slug || 'memoria'}.md`;
-  const filePath = `src/content/memorias/${fileName}`;
+    const limit = checkRateLimit('write', `memoria:${auth.user.id}`);
+    if (!limit.allowed) throw new RateLimitError(Math.ceil(limit.retryAfterMs / 1000));
 
-  const frontmatter = [
-    '---',
-    `number: ${number}`,
-    `title: ${yamlString(safeTitle)}`,
-    `place: ${yamlString(place)}`,
-    `author: ${yamlString(author)}`,
-    `collective: ${yamlString(collective)}`,
-    `image: ${yamlString(image)}`,
-    `description: ${yamlString(description)}`, 
-    '---',
-    '',
-    String(body || '').trim(),
-  ].join('\n');
+    let payload;
+    try {
+      payload = JSON.parse(event.body || '{}');
+    } catch {
+      throw new ValidationError('Cuerpo de la petición inválido.');
+    }
 
-  const githubToken = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO || 'Noisk8/simposio-memorias-participativas';
-  const branch = process.env.GITHUB_BRANCH || 'main';
+    const parsed = memoriaCreateInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new ValidationError('Los datos de la memoria no son válidos.', {
+        fields: parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      });
+    }
+    const { number, title, place, author, collective, image, description, body } = parsed.data;
 
-  if (!githubToken) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'GITHUB_TOKEN no está configurado.' }) };
-  }
+    const safeTitle = String(title).trim();
+    const yamlString = (value: unknown) => JSON.stringify(String(value ?? '').trim());
+    const slug = slugify(safeTitle);
 
-  const content = Buffer.from(frontmatter).toString('base64');
-  const url = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+    const fileName = `${number}-${slug || 'memoria'}.md`;
+    const filePath = `src/content/memorias/${fileName}`;
 
-  try {
+    const frontmatter = [
+      '---',
+      `number: ${number}`,
+      `title: ${yamlString(safeTitle)}`,
+      `place: ${yamlString(place)}`,
+      `author: ${yamlString(author)}`,
+      `collective: ${yamlString(collective)}`,
+      `image: ${yamlString(image)}`,
+      `description: ${yamlString(description)}`,
+      '---',
+      '',
+      String(body || '').trim(),
+    ].join('\n');
+
+    const githubToken = process.env.GITHUB_TOKEN;
+    const repo = process.env.GITHUB_REPO || 'Noisk8/simposio-memorias-participativas';
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    if (!githubToken) throw new ConfigurationError('GITHUB_TOKEN no está configurado.');
+
+    const content = Buffer.from(frontmatter).toString('base64');
+    const url = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `Bearer ${githubToken}`,
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${githubToken}`,
         'X-GitHub-Api-Version': '2022-11-28',
       },
       body: JSON.stringify({
@@ -106,24 +95,39 @@ export const handler = async (event: any) => {
     });
 
     if (!response.ok) {
-      console.error('[create-memoria] GitHub API error:', response.status);
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'No se pudo guardar la memoria.' }) };
+      await recordAudit({
+        requestId,
+        actorId: auth.user.id,
+        action: 'memoria.create',
+        resourceType: 'memoria',
+        result: 'failure',
+        metadata: { number, filePath, githubStatus: response.status },
+      });
+      throw new GitHubError();
     }
 
     const data = await response.json();
 
-    logAudit('create-memoria', user, { number, title: safeTitle, file: filePath });
+    await recordAudit({
+      requestId,
+      actorId: auth.user.id,
+      action: 'memoria.create',
+      resourceType: 'memoria',
+      result: 'success',
+      metadata: { number, title: safeTitle, filePath, commitSha: data.commit?.sha || null },
+    });
 
     return {
       statusCode: 201,
       headers,
       body: JSON.stringify({
-        success: true,
+        ok: true,
         file: filePath,
         commit: data.commit?.sha,
+        requestId,
       }),
     };
-  } catch (error: any) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+  } catch (error: unknown) {
+    return errorResponse(error, headers, requestId);
   }
 };

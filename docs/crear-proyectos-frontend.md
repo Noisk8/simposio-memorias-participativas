@@ -1,6 +1,6 @@
 # Crear memorias desde el frontend
 
-Esta funcionalidad permite que un usuario con rol `admin` cree nuevos memorias directamente desde el sitio web, sin entrar al CMS. El formulario envía los datos a una **Netlify Function** que crea el archivo Markdown en GitHub y dispara un nuevo deploy.
+Esta funcionalidad heredada permite crear memorias desde el panel propio. El formulario envía los datos a una **Netlify Function** autenticada; la autorización se basa en el permiso `memoria.create`, no en un rol enviado por el navegador.
 
 ---
 
@@ -14,8 +14,8 @@ Esta funcionalidad permite que un usuario con rol `admin` cree nuevos memorias d
 
 ## Requisitos
 
-1. El usuario debe estar logueado con Netlify Identity.
-2. El usuario debe tener el rol `admin` en `app_metadata.roles`.
+1. El usuario debe tener una sesión válida de Supabase Auth.
+2. Al menos uno de sus roles normalizados debe conceder `memoria.create`.
 3. Netlify Functions debe tener acceso a un token de GitHub con permisos de escritura en el repositorio.
 
 ---
@@ -24,11 +24,11 @@ Esta funcionalidad permite que un usuario con rol `admin` cree nuevos memorias d
 
 En Netlify, ve a **Site settings → Environment variables** y añade:
 
-| Variable | Valor | Obligatoria |
-|---|---|---|
-| `GITHUB_TOKEN` | Token de GitHub con scope `repo` | Sí |
-| `GITHUB_REPO` | `Noisk8/simposio-memorias-participativas` | No (hay valor por defecto) |
-| `GITHUB_BRANCH` | `main` | No (valor por defecto `main`) |
+| Variable        | Valor                                     | Obligatoria                   |
+| --------------- | ----------------------------------------- | ----------------------------- |
+| `GITHUB_TOKEN`  | Token de GitHub con scope `repo`          | Sí                            |
+| `GITHUB_REPO`   | `Noisk8/simposio-memorias-participativas` | No (hay valor por defecto)    |
+| `GITHUB_BRANCH` | `main`                                    | No (valor por defecto `main`) |
 
 ### Cómo crear el token de GitHub
 
@@ -40,12 +40,11 @@ En Netlify, ve a **Site settings → Environment variables** y añade:
 
 ## Cómo funciona
 
-1. El admin visita `/admin/crear-memoria`.
-2. El frontend verifica el rol usando `window.netlifyIdentity`.
-3. Si el usuario es admin, se muestra el formulario.
-4. Al enviar, el frontend obtiene el JWT de Netlify Identity y lo envía en la cabecera `Authorization`.
-5. La Netlify Function recibe el token, valida el rol `admin` en `context.clientContext.user` y crea el archivo en GitHub.
-6. Netlify detecta el commit y redeploya el sitio con el nuevo proyecto.
+1. La persona visita `/admin/crear-memoria` e inicia sesión con Supabase Auth.
+2. Al enviar, el frontend obtiene el access token vigente y lo envía como bearer token.
+3. La función verifica el JWT con Supabase, consulta permisos efectivos con `requirePermission` y valida los datos con el esquema canónico de memoria.
+4. Si dispone de `memoria.create`, la función crea el archivo en GitHub y registra la operación en auditoría.
+5. Netlify detecta el commit y redeploya el sitio con el nuevo proyecto.
 
 ---
 
@@ -56,12 +55,12 @@ La función genera un archivo en `src/content/memorias/{numero}-{slug}.md` con e
 ```md
 ---
 number: 31
-title: "Nuevo proyecto desde el frontend"
-place: "Granada, España"
-author: ""
-collective: ""
-image: "/images/proyecto-31.jpg"
-description: "Descripción corta"
+title: 'Nuevo proyecto desde el frontend'
+place: 'Granada, España'
+author: ''
+collective: ''
+image: '/images/proyecto-31.jpg'
+description: 'Descripción corta'
 ---
 
 Texto completo en Markdown.
@@ -72,7 +71,7 @@ Texto completo en Markdown.
 ## Limitaciones
 
 - El formulario no sube imágenes automáticamente. Debes subir la imagen a `public/images/` manualmente o mediante el CMS, y luego escribir la ruta pública en el campo.
-- Solo los usuarios con rol `admin` pueden crear memorias. Los usuarios con rol `editor` no verán el formulario.
+- Los roles `superadmin`, `admin`, `editor` y `author` reciben inicialmente `memoria.create`; el backend siempre decide usando permisos efectivos.
 - El número del proyecto debe ser único dentro de la colección para evitar colisiones.
 
 ---
@@ -93,5 +92,5 @@ netlify dev
 ## Referencias
 
 - [Netlify Functions](https://docs.netlify.com/functions/overview/)
-- [Netlify Identity](https://docs.netlify.com/identity/overview/)
+- [Supabase Auth](https://supabase.com/docs/guides/auth)
 - [GitHub Contents API](https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#create-or-update-file-contents)

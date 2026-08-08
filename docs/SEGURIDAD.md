@@ -1,92 +1,63 @@
 # Seguridad del CMS y las funciones administrativas
 
-## Principios actuales
+## Autoridad de identidad
 
-Las funciones administrativas se ejecutan únicamente en Netlify o mediante `netlify dev`. La autorización se basa en el usuario verificado contra **Supabase Auth** (endpoint `/auth/v1/user` con el JWT del header `Authorization: Bearer`) y en los roles leídos de la tabla `public.user_roles` en cada petición.
+Los paneles propios usan exclusivamente Supabase Auth. Cada Netlify Function protegida valida el bearer token con `auth.getUser()`, obtiene el usuario real y consulta sus permisos efectivos en las tablas normalizadas de Supabase. Los roles del body, `localStorage`, `user_metadata` y `app_metadata` no intervienen en la autorización.
 
-No se debe confiar en un JWT decodificado manualmente ni en datos enviados por el navegador para decidir si una persona es administradora.
+El acceso activo de Decap, Netlify Identity y Git Gateway fue retirado. `/admin/` y el encabezado comparten exclusivamente la sesión de Supabase.
 
-## Variables de entorno
+## Funciones y permisos
 
-Configura en Netlify, nunca en el repositorio:
+| Función                | Método | Permiso                                            |
+| ---------------------- | -----: | -------------------------------------------------- |
+| `manage-users`         |    GET | `users.read`                                       |
+| `manage-users`         |   POST | `users.manage`                                     |
+| `create-coleccion`     |   POST | `settings.manage`                                  |
+| `create-proyecto`      |   POST | `memoria.create`                                   |
+| `get-revision-history` |    GET | permiso `*.read` derivado de la colección validada |
 
-- `GITHUB_TOKEN`: token fine-grained o GitHub App limitado al repositorio y con `Contents: Read and write`.
-- `GITHUB_REPO`: repositorio en formato `organizacion/repositorio`.
-- `GITHUB_BRANCH`: normalmente `main`.
-- `SITE_URL`: origen público autorizado para CORS.
-- `SUPABASE_URL`: URL del proyecto Supabase.
-- `SUPABASE_SERVICE_ROLE_KEY`: clave `service_role` (nunca exponer en el cliente).
-- `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY`: versiones públicas usadas solo en el navegador para login de los paneles.
+El helper canónico es `requirePermission(event, permiso)`. Devuelve `requestId`, `user`, `roles` y `permissions`.
 
-No compartas ni imprimas valores de estas variables en logs, capturas o incidencias.
+## Errores, logs y auditoría
 
-## Funciones protegidas
+Todas las respuestas de error siguen este contrato:
 
-Las funciones administrativas actuales son:
-
-- `manage-users`: listar usuarios y asignar roles; requiere rol `admin`.
-- `create-coleccion`: crear una colección; requiere rol `admin`.
-- `create-proyecto`: endpoint compatible para crear una memoria; requiere rol `admin`.
-- `get-revision-history`: consultar historial de contenido; requiere usuario autenticado con rol `admin` o `editor`.
-
-Todas deben validar:
-
-1. método HTTP;
-2. JWT de Supabase verificado (`getVerifiedUserWithRoles` en `netlify/security.ts`);
-3. rol requerido, leído de `public.user_roles`;
-4. formato y tamaño de los datos recibidos;
-5. rutas permitidas antes de consultar o escribir en GitHub.
-
-## CORS y cabeceras
-
-Las funciones no deben usar `Access-Control-Allow-Origin: *` en producción. El origen permitido debe ser el dominio público configurado en `SITE_URL`; durante desarrollo se aceptan únicamente los puertos locales definidos por el proyecto.
-
-El archivo `public/_headers` añade cabeceras generales como:
-
-- `X-Content-Type-Options: nosniff`;
-- `X-Frame-Options: DENY`;
-- `Referrer-Policy: strict-origin-when-cross-origin`;
-- `Permissions-Policy`;
-- `Strict-Transport-Security`.
-
-## Límites de peticiones y auditoría
-
-Las funciones administrativas limitan el ritmo de peticiones por usuario (e IP de respaldo) con una ventana deslizante en memoria (`shared/lib.mjs` → `createRateLimiter`):
-
-- Escrituras (crear colección, crear memoria, asignar roles): 20 peticiones/minuto.
-- Lecturas (listar usuarios, historial de revisiones): 60 peticiones/minuto.
-
-Al superar el límite se responde `429` con la cabecera `Retry-After`. El límite es por instancia serverless: suficiente como control básico, pero no sustituye a un límite distribuido.
-
-Cada acción de escritura emite un evento de auditoría (`logAudit`) en los logs de la función con formato JSON (`type: "audit"`), incluyendo acción, usuario, email y detalle. Si Supabase está configurado, también se inserta una fila en `public.audit_log`. No se registran tokens ni cabeceras `Authorization`.
-
-## Reglas para cambios futuros
-
-- No reintroducir fallbacks que acepten JWT sin verificar firma.
-- No añadir tokens, contraseñas o credenciales a `.env.example` con valores reales.
-- No permitir que una función escriba rutas arbitrarias del repositorio.
-- Validar y limitar los campos antes de generar YAML o Markdown.
-- Evitar devolver a los usuarios detalles completos de errores de GitHub.
-- Registrar errores sin incluir tokens, cabeceras `Authorization` ni datos sensibles.
-- Revisar cualquier cambio de roles, permisos o escritura en `main`.
-
-## Revisión antes de desplegar
-
-Ejecuta:
-
-```bash
-npm run lint
-npm run check
-npm run build
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "AUTHORIZATION_DENIED",
+    "message": "Permisos insuficientes.",
+    "requestId": "uuid"
+  }
+}
 ```
 
-Además, comprueba en Netlify que:
+El mismo UUID se devuelve en `x-request-id` y se incorpora a logs JSON y `public.audit_log`. El logger elimina campos cuyos nombres indiquen tokens, contraseñas, cookies, secretos o claves privadas. La auditoría de autorización se espera antes de continuar; las escrituras registran además su acción de dominio.
 
-- las variables de entorno de Supabase y GitHub tienen el alcance de Functions;
-- el esquema de Supabase (`supabase/schema.sql`) está aplicado y los emails de administrador están en `admin_emails`;
-- Git Gateway o el backend de Decap configurado está operativo;
-- el token de GitHub sigue limitado al repositorio correcto.
+## Variables
 
-## Riesgos pendientes
+- `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`: solo Functions.
+- `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY`: login en navegador.
+- `SITE_URL`: origen principal permitido.
+- `ALLOWED_ORIGINS`: orígenes adicionales separados por comas.
+- `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_BRANCH`: integración GitHub heredada hasta las fases 2 y 6.
 
-Git Gateway y Netlify Identity siguen siendo dependencias para el editor Decap (`/admin/`) y deben revisarse porque su soporte y evolución pueden cambiar. Los paneles propios ya no dependen de ellos (Supabase Auth). Conviene vigilar los límites del plan de Supabase y la caducidad de la clave `service_role`.
+La service role nunca debe tener prefijo `PUBLIC_`, aparecer en logs ni formar parte del bundle del navegador.
+
+## Controles de Supabase
+
+- RLS está activo en roles, permisos, relaciones, asignaciones y auditoría.
+- `anon` y `authenticated` no tienen acceso directo a estas tablas.
+- La mutación atómica de roles se ejecuta mediante `cms_set_user_roles` y solo se concede a `service_role`.
+- El registro público debe estar desactivado; las cuentas se crean por invitación o desde una función autorizada.
+- Se recomienda confirmación de correo y MFA para `superadmin` y `admin`.
+
+## Riesgos aún abiertos
+
+- El rate limiting continúa en memoria hasta la Fase 7; no es distribuido entre instancias.
+- Las funciones de escritura heredadas todavía usan un token y escriben en la rama configurada hasta migrarlas a la API editorial y a GitHub App/PR.
+- La edición general de varias colecciones aún no tiene formulario en el panel propio; no debe resolverse reactivando Decap o Git Gateway.
+- La protección de `main` se configura externamente en GitHub durante la Fase 6.
+
+Consulta [Fase 1: RBAC y seguridad](./FASE-1-RBAC.md) para despliegue y reversión.

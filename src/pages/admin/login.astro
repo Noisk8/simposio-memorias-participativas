@@ -1,0 +1,20 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SupabaseAuth from '../../components/SupabaseAuth.astro';
+---
+
+<Layout title="Iniciar sesión - Administración" noindex>
+  <section class="py-16 bg-white min-h-[60vh]">
+    <div class="max-w-lg mx-auto px-4">
+      <h1
+        class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+      >
+        Administración
+      </h1>
+      <SupabaseAuth
+        intro="Inicia sesión con tu cuenta de Supabase para acceder al panel administrativo."
+        redirectAfterLogin="/admin/?welcome=1"
+      />
+    </div>
+  </section>
+</Layout>

@@ -1,73 +1,53 @@
-import { getCorsHeaders, getVerifiedUserWithRoles, hasRole, checkRateLimit, getClientIp, rateLimitHeaders, isSafeContentPath } from '../security';
+import { checkRateLimit, errorResponse, getCorsHeaders, isSafeContentPath } from '../security';
+import { requirePermission } from '../../shared/auth/require-permission.ts';
+import { recordAudit } from '../../shared/observability/audit.ts';
+import { getRequestId } from '../../shared/observability/request-id.ts';
+import { getGitHubConfiguration } from '../../shared/github/config.ts';
+import {
+  AppError,
+  GitHubError,
+  RateLimitError,
+  ValidationError,
+} from '../../shared/observability/errors.ts';
+
+const READ_PERMISSIONS: Record<string, string> = {
+  entradas: 'entrada.read',
+  memorias: 'memoria.read',
+  paginas: 'pagina.read',
+  simposios: 'simposio.read',
+  categorias: 'taxonomy.read',
+  etiquetas: 'taxonomy.read',
+};
 
 export const handler = async (event: any) => {
-  const headers = getCorsHeaders(event, 'GET, OPTIONS');
+  let requestId = getRequestId(event);
+  let headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers };
-  }
-
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Método no permitido.' }),
-    };
-  }
-
-  const user = await getVerifiedUserWithRoles(event);
-  if (!user) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Autenticación requerida.' }) };
-  }
-  if (!hasRole(user, 'admin') && !hasRole(user, 'editor')) {
-    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Permisos insuficientes.' }) };
-  }
-
-  const limit = checkRateLimit('read', `revisions:${user.id || user.sub || getClientIp(event)}`);
-  if (!limit.allowed) {
-    return {
-      statusCode: 429,
-      headers: rateLimitHeaders(limit, headers),
-      body: JSON.stringify({ error: 'Demasiadas peticiones. Inténtalo de nuevo en un momento.' }),
-    };
-  }
-
-  const params = event.queryStringParameters || {};
-  const filePath = params.path;
-
-  if (!isSafeContentPath(filePath)) {
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({ error: 'La ruta solicitada no es válida.' }),
-    };
-  }
-
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'GITHUB_TOKEN no configurado.' }),
-    };
-  }
-
-  const repo = process.env.GITHUB_REPO || '';
-  const [repoOwner, repoName] = repo.split('/');
-  const branch = process.env.GITHUB_BRANCH || 'main';
-
-  if (!repoOwner || !repoName) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'GITHUB_REPO no está configurado correctamente.' }),
-    };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
 
   try {
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${encodeURIComponent(filePath)}&sha=${branch}&per_page=30`;
+    if (event.httpMethod !== 'GET') {
+      throw new AppError('METHOD_NOT_ALLOWED', 'Método no permitido.', 405);
+    }
 
-    const res = await fetch(apiUrl, {
+    const filePath = event.queryStringParameters?.path;
+    if (!isSafeContentPath(filePath)) throw new ValidationError('La ruta solicitada no es válida.');
+
+    const collection = filePath.split('/')[2];
+    const permission = READ_PERMISSIONS[collection];
+    if (!permission) throw new ValidationError('La colección solicitada no está permitida.');
+
+    const auth = await requirePermission(event, permission);
+    requestId = auth.requestId;
+    headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
+
+    const limit = checkRateLimit('read', `revisions:${auth.user.id}`);
+    if (!limit.allowed) throw new RateLimitError(Math.ceil(limit.retryAfterMs / 1000));
+
+    const { token, owner: repoOwner, repo: repoName, branch } = getGitHubConfiguration();
+
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${encodeURIComponent(filePath)}&sha=${encodeURIComponent(branch)}&per_page=30`;
+    const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github.v3+json',
@@ -75,18 +55,21 @@ export const handler = async (event: any) => {
       },
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('[get-revision-history] GitHub API error:', res.status, errText);
-      return {
-        statusCode: res.status,
-        headers,
-        body: JSON.stringify({ error: `Error de GitHub API (${res.status})` }),
-      };
+    if (!response.ok) {
+      await recordAudit({
+        requestId,
+        actorId: auth.user.id,
+        action: 'github.revision-history',
+        resourceType: collection,
+        result: 'failure',
+        metadata: { filePath, githubStatus: response.status },
+      });
+      throw new GitHubError('No se pudo consultar el historial de revisiones.', {
+        status: response.status,
+      });
     }
 
-    const commits = await res.json();
-
+    const commits = await response.json();
     const revisions = commits.map((commit: any) => ({
       sha: commit.sha,
       message: commit.commit.message,
@@ -99,14 +82,9 @@ export const handler = async (event: any) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ revisions }),
+      body: JSON.stringify({ ok: true, revisions, requestId }),
     };
-  } catch (err: any) {
-    console.error('[get-revision-history] Error:', err.message);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: err.message }),
-    };
+  } catch (error: unknown) {
+    return errorResponse(error, headers, requestId);
   }
 };

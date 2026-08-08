@@ -1,0 +1,1166 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import SupabaseAuth from '../../components/SupabaseAuth.astro';
+---
+
+<AdminLayout title="Gestión de contenidos - Admin">
+  <section class="cms-shell">
+    <div class="cms-page">
+      <div class="cms-mobile-heading">
+        <div>
+          <a href="/admin/" class="text-sm text-ugr-green hover:underline">← Panel</a>
+          <h1 class="mt-2 text-3xl font-bold text-ugr-green-dark">Gestión de contenidos</h1>
+          <p class="mt-2 text-ugr-text-light">
+            Edición protegida con sesión y permisos de Supabase.
+          </p>
+        </div>
+        <button
+          id="new-button"
+          class="rounded-lg bg-ugr-green px-5 py-2.5 font-semibold text-white hover:opacity-90"
+          >Nuevo contenido</button
+        >
+      </div>
+
+      <SupabaseAuth redirectUnauthenticated />
+      <div id="status" class="mb-5 rounded-lg bg-white p-4 text-sm text-ugr-text-light shadow-sm">
+        Verificando sesión…
+      </div>
+
+      <div id="workspace" class="cms-workspace hidden">
+        <aside class="cms-sidebar">
+          <select id="collection" class="sr-only">
+            <option value="entradas">Entradas</option>
+            <option value="memorias">Memorias</option>
+            <option value="paginas">Páginas</option>
+            <option value="simposios">Simposios</option>
+            <option value="categorias">Categorías</option>
+            <option value="etiquetas">Etiquetas</option>
+          </select>
+          <label for="search" class="sr-only">Buscar</label>
+          <input
+            id="search"
+            type="search"
+            placeholder="Buscar en todo el CMS…"
+            class="cms-search"
+          />
+          <p class="cms-side-title">CONTENIDO</p>
+          <nav id="collection-nav" class="cms-side-nav"></nav>
+          <div class="cms-side-divider"></div>
+          <p class="cms-side-title">BORRADORES</p>
+          <button type="button" class="cms-draft-link" data-draft-collection="entradas"
+            >✎ Borradores · Entradas</button
+          >
+          <button type="button" class="cms-draft-link" data-draft-collection="memorias"
+            >✎ Borradores · Memorias</button
+          >
+          <button type="button" class="cms-draft-link" data-draft-collection="paginas"
+            >✎ Borradores · Páginas</button
+          >
+          <label class="mb-4 flex items-center gap-2 text-sm"
+            ><input id="drafts-only" type="checkbox" /> Solo borradores</label
+          >
+          <div class="hidden">
+            <select
+              id="sort"
+              class="min-w-0 flex-1 rounded-lg border border-gray-300 px-2 py-2 text-sm"
+            >
+              <option value="title">Ordenar: título</option>
+              <option value="date">Ordenar: fecha</option>
+              <option value="number">Ordenar: número</option>
+            </select>
+            <button
+              id="view-list"
+              type="button"
+              title="Vista de lista"
+              class="rounded border border-gray-300 px-3">☰</button
+            >
+            <button
+              id="view-grid"
+              type="button"
+              title="Vista de cuadrícula"
+              class="rounded border border-gray-300 px-3">▦</button
+            >
+          </div>
+        </aside>
+
+        <main class="cms-content">
+          <section id="collection-view">
+            <header class="cms-collection-header">
+              <div>
+                <h1 id="collection-title">Entradas</h1><p id="collection-description"></p>
+              </div><button id="header-new-button" type="button" class="cms-primary"
+                >＋ Nueva entrada</button
+              >
+            </header>
+            <div class="cms-list-toolbar">
+              <select id="sort-visible"
+                ><option value="title">Sort by · Título</option><option value="date"
+                  >Sort by · Fecha</option
+                ><option value="number">Sort by · Número</option></select
+              ><select id="group"><option value="">Group by</option></select><button
+                id="view-list-visible"
+                type="button">☰</button
+              ><button id="view-grid-visible" type="button">▦</button>
+            </div>
+            <div id="items" class="cms-cards"></div>
+          </section>
+          <div id="empty-editor" class="hidden"></div>
+          <form id="editor" class="hidden">
+            <div
+              class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-4"
+            >
+              <div>
+                <h2 id="editor-title" class="text-2xl font-semibold text-ugr-green-dark">
+                  Nuevo contenido
+                </h2>
+                <p id="file-path" class="mt-1 text-xs text-gray-500"></p>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  id="back-button"
+                  class="rounded-lg border border-gray-300 px-4 py-2 text-sm">← Volver</button
+                >
+                <button
+                  type="button"
+                  id="history-button"
+                  class="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                  >Historial</button
+                >
+                <button
+                  type="button"
+                  id="delete-button"
+                  class="hidden rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                  >Eliminar</button
+                >
+                <button
+                  type="button"
+                  id="save-draft-button"
+                  class="rounded-lg border border-ugr-green px-4 py-2 text-sm font-semibold text-ugr-green hover:bg-green-50"
+                  >Guardar borrador</button
+                >
+                <button
+                  type="button"
+                  id="publish-button"
+                  class="rounded-lg bg-ugr-green px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
+                  >Publicar</button
+                >
+              </div>
+            </div>
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div>
+                <div id="fields" class="grid grid-cols-1 gap-4 md:grid-cols-2"></div>
+                <div class="mt-5">
+                  <label for="body" class="mb-1 block text-sm font-semibold"
+                    >Contenido (Markdown)</label
+                  >
+                  <textarea
+                    id="body"
+                    rows="18"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+                    placeholder="Escribe aquí el contenido…"></textarea>
+                </div>
+              </div>
+              <aside class="xl:sticky xl:top-5 xl:self-start">
+                <div class="mb-2 flex items-center justify-between">
+                  <h3 class="font-semibold">Vista previa en tiempo real</h3>
+                  <span class="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800"
+                    >En vivo</span
+                  >
+                </div>
+                <article
+                  id="live-preview"
+                  class="min-h-96 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                >
+                </article>
+              </aside>
+            </div>
+          </form>
+          <section id="history" class="hidden"></section>
+        </main>
+      </div>
+    </div>
+  </section>
+</AdminLayout>
+
+<script is:inline>
+  // @ts-nocheck
+  const schemas = {
+    entradas: [
+      ['draft', 'Borrador', 'boolean'],
+      ['simposio', 'Simposio', 'relation:simposios'],
+      ['title', 'Título', 'text', 'required'],
+      ['date', 'Fecha', 'date'],
+      ['publish_date', 'Fecha de publicación', 'date'],
+      ['author', 'Autoría', 'text'],
+      ['categories', 'Categorías', 'relations:categorias'],
+      ['tags', 'Etiquetas', 'relations:etiquetas'],
+      ['image', 'Imagen (/images/…)', 'text'],
+      ['description', 'Descripción', 'textarea'],
+    ],
+    memorias: [
+      ['draft', 'Borrador', 'boolean'],
+      ['simposio', 'Simposio', 'relation:simposios'],
+      ['number', 'Número', 'number', 'required'],
+      ['title', 'Título', 'text', 'required'],
+      ['place', 'Lugar', 'text', 'required'],
+      ['author', 'Autoría', 'text'],
+      ['collective', 'Colectivo', 'text'],
+      ['categories', 'Categorías', 'relations:categorias'],
+      ['tags', 'Etiquetas', 'relations:etiquetas'],
+      ['image', 'Imagen (/images/…)', 'text'],
+      ['description', 'Descripción', 'textarea'],
+      ['publish_date', 'Fecha de publicación', 'date'],
+    ],
+    paginas: [
+      ['draft', 'Borrador', 'boolean'],
+      ['simposio', 'Simposio', 'relation:simposios'],
+      ['slug', 'Slug', 'text'],
+      ['parent', 'Página superior', 'relation:paginas'],
+      ['is_home', 'Es portada', 'boolean'],
+      ['order', 'Orden', 'number'],
+      ['template', 'Plantilla', 'select:default|el-simposio|organizacion|programa|contacto|custom'],
+      ['title', 'Título', 'text', 'required'],
+      ['description', 'Descripción', 'textarea'],
+      ['image', 'Imagen', 'text'],
+      ['email', 'Email', 'text'],
+      ['instagram', 'Instagram URL', 'text'],
+      ['instagram_handle', 'Usuario de Instagram', 'text'],
+      ['organizadores', 'Organizadores (separados por coma)', 'list'],
+      ['instituciones_image', 'Imagen de instituciones', 'text'],
+    ],
+    simposios: [
+      ['title', 'Título', 'text', 'required'],
+      ['slug', 'Slug', 'text', 'required'],
+      ['edition', 'Edición', 'number', 'required'],
+      ['year', 'Año', 'number', 'required'],
+      ['date', 'Fecha', 'date'],
+      ['place', 'Lugar', 'text'],
+      ['status', 'Estado', 'select:active|archived|upcoming'],
+      ['theme', 'Tema', 'text'],
+      ['image', 'Imagen', 'text'],
+      ['poster', 'Cartel', 'text'],
+      ['program_url', 'URL del programa', 'text'],
+      ['is_default', 'Predeterminado', 'boolean'],
+    ],
+    categorias: [
+      ['title', 'Título', 'text', 'required'],
+      ['slug', 'Slug', 'text'],
+      ['description', 'Descripción', 'textarea'],
+      ['parent', 'Categoría superior', 'relation:categorias'],
+    ],
+    etiquetas: [
+      ['title', 'Título', 'text', 'required'],
+      ['slug', 'Slug', 'text'],
+      ['description', 'Descripción', 'textarea'],
+    ],
+  };
+  const defaults = {
+    draft: false,
+    simposio: '2026',
+    status: 'active',
+    template: 'default',
+    is_home: false,
+    is_default: false,
+    order: 0,
+    categories: [],
+    tags: [],
+    organizadores: [],
+  };
+  const collection = document.getElementById('collection');
+  const itemsNode = document.getElementById('items');
+  const fieldsNode = document.getElementById('fields');
+  const editor = document.getElementById('editor');
+  const emptyEditor = document.getElementById('empty-editor');
+  const statusNode = document.getElementById('status');
+  const search = document.getElementById('search');
+  const draftsOnly = document.getElementById('drafts-only');
+  const sortSelect = document.getElementById('sort');
+  const collectionNav = document.getElementById('collection-nav');
+  const previewNode = document.getElementById('live-preview');
+  const historyNode = document.getElementById('history');
+  const collectionView = document.getElementById('collection-view');
+  const collectionTitle = document.getElementById('collection-title');
+  const collectionDescription = document.getElementById('collection-description');
+  let items = [];
+  let globalItems = [];
+  let current = null;
+  let gridView = true;
+  const references = { categorias: [], etiquetas: [], simposios: [], paginas: [] };
+  const labels = {
+    entradas: 'Entradas',
+    memorias: 'Memorias',
+    paginas: 'Páginas',
+    simposios: 'Ediciones',
+    categorias: 'Categorías',
+    etiquetas: 'Etiquetas',
+  };
+  const descriptions = {
+    entradas:
+      'Entradas o noticias del sitio (equivalente a Posts de WordPress). Solo se listan las publicadas; los borradores están en la sección Borradores.',
+    memorias:
+      'Proyectos del Museo de Memorias Vivas, organizados por número, lugar, autoría y colectivo.',
+    paginas:
+      'Páginas informativas de cada simposio: El Simposio, Organización, Programa, Contacto y otras.',
+    simposios:
+      'Cada edición de la Red Internacional de Memorias Participativas. Una edición puede ser la activa por defecto.',
+    categorias: 'Taxonomía jerárquica para clasificar entradas y memorias.',
+    etiquetas: 'Taxonomía plana de palabras clave para entradas y memorias.',
+  };
+  const groupFields = {
+    entradas: [
+      ['author', 'Autor/a'],
+      ['date', 'Mes de publicación'],
+    ],
+    memorias: [
+      ['place', 'Lugar'],
+      ['collective', 'Colectivo'],
+    ],
+    paginas: [
+      ['simposio', 'Simposio'],
+      ['template', 'Plantilla'],
+    ],
+    simposios: [['status', 'Estado']],
+    categorias: [['parent', 'Categoría padre']],
+    etiquetas: [],
+  };
+
+  function esc(value) {
+    const node = document.createElement('span');
+    node.textContent = String(value || '');
+    return node.innerHTML;
+  }
+  async function token() {
+    return window.supabaseAuth ? await window.supabaseAuth.getToken() : null;
+  }
+  async function api(url, options) {
+    const accessToken = await token();
+    const response = await fetch(url, {
+      ...(options || {}),
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json',
+        ...((options || {}).headers || {}),
+      },
+    });
+    const type = response.headers.get('content-type') || '';
+    if (!type.includes('application/json'))
+      throw new Error(
+        'Las funciones administrativas no están disponibles. Usa netlify dev o el sitio publicado.'
+      );
+    const data = await response.json();
+    if (!response.ok) {
+      const fields = data.error?.details?.fields;
+      throw new Error(
+        data.error?.message +
+          (fields ? ' ' + fields.map((f) => f.path + ': ' + f.message).join('; ') : '')
+      );
+    }
+    return data;
+  }
+  function setStatus(message, error) {
+    statusNode.textContent = message;
+    statusNode.className =
+      'cms-api-status mb-5 rounded-lg p-4 text-sm shadow-sm ' +
+      (error ? 'bg-red-50 text-red-700' : 'bg-white text-ugr-text-light');
+    statusNode.classList.toggle('cms-api-error', Boolean(error));
+  }
+
+  function createNavigation() {
+    collectionNav.innerHTML = '';
+    Object.entries(labels).forEach(([key, label]) => {
+      if (key === 'categorias') {
+        const divider = document.createElement('div');
+        divider.className = 'cms-side-divider';
+        collectionNav.appendChild(divider);
+        const title = document.createElement('p');
+        title.className = 'cms-side-title';
+        title.textContent = 'TAXONOMÍAS';
+        collectionNav.appendChild(title);
+      }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.collection = key;
+      button.innerHTML = '<span>▣</span>' + esc(label);
+      button.className = collection.value === key ? 'active' : '';
+      button.onclick = () => {
+        collection.value = key;
+        draftsOnly.checked = false;
+        createNavigation();
+        loadItems();
+      };
+      collectionNav.appendChild(button);
+    });
+    const divider = document.createElement('div');
+    divider.className = 'cms-side-divider';
+    collectionNav.appendChild(divider);
+    const title = document.createElement('p');
+    title.className = 'cms-side-title';
+    title.textContent = 'ADMINISTRACIÓN';
+    collectionNav.appendChild(title);
+    [
+      ['/admin/medios', '▧ Biblioteca de imágenes'],
+      ['/admin/gestion-usuarios', '♟ Usuarios y roles'],
+      ['/admin/gestion-colecciones', '⚙ Gestionar colecciones'],
+    ].forEach(([href, label]) => {
+      const link = document.createElement('a');
+      link.href = href;
+      link.textContent = label;
+      collectionNav.appendChild(link);
+    });
+  }
+
+  async function loadReferences() {
+    const loaded = await Promise.all(
+      Object.keys(labels).map(async (name) => {
+        try {
+          const list =
+            (await api('/.netlify/functions/manage-content?collection=' + name)).items || [];
+          if (name in references) references[name] = list;
+          return list.map((item) => ({ ...item, collection: name }));
+        } catch {
+          if (name in references) references[name] = [];
+          return [];
+        }
+      })
+    );
+    globalItems = loaded.flat();
+  }
+
+  async function loadItems() {
+    current = null;
+    editor.classList.add('hidden');
+    historyNode.classList.add('hidden');
+    collectionView.classList.remove('hidden');
+    collectionTitle.textContent = labels[collection.value];
+    collectionDescription.textContent = descriptions[collection.value];
+    document.getElementById('header-new-button').textContent =
+      '＋ ' +
+      (collection.value === 'simposios'
+        ? 'Edición de simposio'
+        : collection.value === 'memorias'
+          ? 'Memoria'
+          : collection.value === 'paginas'
+            ? 'Página'
+            : collection.value === 'categorias'
+              ? 'Categoría'
+              : collection.value === 'etiquetas'
+                ? 'Etiqueta'
+                : 'Entrada');
+    const group = document.getElementById('group');
+    group.innerHTML = '<option value="">Group by</option>';
+    groupFields[collection.value].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = 'Agrupar · ' + label;
+      group.appendChild(option);
+    });
+    itemsNode.innerHTML = '<p class="text-sm text-gray-500">Cargando…</p>';
+    try {
+      const result = await api(
+        '/.netlify/functions/manage-content?collection=' + encodeURIComponent(collection.value)
+      );
+      items = result.items || [];
+      renderItems();
+      setStatus(items.length + ' contenidos cargados.');
+    } catch (error) {
+      itemsNode.innerHTML = '';
+      setStatus(error.message, true);
+    }
+  }
+  function renderItems() {
+    const query = search.value.trim().toLowerCase();
+    const source = query
+      ? globalItems
+      : items.map((item) => ({ ...item, collection: collection.value }));
+    const filtered = source.filter(
+      (item) =>
+        (draftsOnly.checked
+          ? item.data.draft
+          : !['entradas', 'memorias', 'paginas'].includes(item.collection) || !item.data.draft) &&
+        (!query ||
+          String(item.data.title || item.name)
+            .toLowerCase()
+            .includes(query))
+    );
+    filtered.sort((a, b) => {
+      const groupKey = document.getElementById('group').value;
+      const key = groupKey || sortSelect.value;
+      return String(a.data[key] ?? '').localeCompare(String(b.data[key] ?? ''), undefined, {
+        numeric: true,
+      });
+    });
+    itemsNode.className = gridView ? 'cms-cards grid-view' : 'cms-cards list-view';
+    itemsNode.innerHTML = filtered.length
+      ? ''
+      : '<p class="text-sm text-gray-500">No hay resultados.</p>';
+    let previousGroup = null;
+    const groupKey = document.getElementById('group').value;
+    filtered.forEach((item) => {
+      let groupValue = groupKey ? String(item.data[groupKey] || 'Sin asignar') : '';
+      if (groupKey === 'date') groupValue = groupValue.slice(0, 7) || 'Sin fecha';
+      if (groupKey && groupValue !== previousGroup) {
+        const heading = document.createElement('h2');
+        heading.className = 'cms-group-title';
+        heading.textContent = groupValue;
+        itemsNode.appendChild(heading);
+        previousGroup = groupValue;
+      }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cms-entry-card';
+      button.innerHTML =
+        '<span class="cms-card-title">' +
+        esc(item.data.title || item.name) +
+        '</span>' +
+        (item.data.image
+          ? '<img src="' + esc(item.data.image) + '" alt="" loading="lazy">'
+          : '<div class="cms-card-placeholder"></div>') +
+        '<span class="cms-card-meta">' +
+        (item.data.draft ? 'Borrador · ' : '') +
+        esc(item.name) +
+        '</span>';
+      button.onclick = () => {
+        if (item.collection !== collection.value) {
+          collection.value = item.collection;
+          createNavigation();
+        }
+        openEditor(item);
+      };
+      itemsNode.appendChild(button);
+    });
+  }
+  function fieldElement(def, value) {
+    const [key, label, type, required] = def;
+    const wrapper = document.createElement('div');
+    wrapper.className = type === 'textarea' ? 'md:col-span-2' : '';
+    if (type === 'boolean') {
+      wrapper.innerHTML =
+        '<label class="mt-6 flex items-center gap-2 text-sm font-semibold"><input data-key="' +
+        key +
+        '" type="checkbox" ' +
+        (value ? 'checked' : '') +
+        '> ' +
+        esc(label) +
+        '</label>';
+      return wrapper;
+    }
+    const labelNode = document.createElement('label');
+    labelNode.className = 'mb-1 block text-sm font-semibold';
+    labelNode.textContent = label;
+    wrapper.appendChild(labelNode);
+    let input;
+    if (type === 'textarea' || type === 'json') {
+      input = document.createElement('textarea');
+      input.rows = type === 'json' ? 12 : 3;
+    } else if (type.startsWith('select:')) {
+      input = document.createElement('select');
+      type
+        .slice(7)
+        .split('|')
+        .forEach((option) => {
+          const o = document.createElement('option');
+          o.value = option;
+          o.textContent = option;
+          input.appendChild(o);
+        });
+    } else if (type.startsWith('relation:') || type.startsWith('relations:')) {
+      input = document.createElement('select');
+      const multiple = type.startsWith('relations:');
+      const source = type.split(':')[1];
+      input.multiple = multiple;
+      if (multiple) input.size = Math.min(6, Math.max(3, references[source].length));
+      else {
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = '— Sin seleccionar —';
+        input.appendChild(empty);
+      }
+      references[source].forEach((item) => {
+        if (current && item.path === current.path) return;
+        const option = document.createElement('option');
+        option.value = item.data.slug || String(item.data.year || item.data.title || '');
+        option.textContent = item.data.title + (item.data.year ? ' · ' + item.data.year : '');
+        const selected = multiple
+          ? Array.isArray(value) && value.includes(option.value)
+          : value === option.value;
+        option.selected = selected;
+        input.appendChild(option);
+      });
+    } else {
+      input = document.createElement('input');
+      input.type = type === 'list' ? 'text' : type;
+    }
+    input.dataset.key = key;
+    input.required = required === 'required';
+    input.className = 'w-full rounded-lg border border-gray-300 px-3 py-2';
+    if (!type.startsWith('relation'))
+      input.value =
+        type === 'list' && Array.isArray(value)
+          ? value.join(', ')
+          : type === 'json'
+            ? JSON.stringify(value || [], null, 2)
+            : (value ?? '');
+    wrapper.appendChild(input);
+    if (['image', 'poster', 'instituciones_image'].includes(key)) {
+      const picker = document.createElement('input');
+      picker.type = 'file';
+      picker.accept = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
+      picker.className = 'mt-2 block w-full text-xs';
+      picker.onchange = async () => {
+        const file = picker.files?.[0];
+        if (!file) return;
+        if (file.size > 6 * 1024 * 1024) return setStatus('La imagen supera 6 MB.', true);
+        setStatus('Subiendo imagen…');
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const content = String(reader.result).split(',')[1];
+            const result = await api('/.netlify/functions/manage-media', {
+              method: 'POST',
+              body: JSON.stringify({ name: file.name, content }),
+            });
+            input.value = result.image.path;
+            updatePreview();
+            setStatus('Imagen subida: ' + result.image.path);
+          } catch (error) {
+            setStatus(error.message, true);
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+      wrapper.appendChild(picker);
+    }
+    return wrapper;
+  }
+  function openEditor(item) {
+    current = item || null;
+    historyNode.classList.add('hidden');
+    historyNode.innerHTML = '';
+    emptyEditor.classList.add('hidden');
+    editor.classList.remove('hidden');
+    collectionView.classList.add('hidden');
+    document.getElementById('editor-title').textContent = item
+      ? item.data.title || item.name
+      : 'Nuevo contenido';
+    document.getElementById('file-path').textContent = item
+      ? item.path
+      : 'El nombre del archivo se generará al guardar.';
+    fieldsNode.innerHTML = '';
+    const data = { ...defaults, ...(item ? item.data : {}) };
+    schemas[collection.value].forEach((def) =>
+      fieldsNode.appendChild(fieldElement(def, data[def[0]]))
+    );
+    document.getElementById('body').value = item ? item.body : '';
+    document.getElementById('delete-button').classList.toggle('hidden', !item);
+    document.getElementById('history-button').classList.toggle('hidden', !item);
+    document
+      .getElementById('save-draft-button')
+      .classList.toggle('hidden', !['entradas', 'memorias', 'paginas'].includes(collection.value));
+    updatePreview();
+  }
+  function formData() {
+    const data = {};
+    fieldsNode.querySelectorAll('[data-key]').forEach((input) => {
+      const def = schemas[collection.value].find((field) => field[0] === input.dataset.key);
+      if (def[2] === 'boolean') data[input.dataset.key] = input.checked;
+      else if (def[2] === 'number') data[input.dataset.key] = Number(input.value || 0);
+      else if (def[2] === 'list')
+        data[input.dataset.key] = input.value
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean);
+      else if (def[2].startsWith('relations:'))
+        data[input.dataset.key] = Array.from(input.selectedOptions).map((option) => option.value);
+      else if (def[2] === 'json') {
+        try {
+          data[input.dataset.key] = JSON.parse(input.value || '[]');
+        } catch {
+          throw new Error('El JSON de los elementos del menú no es válido.');
+        }
+      } else data[input.dataset.key] = input.value.trim();
+    });
+    return data;
+  }
+  function markdown(value) {
+    return esc(value)
+      .replace(/^### (.+)$/gm, '<h3 class="mt-5 text-xl font-bold">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="mt-6 text-2xl font-bold">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="mt-6 text-3xl font-bold">$1</h1>')
+      .replace(
+        /^&gt; (.+)$/gm,
+        '<blockquote class="my-4 border-l-4 border-ugr-green pl-4 italic">$1</blockquote>'
+      )
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p class="mt-4">')
+      .replace(/\n/g, '<br>');
+  }
+  function updatePreview() {
+    if (editor.classList.contains('hidden')) return;
+    let data;
+    try {
+      data = formData();
+    } catch {
+      previewNode.innerHTML =
+        '<p class="p-6 text-amber-700">Completa el campo JSON para actualizar la vista previa.</p>';
+      return;
+    }
+    const body = document.getElementById('body').value;
+    const image = data.image || data.poster;
+    const badges = [...(data.categories || []), ...(data.tags || [])]
+      .map(
+        (value) =>
+          '<span class="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">' +
+          esc(value) +
+          '</span>'
+      )
+      .join(' ');
+    const meta = [data.date, data.author, data.place, data.collective]
+      .filter(Boolean)
+      .map(esc)
+      .join(' · ');
+    previewNode.innerHTML =
+      (image
+        ? '<img src="' + esc(image) + '" alt="" class="h-56 w-full object-cover">'
+        : '<div class="h-24 bg-gradient-to-r from-ugr-green to-ugr-green-dark"></div>') +
+      '<div class="p-6">' +
+      (data.draft
+        ? '<p class="mb-2 text-xs font-bold uppercase text-amber-700">Borrador</p>'
+        : '') +
+      '<h1 class="text-3xl font-bold text-ugr-green-dark">' +
+      esc(data.title || 'Título del contenido') +
+      '</h1>' +
+      (meta ? '<p class="mt-2 text-sm text-gray-500">' + meta + '</p>' : '') +
+      (data.description
+        ? '<p class="mt-4 text-lg text-gray-700">' + esc(data.description) + '</p>'
+        : '') +
+      (badges ? '<div class="mt-4 flex flex-wrap gap-2">' + badges + '</div>' : '') +
+      '<div class="prose mt-6 text-gray-800"><p>' +
+      markdown(body || 'El contenido escrito en Markdown aparecerá aquí en tiempo real.') +
+      '</p></div></div>';
+  }
+  async function saveWithDraft(draft) {
+    const draftInput = fieldsNode.querySelector('[data-key="draft"]');
+    if (draftInput) draftInput.checked = draft;
+    editor.requestSubmit();
+  }
+  editor.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    setStatus('Guardando…');
+    try {
+      await api('/.netlify/functions/manage-content?collection=' + collection.value, {
+        method: 'POST',
+        body: JSON.stringify({
+          path: current?.path,
+          sha: current?.sha,
+          data: formData(),
+          body: document.getElementById('body').value,
+        }),
+      });
+      setStatus('Contenido guardado. El despliegue se actualizará desde GitHub.');
+      await loadReferences();
+      await loadItems();
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+  document.getElementById('delete-button').onclick = async () => {
+    if (!current || !confirm('¿Eliminar definitivamente este contenido del repositorio?')) return;
+    try {
+      await api(
+        '/.netlify/functions/manage-content?collection=' +
+          collection.value +
+          '&path=' +
+          encodeURIComponent(current.path) +
+          '&sha=' +
+          current.sha,
+        { method: 'DELETE' }
+      );
+      setStatus('Contenido eliminado.');
+      await loadItems();
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  };
+  document.getElementById('history-button').onclick = async () => {
+    if (!current) return;
+    historyNode.classList.remove('hidden');
+    historyNode.innerHTML = '<p>Cargando historial…</p>';
+    try {
+      const result = await api(
+        '/.netlify/functions/get-revision-history?path=' + encodeURIComponent(current.path)
+      );
+      historyNode.innerHTML =
+        '<div class="mb-4 flex justify-between"><h2 class="text-xl font-semibold">Historial de revisiones</h2><button id="close-history" class="text-ugr-green">Volver al editor</button></div>' +
+        (result.revisions || [])
+          .map(
+            (revision) =>
+              '<a class="mb-2 block rounded-lg border border-gray-200 p-3 hover:bg-gray-50" target="_blank" rel="noopener" href="' +
+              esc(revision.url) +
+              '"><strong>' +
+              esc(revision.message) +
+              '</strong><br><span class="text-xs text-gray-500">' +
+              esc(revision.author) +
+              ' · ' +
+              esc(new Date(revision.date).toLocaleString()) +
+              '</span></a>'
+          )
+          .join('');
+      editor.classList.add('hidden');
+      document.getElementById('close-history').onclick = () => {
+        historyNode.classList.add('hidden');
+        editor.classList.remove('hidden');
+      };
+    } catch (error) {
+      historyNode.innerHTML = '<p class="text-red-700">' + esc(error.message) + '</p>';
+    }
+  };
+  document.getElementById('new-button').onclick = () => openEditor(null);
+  document.getElementById('header-new-button').onclick = () => openEditor(null);
+  document.getElementById('back-button').onclick = loadItems;
+  document.getElementById('save-draft-button').onclick = () => saveWithDraft(true);
+  document.getElementById('publish-button').onclick = () => saveWithDraft(false);
+  editor.addEventListener('input', updatePreview);
+  collection.onchange = () => {
+    createNavigation();
+    loadItems();
+  };
+  search.oninput = renderItems;
+  draftsOnly.onchange = renderItems;
+  sortSelect.onchange = renderItems;
+  document.getElementById('sort-visible').onchange = (event) => {
+    sortSelect.value = event.target.value;
+    renderItems();
+  };
+  document.getElementById('group').onchange = renderItems;
+  document.getElementById('view-list').onclick = () => {
+    gridView = false;
+    renderItems();
+  };
+  document.getElementById('view-grid').onclick = () => {
+    gridView = true;
+    renderItems();
+  };
+  document.getElementById('view-list-visible').onclick = () => {
+    gridView = false;
+    renderItems();
+  };
+  document.getElementById('view-grid-visible').onclick = () => {
+    gridView = true;
+    renderItems();
+  };
+  document.querySelectorAll('[data-draft-collection]').forEach(
+    (button) =>
+      (button.onclick = () => {
+        collection.value = button.dataset.draftCollection;
+        draftsOnly.checked = true;
+        createNavigation();
+        loadItems();
+      })
+  );
+  function start() {
+    window.supabaseAuth.ready.then(async () => {
+      if (await window.supabaseAuth.getUser()) {
+        const requested = new URLSearchParams(location.search).get('collection');
+        if (requested && labels[requested]) collection.value = requested;
+        document.getElementById('workspace').classList.remove('hidden');
+        collectionNav.classList.remove('hidden');
+        collectionNav.classList.add('flex');
+        createNavigation();
+        await loadReferences();
+        const query = new URLSearchParams(location.search);
+        draftsOnly.checked = query.get('drafts') === '1';
+        await loadItems();
+        if (query.get('new') === '1') openEditor(null);
+      }
+    });
+  }
+  function waitForAuth() {
+    if (window.supabaseAuth) return start();
+    window.setTimeout(waitForAuth, 100);
+  }
+  waitForAuth();
+</script>
+
+<style is:global>
+  .cms-shell {
+    min-height: calc(100vh - 54px);
+    background: var(--cms-bg);
+  }
+  .cms-page {
+    padding: 10px 24px 40px;
+  }
+  .cms-mobile-heading,
+  #supabase-user-info,
+  #supabase-signout {
+    display: none !important;
+  }
+  .cms-api-status {
+    display: none;
+  }
+  .cms-api-status.cms-api-error {
+    display: block;
+    position: fixed;
+    left: 290px;
+    right: 24px;
+    top: 65px;
+    z-index: 45;
+    border: 1px solid #fca5a5;
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+  }
+  .cms-workspace {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  .cms-sidebar {
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 84px);
+    overflow: auto;
+    background: var(--cms-side);
+    border: 1px solid var(--cms-border);
+    border-radius: 16px;
+    padding: 18px 14px;
+    box-sizing: border-box;
+    box-shadow: 0 12px 35px #10182812;
+  }
+  .cms-search {
+    width: 100%;
+    height: 43px;
+    box-sizing: border-box;
+    border: 1px solid var(--cms-border);
+    border-radius: 11px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    padding: 0 13px;
+    margin: 31px 0 28px;
+  }
+  .cms-side-title {
+    margin: 0 6px 8px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--cms-text);
+  }
+  .cms-side-nav {
+    display: block !important;
+  }
+  .cms-side-nav button,
+  .cms-side-nav a,
+  .cms-draft-link {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 11px;
+    border: 0;
+    background: transparent;
+    color: var(--cms-text);
+    padding: 9px 14px;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .cms-side-nav button:hover,
+  .cms-side-nav a:hover,
+  .cms-draft-link:hover {
+    background: #dfe7f1;
+  }
+  .cms-side-nav button.active {
+    background: #dce5f1;
+    color: #2679b8;
+  }
+  .cms-side-divider {
+    height: 1px;
+    background: var(--cms-border);
+    margin: 14px 3px 26px;
+  }
+  .cms-content {
+    min-width: 0;
+    padding: 0 0 80px;
+  }
+  .cms-collection-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+    max-width: 680px;
+    min-height: 120px;
+    box-sizing: border-box;
+    margin: 0 12px 22px;
+    background: var(--cms-panel);
+    border: 1px solid #d9dee6;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 12px 30px #1018280c;
+  }
+  .cms-collection-header h1 {
+    font-family: Atkinson, system-ui, sans-serif;
+    font-size: 25px;
+    margin: 0 0 14px;
+    color: var(--cms-text);
+  }
+  .cms-collection-header p {
+    max-width: 520px;
+    margin: 0;
+    color: var(--cms-text);
+    line-height: 1.45;
+  }
+  .cms-primary,
+  .cms-list-toolbar button,
+  .cms-list-toolbar select {
+    border: 0;
+    border-radius: 6px;
+    background: var(--cms-blue);
+    color: #fff;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .cms-primary {
+    min-width: 130px;
+  }
+  .cms-list-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0 24px 16px;
+  }
+  .cms-list-toolbar button {
+    font-size: 20px;
+    padding: 4px 8px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    border: 1px solid #e4e7ec;
+  }
+  .cms-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 335px));
+    gap: 16px;
+    padding: 0 0 30px;
+  }
+  .cms-cards.list-view {
+    grid-template-columns: minmax(300px, 680px);
+  }
+  .cms-entry-card {
+    height: 240px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #c9ced6;
+    border-radius: 16px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 8px 20px #1018280a;
+  }
+  .cms-entry-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px #10182818;
+  }
+  .cms-card-title {
+    min-height: 72px;
+    box-sizing: border-box;
+    padding: 18px 20px;
+    font-size: 17px;
+    background: var(--cms-panel);
+  }
+  .cms-entry-card img,
+  .cms-card-placeholder {
+    width: 100%;
+    height: 168px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #dce5ea, #f4f5f7);
+  }
+  .cms-card-meta {
+    display: none;
+  }
+  .cms-cards.list-view .cms-entry-card {
+    height: auto;
+    min-height: 76px;
+  }
+  .cms-cards.list-view .cms-entry-card img,
+  .cms-cards.list-view .cms-card-placeholder {
+    display: none;
+  }
+  .cms-group-title {
+    grid-column: 1/-1;
+    margin: 12px 0 0;
+    font-size: 18px;
+    color: var(--cms-muted);
+  }
+  #editor,
+  #history {
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    border: 1px solid var(--cms-border);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 12px 30px #10182812;
+  }
+  #editor input,
+  #editor textarea,
+  #editor select {
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    border-color: var(--cms-border);
+  }
+  #editor-title {
+    color: var(--cms-blue) !important;
+  }
+  #save-draft-button {
+    border-color: var(--cms-blue) !important;
+    color: var(--cms-blue) !important;
+    background: transparent !important;
+  }
+  #save-draft-button:hover {
+    background: color-mix(in srgb, var(--cms-blue) 12%, transparent) !important;
+  }
+  #publish-button {
+    border-color: var(--cms-blue) !important;
+    background: var(--cms-blue) !important;
+    color: #fff !important;
+  }
+  #publish-button:hover {
+    filter: brightness(1.08);
+  }
+  #editor aside > div > span {
+    background: color-mix(in srgb, var(--cms-blue) 14%, var(--cms-panel)) !important;
+    color: var(--cms-blue) !important;
+  }
+  #live-preview {
+    color: #333;
+  }
+  .cms-content .hidden {
+    display: none !important;
+  }
+  @media (max-width: 900px) {
+    .cms-page {
+      padding: 10px;
+    }
+    .cms-workspace {
+      grid-template-columns: 1fr;
+    }
+    .cms-sidebar {
+      position: static;
+      height: auto;
+    }
+    .cms-side-nav {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cms-collection-header {
+      margin: 0 0 18px;
+      max-width: none;
+    }
+    .cms-cards {
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+  }
+</style>

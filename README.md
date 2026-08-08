@@ -1,12 +1,12 @@
 # I Simposio sobre Memorias Participativas
 
-Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build), gestionado con [Decap CMS](https://decapcms.org) y desplegado en [Netlify](https://www.netlify.com/).
+Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build) y desplegado en [Netlify](https://www.netlify.com/). El panel administrativo usa Supabase Auth y RBAC granular como única autoridad de identidad.
 
 ## Tecnologías
 
 - **Framework:** Astro 7.
 - **Interfaz:** React 19 y Tailwind CSS 4.
-- **CMS:** Decap CMS con Netlify Identity y Git Gateway.
+- **CMS propio:** Supabase Auth + Netlify Functions.
 - **Contenido:** Markdown mediante Astro Content Collections.
 - **Funciones serverless:** Netlify Functions.
 - **Búsqueda:** Pagefind.
@@ -67,36 +67,12 @@ http://localhost:8888
 
 El backend local queda disponible bajo `/.netlify/functions/*`. La URL pública y la anon key se inyectan también en `/admin/supabase-config.js`, mientras que la service role key solo la usa el backend.
 
-### CMS local y Netlify Dev
-
-Para trabajar simultáneamente con Decap CMS, `decap-server`, Astro y Netlify Functions:
-
-```bash
-npm run dev:netlify-cms
-```
-
-Después abre:
-
-```text
-http://localhost:8888/admin/
-```
-
-El proxy local de Decap funciona en el puerto `8081`. Este flujo permite guardar contenido localmente sin depender de Git Gateway.
-
-### CMS local solamente
-
-```bash
-npm run dev:cms
-```
-
-Este comando inicia `decap-server` junto con Astro.
-
 ### Otros comandos
 
 ```bash
-npm run cms            # Inicia únicamente decap-server
-npm run sync           # Sincroniza colecciones con Astro y Decap
+npm run sync           # Sincroniza carpetas con Astro Content Collections
 npm run build          # Genera el sitio y el índice de Pagefind
+npm run test           # Ejecuta pruebas unitarias y de autorización
 npm run preview        # Previsualiza el build de producción
 npm run check          # Ejecuta lint de taxonomías y astro check
 npm run lint           # Ejecuta ESLint
@@ -110,10 +86,7 @@ npm run format:check  # Comprueba el formato
 ```text
 simposio-memorias/
 ├── public/
-│   ├── admin/
-│   │   ├── index.html          # Interfaz personalizada de Decap CMS
-│   │   └── config.yml          # Colecciones, campos y filtros del CMS
-│   └── images/                 # Imágenes públicas del sitio y del CMS
+│   └── images/                 # Imágenes públicas existentes
 ├── src/
 │   ├── assets/                 # Fuentes y recursos procesados por Astro
 │   ├── components/             # Componentes reutilizables Astro/React
@@ -158,23 +131,17 @@ El panel está disponible en:
 /admin/
 ```
 
-Las secciones principales son:
+Si no hay sesión, redirige a `/admin/login`. Tanto el encabezado como todas las páginas administrativas usan la misma sesión de Supabase.
 
-- **Entradas**
-- **Memorias del Museo de Memorias Vivas**
-- **Páginas informativas**
-- **Ediciones de simposio**
-- **Categorías**
-- **Etiquetas**
-- **Borradores · Entradas**
-- **Borradores · Memorias**
-- **Borradores · Páginas**
+Las secciones activas son creación de memorias, gestión de usuarios/roles y creación de colecciones. La edición general de las demás colecciones debe incorporarse progresivamente al panel propio.
 
 La página administrativa adicional para crear una memoria es:
 
 ```text
 /admin/crear-memoria
 ```
+
+Las funciones administrativas no confían en roles enviados por el navegador: validan el JWT de Supabase y consultan permisos efectivos en PostgreSQL. Antes de desplegarlas aplica la migración indicada en [`docs/FASE-1-RBAC.md`](./docs/FASE-1-RBAC.md).
 
 La ruta anterior `/admin/crear-proyecto` redirige a la nueva para mantener compatibilidad.
 
@@ -185,6 +152,7 @@ La ruta anterior `/admin/crear-proyecto` redirige a la nueva para mantener compa
 - **[Guía de despliegue](./GUIA-DESPLIEGUE.md):** configuración y publicación en Netlify.
 - **[Documentación técnica](./docs/):** colecciones, roles, creación de contenido y configuración del proyecto.
 - **[Seguridad del CMS](./docs/SEGURIDAD.md):** autenticación, funciones administrativas, variables y checklist de seguridad.
+- **[Fase 1: RBAC y seguridad](./docs/FASE-1-RBAC.md):** migración, despliegue, pruebas y reversión.
 
 Si una persona solo necesita gestionar contenidos, debe comenzar por el **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md)**.
 
@@ -194,7 +162,9 @@ Antes de publicar cambios técnicos, se recomienda ejecutar:
 
 ```bash
 npm run lint
+npm run test
 npm run check
+npm run format:check
 npm run build
 ```
 

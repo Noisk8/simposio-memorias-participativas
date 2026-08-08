@@ -1,91 +1,90 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import SupabaseAuth from '../../components/SupabaseAuth.astro';
-
-const colecciones = [
-  {
-    name: 'simposios',
-    label: 'Ediciones de simposio',
-    path: '/admin/#/collections/simposios',
-  },
-  {
-    name: 'paginas',
-    label: 'Páginas informativas',
-    path: '/admin/#/collections/paginas',
-  },
-  {
-    name: 'memorias',
-    label: 'Memorias del Museo de Memorias Vivas',
-    path: '/admin/#/collections/memorias',
-  },
-  {
-    name: 'entradas',
-    label: 'Entradas',
-    path: '/admin/#/collections/entradas',
-  },
-];
 ---
 
-<Layout title="Gestionar colecciones - Admin">
+<AdminLayout title="Gestionar colecciones - Admin">
   <section class="py-16 bg-white min-h-[60vh]">
     <div class="max-w-3xl mx-auto px-4">
-      <h1 class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+      <h1
+        class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+      >
         Gestionar colecciones
       </h1>
       <p class="text-ugr-text-light mb-8">
-        Desde aquí puedes acceder a las colecciones existentes y crear nuevas. Solo los usuarios con rol <strong>admin</strong> pueden crear colecciones.
+        Desde aquí puedes crear la estructura de una colección nueva. La función exige el permiso <strong
+          >settings.manage</strong
+        >.
       </p>
 
-      <SupabaseAuth intro="Inicia sesión con tu cuenta para acceder al panel de colecciones." />
+      <SupabaseAuth redirectUnauthenticated />
 
       <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6">
         No tienes permiso. Inicia sesión con una cuenta de administrador.
       </div>
 
-      <div id="loading" class="text-ugr-text-light mb-6">
-        Verificando sesión...
-      </div>
+      <div id="loading" class="text-ugr-text-light mb-6">Verificando sesión...</div>
 
       <div id="admin-panel" class="hidden space-y-12">
         <div class="flex justify-end">
-          <a href="/admin/gestion-usuarios" class="text-sm text-ugr-green hover:underline font-medium">
+          <a
+            href="/admin/gestion-usuarios"
+            class="text-sm text-ugr-green hover:underline font-medium"
+          >
             Gestionar usuarios y roles →
           </a>
         </div>
-        <section>
-          <h2 class="text-xl font-semibold mb-4 text-ugr-text">Colecciones activas</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {colecciones.map((col) => (
-              <a
-                href={col.path}
-                class="block p-5 border border-gray-200 rounded-lg hover:border-ugr-green hover:shadow-md transition-all"
-              >
-                <h3 class="font-semibold text-ugr-green mb-1">{col.label}</h3>
-                <p class="text-sm text-ugr-text-light">Abrir en el CMS</p>
-              </a>
-            ))}
-          </div>
-        </section>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          La edición general de Entradas, Páginas, Taxonomías y Simposios todavía debe migrarse al
+          panel propio. El antiguo editor Decap fue desactivado para eliminar el segundo sistema de
+          login.
+        </div>
 
         <section id="nueva" class="border-t border-gray-200 pt-8">
           <h2 class="text-xl font-semibold mb-4 text-ugr-text">Crear nueva colección</h2>
           <form id="coleccion-form" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-sm font-semibold text-ugr-text mb-1" for="name">Nombre interno</label>
-                <input type="text" id="name" name="name" required placeholder="ponentes" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green" />
-                <p class="text-xs text-ugr-text-light mt-1">Solo letras, números y guiones. Ejemplo: <code>ponentes</code>.</p>
+                <label class="block text-sm font-semibold text-ugr-text mb-1" for="name"
+                  >Nombre interno</label
+                >
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="ponentes"
+                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green"
+                />
+                <p class="text-xs text-ugr-text-light mt-1">
+                  Solo minúsculas, números y guion bajo. Ejemplo: <code>ponentes</code>.
+                </p>
               </div>
               <div>
-                <label class="block text-sm font-semibold text-ugr-text mb-1" for="label">Etiqueta visible</label>
-                <input type="text" id="label" name="label" required placeholder="Ponentes del simposio" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green" />
+                <label class="block text-sm font-semibold text-ugr-text mb-1" for="label"
+                  >Etiqueta visible</label
+                >
+                <input
+                  type="text"
+                  id="label"
+                  name="label"
+                  required
+                  placeholder="Ponentes del simposio"
+                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ugr-green"
+                />
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-ugr-text mb-1" for="folder">Carpeta</label>
-              <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-ugr-green">
-                <span class="px-3 py-2 bg-gray-100 text-ugr-text-light text-sm font-mono border-r border-gray-300 select-none whitespace-nowrap">
+              <label class="block text-sm font-semibold text-ugr-text mb-1" for="folder"
+                >Carpeta</label
+              >
+              <div
+                class="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-ugr-green"
+              >
+                <span
+                  class="px-3 py-2 bg-gray-100 text-ugr-text-light text-sm font-mono border-r border-gray-300 select-none whitespace-nowrap"
+                >
                   src/content/
                 </span>
                 <input
@@ -97,13 +96,13 @@ const colecciones = [
                   class="flex-1 px-3 py-2 focus:outline-none text-sm"
                 />
               </div>
-              <p class="text-xs text-ugr-text-light mt-1">Solo el nombre de la carpeta. Ejemplo: <code>ponentes</code>.</p>
+              <p class="text-xs text-ugr-text-light mt-1">
+                Solo el nombre de la carpeta. Ejemplo: <code>ponentes</code>.
+              </p>
             </div>
 
             <div class="flex items-center gap-4">
-              <button type="submit" class="btn-green">
-                Crear colección
-              </button>
+              <button type="submit" class="btn-green"> Crear colección </button>
               <span id="status" class="text-sm font-medium"></span>
             </div>
           </form>
@@ -111,7 +110,7 @@ const colecciones = [
       </div>
     </div>
   </section>
-</Layout>
+</AdminLayout>
 
 <script is:inline>
   // @ts-nocheck
@@ -176,13 +175,15 @@ const colecciones = [
       return;
     }
 
-    var folderName = document.getElementById('folder').value.trim().replace(/^src\/content\/?/, '');
+    var folderName = document
+      .getElementById('folder')
+      .value.trim()
+      .replace(/^src\/content\/?/, '');
     var data = {
       name: document.getElementById('name').value.trim(),
       label: document.getElementById('label').value.trim(),
       folder: 'src/content/' + folderName,
       slug: '{{slug}}',
-      fields: 'fields:\n  - label: "Simposio"\n    name: "simposio"\n    widget: "relation"\n    collection: "simposios"\n    search_fields: ["title", "year"]\n    value_field: "slug"\n    display_fields: ["title", "year"]\n    required: false\n    default: "2026"\n  - { label: "Título", name: "title", widget: "string" }\n  - { label: "Fecha", name: "date", widget: "string", required: false }\n  - { label: "Imagen", name: "image", widget: "image", required: false }\n  - { label: "Descripción", name: "description", widget: "text", required: false }\n  - { label: "Contenido", name: "body", widget: "markdown", required: false }',
     };
 
     try {
@@ -190,7 +191,7 @@ const colecciones = [
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify(data),
       });
@@ -202,7 +203,8 @@ const colecciones = [
         status.className = 'text-sm font-medium text-green-600';
         form.reset();
       } else {
-        status.textContent = result.error || 'Error al crear la colección.';
+        status.textContent =
+          (result.error && result.error.message) || 'Error al crear la colección.';
         status.className = 'text-sm font-medium text-red-600';
       }
     } catch (err) {

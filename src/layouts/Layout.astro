@@ -34,7 +34,6 @@ const { title, description = NETWORK_DESCRIPTION, image, noindex, type, canonica
       modifiedDate={modifiedDate}
       tags={tags}
     />
-    <script is:inline src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   </head>
   <body class="min-h-screen flex flex-col">
     <Header />
@@ -42,24 +41,5 @@ const { title, description = NETWORK_DESCRIPTION, image, noindex, type, canonica
       <slot />
     </main>
     <Footer />
-    <script is:inline>
-      if (window.netlifyIdentity) {
-        window.netlifyIdentity.on('init', (user) => {
-          const hash = window.location.hash;
-          // Si hay token de invitación o recuperación, abrir el modal para que
-          // el widget complete la aceptación de la invitación o el reseteo.
-          if (hash && (hash.includes('invite_token=') || hash.includes('recovery_token='))) {
-            window.netlifyIdentity.open();
-            return;
-          }
-          // Si no hay sesión activa, al hacer login redirigir al admin
-          if (!user) {
-            window.netlifyIdentity.on('login', () => {
-              document.location.href = '/admin/';
-            });
-          }
-        });
-      }
-    </script>
   </body>
 </html>
