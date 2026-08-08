@@ -1,12 +1,12 @@
 ---
-simposio: "2026"
-slug: "el-simposio"
-parent: ""
+simposio: '2026'
+slug: 'el-simposio'
+parent: ''
 is_home: false
-template: "el-simposio"
-title: "El Simposio"
-description: "Propósito, objetivos y dinámica del I Simposio sobre Memorias Participativas."
-image: "/images/hero-bg.jpg"
+template: 'el-simposio'
+title: 'El Simposio'
+description: 'Propósito, objetivos y dinámica del I Simposio sobre Memorias Participativas.'
+image: '/images/hero-bg.jpg'
 order: 1
 ---
 

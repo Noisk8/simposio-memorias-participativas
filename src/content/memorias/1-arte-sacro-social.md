@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 1
-title: "Exposición de Arte Sacro-Social «San Miguel Harto»"
-place: "Granada, España"
-author: ""
-collective: "Asociación de Vecinxs del Cerro de San Miguel"
-image: "/images/proyecto-1.jpg"
-description: "Lo sagrado y lo social se hibridan para crear una experiencia artística comunitaria en el barrio de cuevas de San Miguel Alto."
+title: 'Exposición de Arte Sacro-Social «San Miguel Harto»'
+place: 'Granada, España'
+author: ''
+collective: 'Asociación de Vecinxs del Cerro de San Miguel'
+image: '/images/proyecto-1.jpg'
+description: 'Lo sagrado y lo social se hibridan para crear una experiencia artística comunitaria en el barrio de cuevas de San Miguel Alto.'
 tags:
   - museo-memorias
 ---

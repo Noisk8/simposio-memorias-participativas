@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 8
-title: "Historias Inconclusas"
-place: "Colombia"
-author: ""
-collective: "Programa Somos Defensores y Portal periodístico Verdad Abierta"
-image: "/images/proyecto-8.jpg"
-description: "Proyecto colombiano que aboga por la memoria y la lucha contra la impunidad en asesinatos de líderes sociales."
+title: 'Historias Inconclusas'
+place: 'Colombia'
+author: ''
+collective: 'Programa Somos Defensores y Portal periodístico Verdad Abierta'
+image: '/images/proyecto-8.jpg'
+description: 'Proyecto colombiano que aboga por la memoria y la lucha contra la impunidad en asesinatos de líderes sociales.'
 tags:
   - museo-memorias
 ---

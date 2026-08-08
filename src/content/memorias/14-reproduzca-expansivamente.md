@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 14
-title: "¡Reproduzca Expansivamente!"
-place: "Colombia"
-author: ""
-collective: "Entrelazando"
-image: "/images/proyecto-14.jpg"
-description: "La escritura no requiere permisos, pero hay quien la usa para distorsionar la realidad, proclamándose a sí mismos dueños de la verdad."
+title: '¡Reproduzca Expansivamente!'
+place: 'Colombia'
+author: ''
+collective: 'Entrelazando'
+image: '/images/proyecto-14.jpg'
+description: 'La escritura no requiere permisos, pero hay quien la usa para distorsionar la realidad, proclamándose a sí mismos dueños de la verdad.'
 tags:
   - museo-memorias
 ---

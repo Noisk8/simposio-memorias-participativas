@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 21
-title: "Lorca con orgullo VR"
-place: "Granada, España"
-author: "Mariela Luján, Andrew Simon Tucker"
-collective: ""
-image: "/images/proyecto-21.jpg"
-description: "Documental VR 360º creado con la comunidad LGTBQIA+ de Granada que revisita momentos clave de la vida de Federico García Lorca."
+title: 'Lorca con orgullo VR'
+place: 'Granada, España'
+author: 'Mariela Luján, Andrew Simon Tucker'
+collective: ''
+image: '/images/proyecto-21.jpg'
+description: 'Documental VR 360º creado con la comunidad LGTBQIA+ de Granada que revisita momentos clave de la vida de Federico García Lorca.'
 tags:
   - museo-memorias
 ---

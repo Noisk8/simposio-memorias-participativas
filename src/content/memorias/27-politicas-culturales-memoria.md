@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 27
-title: "Políticas culturales de memoria en la Dirección de Patrimonio y Memoria"
-place: "Colombia"
-author: ""
-collective: "Dirección de Patrimonio y Memoria del Ministerio de las Culturas"
-image: "/images/proyecto-27.jpg"
-description: "Esta pieza audiovisual presenta las memorias del conflicto armado en Colombia como expresiones vivas construidas por comunidades y colectivos de víctimas."
+title: 'Políticas culturales de memoria en la Dirección de Patrimonio y Memoria'
+place: 'Colombia'
+author: ''
+collective: 'Dirección de Patrimonio y Memoria del Ministerio de las Culturas'
+image: '/images/proyecto-27.jpg'
+description: 'Esta pieza audiovisual presenta las memorias del conflicto armado en Colombia como expresiones vivas construidas por comunidades y colectivos de víctimas.'
 tags:
   - museo-memorias
 ---

@@ -4,6 +4,7 @@ import { requirePermission } from '../../shared/auth/require-permission.ts';
 import { recordAudit } from '../../shared/observability/audit.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { getGitHubConfiguration } from '../../shared/github/config.ts';
+import { assertImageSignature } from '../../shared/media/validation.ts';
 import {
   AppError,
   ConflictError,
@@ -13,6 +14,26 @@ import {
 } from '../../shared/observability/errors.ts';
 
 const EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif']);
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
+async function findImageReferences(name: string) {
+  const config = getGitHubConfiguration();
+  const query = encodeURIComponent(
+    `"/images/${name}" repo:${config.owner}/${config.repo} path:src/content`
+  );
+  const response = await fetch(`https://api.github.com/search/code?q=${query}&per_page=5`, {
+    headers: {
+      Authorization: `Bearer ${config.token}`,
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'Simposio-CMS',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  if (!response.ok)
+    throw new GitHubError('No se pudo comprobar el uso de la imagen.', { status: response.status });
+  const result: any = await response.json();
+  return (result.items || []).map((item: any) => item.path);
+}
 
 async function github(path: string, init: any = {}) {
   const config = getGitHubConfiguration();
@@ -99,8 +120,9 @@ export const handler = async (event: any) => {
       if (typeof payload.content !== 'string' || !/^[A-Za-z0-9+/]*={0,2}$/.test(payload.content))
         throw new ValidationError('Contenido de imagen inválido.');
       const bytes = Buffer.from(payload.content, 'base64');
-      if (!bytes.length || bytes.length > 6 * 1024 * 1024)
-        throw new ValidationError('La imagen debe pesar entre 1 byte y 6 MB.');
+      if (!bytes.length || bytes.length > MAX_IMAGE_BYTES)
+        throw new ValidationError('La imagen debe pesar entre 1 byte y 4 MB.');
+      assertImageSignature(name, bytes);
       const path = `public/images/${name}`;
       const existingResponse = await github(path);
       if (existingResponse.ok) {
@@ -175,6 +197,12 @@ export const handler = async (event: any) => {
     if (typeof sha !== 'string' || !/^[a-f0-9]{40}$/i.test(sha))
       throw new ValidationError('Versión de imagen inválida.');
     const path = `public/images/${name}`;
+    const references = await findImageReferences(name);
+    if (references.length) {
+      throw new ConflictError('La imagen está siendo utilizada y no se puede eliminar.', {
+        references,
+      });
+    }
     const response = await github(path, {
       method: 'DELETE',
       body: JSON.stringify({

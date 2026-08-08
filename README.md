@@ -70,7 +70,7 @@ El backend local queda disponible bajo `/.netlify/functions/*`. La URL pública 
 ### Otros comandos
 
 ```bash
-npm run sync           # Sincroniza carpetas con Astro Content Collections
+npm run sync           # Verifica carpetas y Content Collections sin reescribir fuentes
 npm run build          # Genera el sitio y el índice de Pagefind
 npm run test           # Ejecuta pruebas unitarias y de autorización
 npm run preview        # Previsualiza el build de producción
@@ -133,7 +133,7 @@ El panel está disponible en:
 
 Si no hay sesión, redirige a `/admin/login`. Tanto el encabezado como todas las páginas administrativas usan la misma sesión de Supabase.
 
-Las secciones activas son creación de memorias, gestión de usuarios/roles y creación de colecciones. La edición general de las demás colecciones debe incorporarse progresivamente al panel propio.
+El panel gestiona entradas, memorias, páginas, ediciones, categorías, etiquetas, medios, usuarios y roles. Los contenidos editoriales cuentan con propiedad, borradores, revisión, aprobación y publicación.
 
 La página administrativa adicional para crear una memoria es:
 

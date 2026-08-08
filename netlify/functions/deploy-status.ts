@@ -1,0 +1,48 @@
+import { errorResponse, getCorsHeaders } from '../security';
+import { requirePermission } from '../../shared/auth/require-permission.ts';
+import { getGitHubConfiguration } from '../../shared/github/config.ts';
+import { getRequestId } from '../../shared/observability/request-id.ts';
+import { AppError, GitHubError } from '../../shared/observability/errors.ts';
+
+export const handler = async (event: any) => {
+  let requestId = getRequestId(event);
+  let headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
+  try {
+    if (event.httpMethod !== 'GET')
+      throw new AppError('METHOD_NOT_ALLOWED', 'Método no permitido.', 405);
+    const auth = await requirePermission(event, 'admin.access');
+    requestId = auth.requestId;
+    headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
+    const config = getGitHubConfiguration();
+    const response = await fetch(
+      `https://api.github.com/repos/${config.owner}/${config.repo}/commits/${encodeURIComponent(config.branch)}/status`,
+      {
+        headers: {
+          Authorization: `Bearer ${config.token}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'Simposio-CMS',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
+    if (!response.ok)
+      throw new GitHubError('No se pudo consultar el estado del despliegue.', {
+        status: response.status,
+      });
+    const status: any = await response.json();
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        ok: true,
+        state: status.state,
+        sha: status.sha,
+        checks: status.statuses || [],
+        requestId,
+      }),
+    };
+  } catch (error) {
+    return errorResponse(error, headers, requestId);
+  }
+};

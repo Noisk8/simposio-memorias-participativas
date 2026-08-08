@@ -17,6 +17,13 @@ export const legacyPublicationFields = {
   publish_date: dateField,
 };
 
+export const editorialMetadataFields = {
+  owner_id: z.uuid().optional(),
+  workflow_state: z
+    .enum(['draft', 'in_review', 'changes_requested', 'approved', 'published', 'archived'])
+    .optional(),
+};
+
 export const genericContentSchema = z.object({
   simposio: z.string().default('2026'),
   title: z.string(),

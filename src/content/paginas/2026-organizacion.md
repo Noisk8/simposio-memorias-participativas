@@ -1,44 +1,44 @@
 ---
-simposio: "2026"
-slug: "organizacion"
-parent: ""
+simposio: '2026'
+slug: 'organizacion'
+parent: ''
 is_home: false
-template: "organizacion"
-title: "Organización"
-description: "Equipo organizador e instituciones del I Simposio sobre Memorias Participativas."
-image: "/images/hero-bg.jpg"
+template: 'organizacion'
+title: 'Organización'
+description: 'Equipo organizador e instituciones del I Simposio sobre Memorias Participativas.'
+image: '/images/hero-bg.jpg'
 order: 2
 organizadores:
-  - "Andrea García González | Universidad de Granada (UGR), Marie Sklodowska-Curie fellow"
-  - "Jordi Guixé | EUROM, Universidad de Barcelona (UB)"
-  - "Carmina Gustrán Loscos | Comisionada \"50 años de España en Libertad\""
-  - "José Miguel Gastón Aguas | Instituto Navarro de Memoria"
-  - "Carla Alba Pulido | UGR"
-  - "Vanesa Garbero | EUROM, Universidad Nacional de Córdoba y CONICET, Argentina"
-  - "Diana Castelblanco | Universidad Jorge Tadeo Lozano, Colombia"
-  - "Marian del Moral | UGR"
-  - "Sorany Marin | Universidad Magdalena, Colombia"
-  - "Anna Pastor | EUROM, UB"
-  - "Carmen Gregorio Gil | UGR"
-  - "Victoria Robles | UGR"
-  - "Ascensión Mazuela | UGR"
-  - "Natalia Luc | UGR"
-  - "Enrique Tudela | UGR"
-  - "Jesús Rodríguez Huertas | UGR"
-  - "Miguel Ángel del Arco | UGR"
-  - "David González | EUROM, UB"
-  - "Johana Botero Ramírez | Wikimedia Colombia"
-  - "Astrid Jamar | Universidad de Antwerp, Bélgica"
-  - "Andrés Góngora | Universidad Nacional de Colombia y Museo Nacional de Colombia"
-  - "Daniela Güiza | Viceministerio de los Patrimonios, las Memorias y Gobernanza Cultural, Colombia"
-  - "Alejandro Castillejo | Universidad de los Andes, Colombia"
-  - "José Fernando Serrano | Universidad de los Andes, Colombia"
-  - "Adolfo Baltar | Universidad Tecnológica de Bolívar, Cartagena, Colombia"
-  - "Olatz Dañobeitia | Universidad del País Vasco"
-  - "Iñaki Sagardoi | Universidad Pública de Navarra"
-  - "Dario Ranocchiari | UGR"
-  - "Kitti Baracsi | Centro em Rede de Investigação em Antropologia, Lisboa"
-instituciones_image: "/images/organizacion-logos.jpg"
+  - 'Andrea García González | Universidad de Granada (UGR), Marie Sklodowska-Curie fellow'
+  - 'Jordi Guixé | EUROM, Universidad de Barcelona (UB)'
+  - 'Carmina Gustrán Loscos | Comisionada "50 años de España en Libertad"'
+  - 'José Miguel Gastón Aguas | Instituto Navarro de Memoria'
+  - 'Carla Alba Pulido | UGR'
+  - 'Vanesa Garbero | EUROM, Universidad Nacional de Córdoba y CONICET, Argentina'
+  - 'Diana Castelblanco | Universidad Jorge Tadeo Lozano, Colombia'
+  - 'Marian del Moral | UGR'
+  - 'Sorany Marin | Universidad Magdalena, Colombia'
+  - 'Anna Pastor | EUROM, UB'
+  - 'Carmen Gregorio Gil | UGR'
+  - 'Victoria Robles | UGR'
+  - 'Ascensión Mazuela | UGR'
+  - 'Natalia Luc | UGR'
+  - 'Enrique Tudela | UGR'
+  - 'Jesús Rodríguez Huertas | UGR'
+  - 'Miguel Ángel del Arco | UGR'
+  - 'David González | EUROM, UB'
+  - 'Johana Botero Ramírez | Wikimedia Colombia'
+  - 'Astrid Jamar | Universidad de Antwerp, Bélgica'
+  - 'Andrés Góngora | Universidad Nacional de Colombia y Museo Nacional de Colombia'
+  - 'Daniela Güiza | Viceministerio de los Patrimonios, las Memorias y Gobernanza Cultural, Colombia'
+  - 'Alejandro Castillejo | Universidad de los Andes, Colombia'
+  - 'José Fernando Serrano | Universidad de los Andes, Colombia'
+  - 'Adolfo Baltar | Universidad Tecnológica de Bolívar, Cartagena, Colombia'
+  - 'Olatz Dañobeitia | Universidad del País Vasco'
+  - 'Iñaki Sagardoi | Universidad Pública de Navarra'
+  - 'Dario Ranocchiari | UGR'
+  - 'Kitti Baracsi | Centro em Rede de Investigação em Antropologia, Lisboa'
+instituciones_image: '/images/organizacion-logos.jpg'
 ---
 
 El I Simposio sobre Memorias Participativas es una iniciativa conjunta de la Universidad de Granada, EUROM y un amplio equipo de investigadoras, gestores culturales y activistas de memoria.

@@ -25,6 +25,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+
       - name: Lint
         run: npm run lint
 
@@ -36,3 +42,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Build must not mutate sources
+        run: git diff --exit-code

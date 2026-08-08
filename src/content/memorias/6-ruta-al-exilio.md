@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 6
-title: "Proyecto de Memoria Juvenil «Ruta al Exilio»"
-place: "Andalucía, Euskal Herria, Catalunya, Madrid, Occitania. España"
-author: ""
-collective: "Asociación Ruta al Exilio"
-image: "/images/proyecto-6.jpg"
-description: "Presentación basada en fotografías y objetos sobre las rutas del exilio republicano."
+title: 'Proyecto de Memoria Juvenil «Ruta al Exilio»'
+place: 'Andalucía, Euskal Herria, Catalunya, Madrid, Occitania. España'
+author: ''
+collective: 'Asociación Ruta al Exilio'
+image: '/images/proyecto-6.jpg'
+description: 'Presentación basada en fotografías y objetos sobre las rutas del exilio republicano.'
 tags:
   - museo-memorias
 ---

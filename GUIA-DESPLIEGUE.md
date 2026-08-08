@@ -21,6 +21,7 @@ Aplica, en orden, las migraciones de `supabase/migrations/`. La migración inici
 
 ```text
 202608080001_phase1_rbac.sql
+202608080002_editorial_workflow.sql
 ```
 
 En Supabase Auth:
@@ -28,7 +29,8 @@ En Supabase Auth:
 - desactiva el registro público;
 - habilita confirmación de correo;
 - limita las Redirect URLs al dominio de producción, previews autorizados y localhost;
-- recomienda MFA para administración.
+- exige MFA para cuentas `admin` y `superadmin`;
+- crea usuarios editoriales únicamente desde el panel administrativo.
 
 ## Variables de entorno
 
@@ -49,6 +51,8 @@ GITHUB_TOKEN=...
 GITHUB_REPO=organizacion/repositorio
 GITHUB_BRANCH=main
 ```
+
+En GitHub protege `main`: exige pull request, CI aprobado y bloquea force-push. Limita el token del CMS al repositorio y a `Contents: read/write`.
 
 `SUPABASE_SERVICE_ROLE_KEY` solo debe estar disponible para Functions. Nunca debe usar prefijo `PUBLIC_`.
 
@@ -100,6 +104,9 @@ Comprueba además:
 - un usuario sin permiso recibe `403`;
 - `x-request-id` aparece en respuestas administrativas;
 - no se carga ningún script de Netlify Identity o Decap.
+- `/.netlify/functions/manage-content?collection=memorias` responde JSON y no una página 404;
+- `/.netlify/functions/deploy-status` devuelve el estado del commit desplegable;
+- un autor no puede modificar contenido perteneciente a otra persona.
 
 ## Reversión
 

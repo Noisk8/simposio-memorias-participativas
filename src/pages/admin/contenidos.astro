@@ -93,6 +93,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
               >
             </header>
             <div class="cms-list-toolbar">
+              <span id="deploy-status" class="cms-deploy-status">Despliegue: consultando…</span>
               <select id="sort-visible"
                 ><option value="title">Sort by · Título</option><option value="date"
                   >Sort by · Fecha</option
@@ -144,6 +145,12 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
                   id="publish-button"
                   class="rounded-lg bg-ugr-green px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
                   >Publicar</button
+                >
+                <button type="button" id="submit-review-button" class="hidden cms-editor-action"
+                  >Enviar a revisión</button
+                >
+                <button type="button" id="approve-button" class="hidden cms-editor-action"
+                  >Aprobar</button
                 >
               </div>
             </div>
@@ -286,6 +293,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   let globalItems = [];
   let current = null;
   let gridView = true;
+  let permissions = [];
+  let dirty = false;
+  let autosaveTimer;
   const references = { categorias: [], etiquetas: [], simposios: [], paginas: [] };
   const labels = {
     entradas: 'Entradas',
@@ -364,6 +374,23 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       'cms-api-status mb-5 rounded-lg p-4 text-sm shadow-sm ' +
       (error ? 'bg-red-50 text-red-700' : 'bg-white text-ugr-text-light');
     statusNode.classList.toggle('cms-api-error', Boolean(error));
+  }
+  async function checkDeployment() {
+    const node = document.getElementById('deploy-status');
+    try {
+      const result = await api('/.netlify/functions/deploy-status');
+      const labels = {
+        success: 'publicado',
+        pending: 'en curso',
+        failure: 'fallido',
+        error: 'con errores',
+      };
+      node.textContent = 'Despliegue: ' + (labels[result.state] || result.state || 'sin estado');
+      node.dataset.state = result.state || 'unknown';
+    } catch {
+      node.textContent = 'Despliegue: no disponible';
+      node.dataset.state = 'unknown';
+    }
   }
 
   function createNavigation() {
@@ -461,12 +488,35 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         '/.netlify/functions/manage-content?collection=' + encodeURIComponent(collection.value)
       );
       items = result.items || [];
+      permissions = result.permissions || [];
+      applyPermissions();
       renderItems();
       setStatus(items.length + ' contenidos cargados.');
     } catch (error) {
       itemsNode.innerHTML = '';
       setStatus(error.message, true);
     }
+  }
+  function permissionBase() {
+    return collection.value === 'entradas'
+      ? 'entrada'
+      : collection.value === 'memorias'
+        ? 'memoria'
+        : collection.value === 'paginas'
+          ? 'pagina'
+          : collection.value === 'simposios'
+            ? 'simposio'
+            : 'taxonomy';
+  }
+  function can(action) {
+    const permission =
+      permissionBase() === 'taxonomy' ? 'taxonomy.manage' : permissionBase() + '.' + action;
+    return permissions.includes(permission);
+  }
+  function applyPermissions() {
+    const mayCreate = can('create');
+    document.getElementById('new-button').classList.toggle('hidden', !mayCreate);
+    document.getElementById('header-new-button').classList.toggle('hidden', !mayCreate);
   }
   function renderItems() {
     const query = search.value.trim().toLowerCase();
@@ -610,7 +660,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       picker.onchange = async () => {
         const file = picker.files?.[0];
         if (!file) return;
-        if (file.size > 6 * 1024 * 1024) return setStatus('La imagen supera 6 MB.', true);
+        if (file.size > 4 * 1024 * 1024) return setStatus('La imagen supera 4 MB.', true);
         setStatus('Subiendo imagen…');
         const reader = new FileReader();
         reader.onload = async () => {
@@ -658,6 +708,45 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       .getElementById('save-draft-button')
       .classList.toggle('hidden', !['entradas', 'memorias', 'paginas'].includes(collection.value));
     updatePreview();
+    dirty = false;
+    const recovered = localStorage.getItem(draftStorageKey());
+    if (!item && recovered && confirm('Hay un borrador local sin guardar. ¿Quieres recuperarlo?')) {
+      try {
+        const saved = JSON.parse(recovered);
+        Object.entries(saved.data || {}).forEach(([key, value]) => {
+          const input = fieldsNode.querySelector('[data-key="' + CSS.escape(key) + '"]');
+          if (!input) return;
+          if (input.type === 'checkbox') input.checked = Boolean(value);
+          else input.value = Array.isArray(value) ? value.join(', ') : value;
+        });
+        document.getElementById('body').value = saved.body || '';
+        updatePreview();
+      } catch {}
+    }
+    document.getElementById('delete-button').classList.toggle('hidden', !item || !can('delete'));
+    document
+      .getElementById('save-draft-button')
+      .classList.toggle('hidden', !can(item ? 'update' : 'create'));
+    document.getElementById('publish-button').classList.toggle('hidden', !can('publish'));
+    document
+      .getElementById('submit-review-button')
+      .classList.toggle('hidden', !item || !can('submit_review'));
+    document.getElementById('approve-button').classList.toggle('hidden', !item || !can('approve'));
+  }
+  function draftStorageKey() {
+    return 'cms-editor:' + collection.value + ':' + (current?.path || 'new');
+  }
+  function persistLocalDraft() {
+    try {
+      localStorage.setItem(
+        draftStorageKey(),
+        JSON.stringify({
+          data: formData(),
+          body: document.getElementById('body').value,
+          savedAt: new Date().toISOString(),
+        })
+      );
+    } catch {}
   }
   function formData() {
     const data = {};
@@ -759,6 +848,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         }),
       });
       setStatus('Contenido guardado. El despliegue se actualizará desde GitHub.');
+      checkDeployment();
+      dirty = false;
+      localStorage.removeItem(draftStorageKey());
       await loadReferences();
       await loadItems();
     } catch (error) {
@@ -821,7 +913,33 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   document.getElementById('back-button').onclick = loadItems;
   document.getElementById('save-draft-button').onclick = () => saveWithDraft(true);
   document.getElementById('publish-button').onclick = () => saveWithDraft(false);
-  editor.addEventListener('input', updatePreview);
+  async function transition(name) {
+    if (!current) return;
+    try {
+      const comment =
+        name === 'approve' ? prompt('Comentario de aprobación (opcional):', '') || '' : '';
+      const result = await api('/.netlify/functions/manage-workflow', {
+        method: 'POST',
+        body: JSON.stringify({ path: current.path, transition: name, comment }),
+      });
+      setStatus('Estado editorial actualizado: ' + result.state + '.');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  }
+  document.getElementById('submit-review-button').onclick = () => transition('submit_review');
+  document.getElementById('approve-button').onclick = () => transition('approve');
+  editor.addEventListener('input', () => {
+    dirty = true;
+    updatePreview();
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(persistLocalDraft, 700);
+  });
+  window.addEventListener('beforeunload', (event) => {
+    if (!dirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
   collection.onchange = () => {
     createNavigation();
     loadItems();
@@ -872,6 +990,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         const query = new URLSearchParams(location.search);
         draftsOnly.checked = query.get('drafts') === '1';
         await loadItems();
+        checkDeployment();
         if (query.get('new') === '1') openEditor(null);
       }
     });
@@ -1011,6 +1130,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     line-height: 1.45;
   }
   .cms-primary,
+  .cms-editor-action,
   .cms-list-toolbar button,
   .cms-list-toolbar select {
     border: 0;
@@ -1024,11 +1144,31 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   .cms-primary {
     min-width: 130px;
   }
+  .cms-editor-action {
+    border: 1px solid var(--cms-blue);
+    border-radius: 7px;
+    background: var(--cms-panel);
+    color: var(--cms-blue);
+    padding: 8px 13px;
+  }
   .cms-list-toolbar {
     display: flex;
     justify-content: flex-end;
     gap: 6px;
     margin: 0 24px 16px;
+  }
+  .cms-deploy-status {
+    align-self: center;
+    margin-right: auto;
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-deploy-status[data-state='success'] {
+    color: #18794e;
+  }
+  .cms-deploy-status[data-state='failure'],
+  .cms-deploy-status[data-state='error'] {
+    color: #b42318;
   }
   .cms-list-toolbar button {
     font-size: 20px;

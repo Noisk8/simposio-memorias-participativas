@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 30
-title: "LIBRE"
-place: "Estado español"
-author: "Fernando Sánchez Castillo"
-collective: "Comisionado 50 años de España en Libertad"
-image: "/images/proyecto-30.jpg"
-description: "Libre invita a reflexionar sobre el papel del arte como herramienta de diálogo y construcción colectiva: una propuesta que convierte la memoria en acción y el pasado en una oportunidad para imaginar futuros más libres y compartidos."
+title: 'LIBRE'
+place: 'Estado español'
+author: 'Fernando Sánchez Castillo'
+collective: 'Comisionado 50 años de España en Libertad'
+image: '/images/proyecto-30.jpg'
+description: 'Libre invita a reflexionar sobre el papel del arte como herramienta de diálogo y construcción colectiva: una propuesta que convierte la memoria en acción y el pasado en una oportunidad para imaginar futuros más libres y compartidos.'
 tags:
   - museo-memorias
 ---

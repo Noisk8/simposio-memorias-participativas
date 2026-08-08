@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 22
-title: "Escuela Iberoamericana de Mediación en sitios y Museos de Memoria"
-place: "Chile, Argentina, México y España"
-author: ""
-collective: "Escuela Iberoamericana de Mediación en sitios y Museos de Memoria"
-image: "/images/proyecto-22.jpg"
-description: "La Escuela se propone como un espacio que busca aportar a la formación de mediadores, educadores y trabajadores con audiencias de museos y sitios de memoria."
+title: 'Escuela Iberoamericana de Mediación en sitios y Museos de Memoria'
+place: 'Chile, Argentina, México y España'
+author: ''
+collective: 'Escuela Iberoamericana de Mediación en sitios y Museos de Memoria'
+image: '/images/proyecto-22.jpg'
+description: 'La Escuela se propone como un espacio que busca aportar a la formación de mediadores, educadores y trabajadores con audiencias de museos y sitios de memoria.'
 tags:
   - museo-memorias
 ---

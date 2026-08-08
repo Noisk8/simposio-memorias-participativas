@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 24
-title: "El elocuente silencio del paisaje"
-place: "Burgos, Estado español"
-author: "Antoni Coll Tort"
-collective: "Coordinadora por la Recuperación de la Memoria Histórica de Burgos (CRMHB), Espacio Tangente y Foro Arte y Territorio. Comisariada por EUROM"
-image: "/images/proyecto-24.jpg"
-description: "Exposición fotográfica que explora los paisajes de memoria vinculados a la Guerra Civil y el franquismo en Burgos."
+title: 'El elocuente silencio del paisaje'
+place: 'Burgos, Estado español'
+author: 'Antoni Coll Tort'
+collective: 'Coordinadora por la Recuperación de la Memoria Histórica de Burgos (CRMHB), Espacio Tangente y Foro Arte y Territorio. Comisariada por EUROM'
+image: '/images/proyecto-24.jpg'
+description: 'Exposición fotográfica que explora los paisajes de memoria vinculados a la Guerra Civil y el franquismo en Burgos.'
 tags:
   - museo-memorias
 ---

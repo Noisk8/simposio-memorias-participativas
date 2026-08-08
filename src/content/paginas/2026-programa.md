@@ -1,12 +1,12 @@
 ---
-simposio: "2026"
-slug: "programa"
-parent: ""
+simposio: '2026'
+slug: 'programa'
+parent: ''
 is_home: false
-template: "programa"
-title: "Programa"
-description: "Programa completo del I Simposio sobre Memorias Participativas."
-image: "/images/hero-bg.jpg"
+template: 'programa'
+title: 'Programa'
+description: 'Programa completo del I Simposio sobre Memorias Participativas.'
+image: '/images/hero-bg.jpg'
 order: 3
 ---
 

@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 11
-title: "Amoratorio de Creación: Cenizas, Flores y Faroles para No Olvidar"
-place: "Bogotá, Colombia"
-author: ""
-collective: "Amoratorio de Creación, mujeres buscadoras"
-image: "/images/proyecto-11.jpg"
-description: "Práctica artística comunitaria desarrollada por artistas y mujeres buscadoras de víctimas de desaparición forzada."
+title: 'Amoratorio de Creación: Cenizas, Flores y Faroles para No Olvidar'
+place: 'Bogotá, Colombia'
+author: ''
+collective: 'Amoratorio de Creación, mujeres buscadoras'
+image: '/images/proyecto-11.jpg'
+description: 'Práctica artística comunitaria desarrollada por artistas y mujeres buscadoras de víctimas de desaparición forzada.'
 tags:
   - museo-memorias
 ---

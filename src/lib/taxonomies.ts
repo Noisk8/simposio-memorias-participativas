@@ -89,7 +89,9 @@ export function formatDate(dateStr: string | undefined | null): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export function sortByDateDesc<T extends { data: { date?: string; title?: string } }>(entries: T[]): T[] {
+export function sortByDateDesc<T extends { data: { date?: string; title?: string } }>(
+  entries: T[]
+): T[] {
   return entries.sort((a, b) => {
     const da = a.data.date || '';
     const db = b.data.date || '';

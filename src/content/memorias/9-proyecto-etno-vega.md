@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 9
-title: "Proyecto Etno Vega (s)"
-place: "Vegas del Genil, Granada, España"
-author: ""
-collective: "Etno Vega (s)"
-image: "/images/proyecto-9.jpg"
-description: "Etno-Vegas se conforma como colectivo y proyecto en el seno de las II Jornadas de Etnografía audiovisual."
+title: 'Proyecto Etno Vega (s)'
+place: 'Vegas del Genil, Granada, España'
+author: ''
+collective: 'Etno Vega (s)'
+image: '/images/proyecto-9.jpg'
+description: 'Etno-Vegas se conforma como colectivo y proyecto en el seno de las II Jornadas de Etnografía audiovisual.'
 tags:
   - museo-memorias
 ---

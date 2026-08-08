@@ -44,6 +44,10 @@ export async function recordAudit(input: AuditInput, client = getAdminClient()):
     action: input.action,
     resource_type: input.resourceType || null,
     resource_id: normalizedResource.resourceId,
+    resource_ref:
+      typeof input.resourceId === 'string' && !UUID_PATTERN.test(input.resourceId)
+        ? input.resourceId
+        : null,
     result: input.result,
     metadata: normalizedResource.metadata,
   });
@@ -54,6 +58,8 @@ export async function recordAudit(input: AuditInput, client = getAdminClient()):
       action: input.action,
       message: error.message,
     });
-    throw new InternalError('No se pudo registrar la auditoría.');
+    // La operación principal no debe fingir que falló después de haberse confirmado
+    // en GitHub. El log estructurado permite alertar y reintentar fuera de la petición.
+    return;
   }
 }

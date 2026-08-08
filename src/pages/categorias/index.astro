@@ -1,13 +1,13 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
-import { getCategorias, buildTree } from '../../lib/taxonomies';
+import { getCategorias, buildTree, filterPublished } from '../../lib/taxonomies';
 
 const categorias = await getCategorias();
 const arbol = buildTree(categorias);
 
-const entradas = await getCollection('entradas', ({ data }) => !data.draft);
-const memorias = await getCollection('memorias', ({ data }) => !data.draft);
+const entradas = filterPublished(await getCollection('entradas'));
+const memorias = filterPublished(await getCollection('memorias'));
 
 function countFor(slug: string) {
   return (
@@ -25,7 +25,9 @@ function countFor(slug: string) {
         <span class="mx-2">/</span>
         <span class="text-white">Categorías</span>
       </nav>
-      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg"
+      >
         Categorías
       </h1>
     </div>
@@ -33,54 +35,62 @@ function countFor(slug: string) {
 
   <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-4">
-      {categorias.length === 0 && (
-        <p class="text-center text-ugr-text-light py-16">No hay categorías creadas todavía.</p>
-      )}
+      {
+        categorias.length === 0 && (
+          <p class="text-center text-ugr-text-light py-16">No hay categorías creadas todavía.</p>
+        )
+      }
       <div class="grid gap-4 md:grid-cols-2">
-        {arbol.map((cat) => (
-          <div class="border border-gray-100 rounded-xl p-5 shadow-sm">
-            <a
-              href={`/categorias/${cat.slug}/`}
-              class="text-lg font-bold text-ugr-green-dark hover:text-ugr-green transition-colors font-[family-name:var(--font-heading)]"
-            >
-              {cat.title}
-              <span class="ml-2 text-xs font-semibold text-ugr-text-light">({countFor(cat.slug)})</span>
-            </a>
-            {cat.description && (
-              <p class="text-sm text-ugr-text-light mt-1">{cat.description}</p>
-            )}
-            {cat.children.length > 0 && (
-              <ul class="mt-3 pl-4 border-l-2 border-ugr-green/20 space-y-1">
-                {cat.children.map((hija) => (
-                  <li>
-                    <a
-                      href={`/categorias/${hija.slug}/`}
-                      class="text-sm font-semibold text-ugr-green hover:underline"
-                    >
-                      {hija.title}
-                      <span class="ml-1 text-xs text-ugr-text-light">({countFor(hija.slug)})</span>
-                    </a>
-                    {hija.children.length > 0 && (
-                      <ul class="mt-1 pl-4 border-l-2 border-ugr-green/20 space-y-1">
-                        {hija.children.map((nieta) => (
-                          <li>
-                            <a
-                              href={`/categorias/${nieta.slug}/`}
-                              class="text-sm text-ugr-green hover:underline"
-                            >
-                              {nieta.title}
-                              <span class="ml-1 text-xs text-ugr-text-light">({countFor(nieta.slug)})</span>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+        {
+          arbol.map((cat) => (
+            <div class="border border-gray-100 rounded-xl p-5 shadow-sm">
+              <a
+                href={`/categorias/${cat.slug}/`}
+                class="text-lg font-bold text-ugr-green-dark hover:text-ugr-green transition-colors font-[family-name:var(--font-heading)]"
+              >
+                {cat.title}
+                <span class="ml-2 text-xs font-semibold text-ugr-text-light">
+                  ({countFor(cat.slug)})
+                </span>
+              </a>
+              {cat.description && <p class="text-sm text-ugr-text-light mt-1">{cat.description}</p>}
+              {cat.children.length > 0 && (
+                <ul class="mt-3 pl-4 border-l-2 border-ugr-green/20 space-y-1">
+                  {cat.children.map((hija) => (
+                    <li>
+                      <a
+                        href={`/categorias/${hija.slug}/`}
+                        class="text-sm font-semibold text-ugr-green hover:underline"
+                      >
+                        {hija.title}
+                        <span class="ml-1 text-xs text-ugr-text-light">
+                          ({countFor(hija.slug)})
+                        </span>
+                      </a>
+                      {hija.children.length > 0 && (
+                        <ul class="mt-1 pl-4 border-l-2 border-ugr-green/20 space-y-1">
+                          {hija.children.map((nieta) => (
+                            <li>
+                              <a
+                                href={`/categorias/${nieta.slug}/`}
+                                class="text-sm text-ugr-green hover:underline"
+                              >
+                                {nieta.title}
+                                <span class="ml-1 text-xs text-ugr-text-light">
+                                  ({countFor(nieta.slug)})
+                                </span>
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))
+        }
       </div>
     </div>
   </section>

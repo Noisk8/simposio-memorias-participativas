@@ -34,34 +34,38 @@ const items = menu ? sortItems(menu.data.items) : [];
 ---
 
 <ul class={className}>
-  {items.map((item) => (
-    <li class:list={[{ 'relative group': item.children?.length }]}>
-      <a
-        href={item.url}
-        class={itemClass}
-        aria-current={isActive(item.url) ? 'page' : undefined}
-      >
-        {item.label}
-      </a>
-      {item.children && item.children.length > 0 && (
-        <ul class:list={[
-          mobile ? 'flex-col gap-1 mt-1 pl-4' : 'absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 hidden group-hover:block',
-        ]}>
-          {sortItems(item.children).map((child) => (
-            <li>
-              <a
-                href={child.url}
-                class:list={[
-                  mobile ? 'block py-2 px-3 text-sm font-medium text-[var(--ugr-text)] hover:text-ugr-green' : 'block px-4 py-2 text-sm font-medium text-[var(--ugr-text)] hover:bg-ugr-green hover:text-white transition-colors',
-                ]}
-                aria-current={isActive(child.url) ? 'page' : undefined}
-              >
-                {child.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-    </li>
-  ))}
+  {
+    items.map((item) => (
+      <li class:list={[{ 'relative group': item.children?.length }]}>
+        <a href={item.url} class={itemClass} aria-current={isActive(item.url) ? 'page' : undefined}>
+          {item.label}
+        </a>
+        {item.children && item.children.length > 0 && (
+          <ul
+            class:list={[
+              mobile
+                ? 'flex-col gap-1 mt-1 pl-4'
+                : 'absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 hidden group-hover:block',
+            ]}
+          >
+            {sortItems(item.children).map((child) => (
+              <li>
+                <a
+                  href={child.url}
+                  class:list={[
+                    mobile
+                      ? 'block py-2 px-3 text-sm font-medium text-[var(--ugr-text)] hover:text-ugr-green'
+                      : 'block px-4 py-2 text-sm font-medium text-[var(--ugr-text)] hover:bg-ugr-green hover:text-white transition-colors',
+                  ]}
+                  aria-current={isActive(child.url) ? 'page' : undefined}
+                >
+                  {child.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))
+  }
 </ul>

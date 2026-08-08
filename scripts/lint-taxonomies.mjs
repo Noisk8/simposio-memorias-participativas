@@ -22,7 +22,8 @@ const ROOT = path.resolve(__dirname, '..');
 function readDirFiles(dir) {
   const fullPath = path.join(ROOT, 'src', 'content', dir);
   if (!fs.existsSync(fullPath)) return [];
-  return fs.readdirSync(fullPath)
+  return fs
+    .readdirSync(fullPath)
     .filter((f) => f.endsWith('.md'))
     .map((f) => {
       const content = fs.readFileSync(path.join(fullPath, f), 'utf-8');
@@ -70,13 +71,17 @@ function main() {
   // 1. Términos usados sin documento
   for (const slug of usedCatSlugs) {
     if (!catBySlug.has(slug)) {
-      console.warn(`⚠ Categoría "${slug}" usada en contenido pero sin documento en src/content/categorias/`);
+      console.warn(
+        `⚠ Categoría "${slug}" usada en contenido pero sin documento en src/content/categorias/`
+      );
       warnings++;
     }
   }
   for (const slug of usedTagSlugs) {
     if (!tagBySlug.has(slug)) {
-      console.warn(`⚠ Etiqueta "${slug}" usada en contenido pero sin documento en src/content/etiquetas/`);
+      console.warn(
+        `⚠ Etiqueta "${slug}" usada en contenido pero sin documento en src/content/etiquetas/`
+      );
       warnings++;
     }
   }
@@ -84,13 +89,17 @@ function main() {
   // 2. Documentos de taxonomía sin uso
   for (const [slug, c] of catBySlug) {
     if (!usedCatSlugs.has(slug)) {
-      console.warn(`⚠ Categoría "${c.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`);
+      console.warn(
+        `⚠ Categoría "${c.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`
+      );
       warnings++;
     }
   }
   for (const [slug, t] of tagBySlug) {
     if (!usedTagSlugs.has(slug)) {
-      console.warn(`⚠ Etiqueta "${t.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`);
+      console.warn(
+        `⚠ Etiqueta "${t.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`
+      );
       warnings++;
     }
   }

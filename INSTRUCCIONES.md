@@ -55,16 +55,16 @@ simposio-memorias/
 
 El CMS está organizado como en WordPress:
 
-| Colección | Tipo | Descripción |
-|-----------|------|-------------|
-| **Entradas** | Posts | Noticias y artículos con fecha, autor, categorías y etiquetas. |
-| **Memorias** | Custom post type | Memorias del *Museo de Memorias Vivas*. |
-| **Categorías** | Taxonomía jerárquica | Clasificación en árbol padre/hijo. |
-| **Etiquetas** | Taxonomía plana | Palabras clave. |
-| **Borradores · Entradas** | Filtro | Entradas con `draft: true`. |
-| **Borradores · Memorias** | Filtro | Memorias con `draft: true`. |
+| Colección                 | Tipo                 | Descripción                                                    |
+| ------------------------- | -------------------- | -------------------------------------------------------------- |
+| **Entradas**              | Posts                | Noticias y artículos con fecha, autor, categorías y etiquetas. |
+| **Memorias**              | Custom post type     | Memorias del _Museo de Memorias Vivas_.                        |
+| **Categorías**            | Taxonomía jerárquica | Clasificación en árbol padre/hijo.                             |
+| **Etiquetas**             | Taxonomía plana      | Palabras clave.                                                |
+| **Borradores · Entradas** | Filtro               | Entradas con `draft: true`.                                    |
+| **Borradores · Memorias** | Filtro               | Memorias con `draft: true`.                                    |
 
-Los borradores usan el mismo almacenamiento que el contenido publicado, pero se filtran por el campo `draft`. El panel de *Borradores recientes* en `/admin/` permite accesos rápidos.
+Los borradores usan el mismo almacenamiento que el contenido publicado, pero se filtran por el campo `draft`. El panel de _Borradores recientes_ en `/admin/` permite accesos rápidos.
 
 ## Manual de usuario y despliegue
 

@@ -11,6 +11,6 @@ export function GET() {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=300',
       },
-    },
+    }
   );
 }

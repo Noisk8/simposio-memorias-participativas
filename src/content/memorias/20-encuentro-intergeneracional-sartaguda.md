@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 20
-title: "Encuentro Intergeneracional de Memoria(s) en el parque de la Memoria de Sartaguda"
-place: "Navarra, España"
-author: ""
-collective: "Instituto Navarro de la Memoria"
-image: "/images/proyecto-20.jpg"
-description: "El Parque de la Memoria de Sartaguda se ha convertido en las últimas décadas en el lugar de memoria más emblemático de Navarra."
+title: 'Encuentro Intergeneracional de Memoria(s) en el parque de la Memoria de Sartaguda'
+place: 'Navarra, España'
+author: ''
+collective: 'Instituto Navarro de la Memoria'
+image: '/images/proyecto-20.jpg'
+description: 'El Parque de la Memoria de Sartaguda se ha convertido en las últimas décadas en el lugar de memoria más emblemático de Navarra.'
 tags:
   - museo-memorias
 ---

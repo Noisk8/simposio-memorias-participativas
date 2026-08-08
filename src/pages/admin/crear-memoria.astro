@@ -209,13 +209,28 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     };
 
     try {
-      var response = await fetch('/.netlify/functions/create-proyecto', {
+      var response = await fetch('/.netlify/functions/manage-content?collection=memorias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + token,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          data: {
+            draft: true,
+            simposio: '2026',
+            number: data.number,
+            title: data.title,
+            place: data.place,
+            author: data.author,
+            collective: data.collective,
+            categories: [],
+            tags: [],
+            image: data.image,
+            description: data.description,
+          },
+          body: data.body,
+        }),
       });
 
       var result = await response.json();

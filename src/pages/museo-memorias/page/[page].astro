@@ -3,11 +3,16 @@ import Layout from '../../../layouts/Layout.astro';
 import TermPills from '../../../components/TermPills.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths, Page } from 'astro';
-import { getCategorias, getEtiquetas, slugTitleMap } from '../../../lib/taxonomies';
+import {
+  getCategorias,
+  getEtiquetas,
+  slugTitleMap,
+  filterPublished,
+} from '../../../lib/taxonomies';
 import { getSimposios } from '../../../lib/simposios';
 
 export const getStaticPaths: GetStaticPaths = async ({ paginate }) => {
-  const todos = await getCollection('memorias', ({ data }) => !data.draft);
+  const todos = filterPublished(await getCollection('memorias'));
   const ordenados = todos.sort((a, b) => b.data.number - a.data.number);
   return paginate(ordenados, { pageSize: 10 });
 };
@@ -27,22 +32,32 @@ const simposios = await getSimposios();
 const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
 ---
 
-<Layout title={`Museo de Memorias Vivas — Página ${currentPage} - Red Internacional de Memorias Participativas`}>
+<Layout
+  title={`Museo de Memorias Vivas — Página ${currentPage} - Red Internacional de Memorias Participativas`}
+>
   <!-- Hero -->
   <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
-      <img src="/images/hero-bg.jpg" alt="Museo de Memorias Vivas" class="w-full h-full object-cover" />
+      <img
+        src="/images/hero-bg.jpg"
+        alt="Museo de Memorias Vivas"
+        class="w-full h-full object-cover"
+      />
       <div class="absolute inset-0 bg-black/60"></div>
     </div>
     <div class="relative z-10 text-center px-4">
       <nav class="text-white/70 text-sm mb-4">
         <a href="/" class="hover:text-white transition-colors">Inicio</a>
         <span class="mx-2">/</span>
-        <a href="/museo-memorias/" class="hover:text-white transition-colors">Museo de Memorias Vivas</a>
+        <a href="/museo-memorias/" class="hover:text-white transition-colors"
+          >Museo de Memorias Vivas</a
+        >
         <span class="mx-2">/</span>
         <span class="text-white">Página {currentPage}</span>
       </nav>
-      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg"
+      >
         Museo de Memorias Vivas
       </h1>
     </div>
@@ -52,8 +67,10 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
   <section class="py-8 bg-ugr-cream border-b">
     <div class="max-w-5xl mx-auto px-4">
       <p class="text-ugr-text text-center">
-        <strong class="text-ugr-green-dark">Coordinación de curaduría y museografía:</strong> Natalia Luc<br/>
-        <strong class="text-ugr-green-dark">Co-curaduría:</strong> Natalia Luc, Diana Castelblanco, Sorany Marín, Andrés Góngora y Johana Botero
+        <strong class="text-ugr-green-dark">Coordinación de curaduría y museografía:</strong> Natalia
+        Luc<br />
+        <strong class="text-ugr-green-dark">Co-curaduría:</strong> Natalia Luc, Diana Castelblanco, Sorany
+        Marín, Andrés Góngora y Johana Botero
       </p>
     </div>
   </section>
@@ -63,12 +80,22 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
     <div class="max-w-6xl mx-auto px-4">
       <div class="flex flex-wrap items-center gap-3 justify-center">
         <span class="text-sm font-semibold text-ugr-text">Filtrar por simposio:</span>
-        <button type="button" class="simposio-filter active px-4 py-2 rounded-full text-sm font-semibold bg-ugr-green text-white transition-colors" data-filter="all">Todos</button>
-        {simposios.map((s) => (
-          <button type="button" class="simposio-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-ugr-green hover:bg-ugr-green/10 transition-colors" data-filter={s.data.slug}>
-            {s.data.title}
-          </button>
-        ))}
+        <button
+          type="button"
+          class="simposio-filter active px-4 py-2 rounded-full text-sm font-semibold bg-ugr-green text-white transition-colors"
+          data-filter="all">Todos</button
+        >
+        {
+          simposios.map((s) => (
+            <button
+              type="button"
+              class="simposio-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-ugr-green hover:bg-ugr-green/10 transition-colors"
+              data-filter={s.data.slug}
+            >
+              {s.data.title}
+            </button>
+          ))
+        }
       </div>
     </div>
   </section>
@@ -77,54 +104,94 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
   <section class="py-16 bg-white">
     <div class="max-w-6xl mx-auto px-4">
       <div id="memorias-grid" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {memorias.map((entry) => (
-          <article class="memoria-card card-shadow bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-ugr-green/30 transition-all duration-300 group" data-simposio={entry.data.simposio}>
-            <a href={`/museo-memorias/${entry.data.number}`} class="block relative h-48 overflow-hidden">
-              <img src={entry.data.image} alt={entry.data.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div class="absolute top-3 left-3">
-                <span class="bg-ugr-green text-white text-xs font-bold px-3 py-1 rounded-full">{entry.data.number}</span>
-              </div>
-              <div class="absolute top-3 right-3">
-                <span class="bg-white/90 text-ugr-green-dark text-xs font-bold px-3 py-1 rounded-full">
-                  {simposioMap.get(entry.data.simposio) || entry.data.simposio}
-                </span>
-              </div>
-            </a>
-            <div class="p-5">
-              <a href={`/museo-memorias/${entry.data.number}`}>
-                <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2">{entry.data.title}</h3>
+        {
+          memorias.map((entry) => (
+            <article
+              class="memoria-card card-shadow bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-ugr-green/30 transition-all duration-300 group"
+              data-simposio={entry.data.simposio}
+            >
+              <a
+                href={`/museo-memorias/${entry.data.number}`}
+                class="block relative h-48 overflow-hidden"
+              >
+                <img
+                  src={entry.data.image}
+                  alt={entry.data.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div class="absolute top-3 left-3">
+                  <span class="bg-ugr-green text-white text-xs font-bold px-3 py-1 rounded-full">
+                    {entry.data.number}
+                  </span>
+                </div>
+                <div class="absolute top-3 right-3">
+                  <span class="bg-white/90 text-ugr-green-dark text-xs font-bold px-3 py-1 rounded-full">
+                    {simposioMap.get(entry.data.simposio) || entry.data.simposio}
+                  </span>
+                </div>
               </a>
-              <p class="text-xs text-ugr-green-light mb-2 font-semibold uppercase tracking-wide">{entry.data.place}</p>
-              <div class="mb-2">
-                <TermPills categories={entry.data.categories} tags={entry.data.tags} catTitles={catTitles} tagTitles={tagTitles} size="sm" />
+              <div class="p-5">
+                <a href={`/museo-memorias/${entry.data.number}`}>
+                  <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2">
+                    {entry.data.title}
+                  </h3>
+                </a>
+                <p class="text-xs text-ugr-green-light mb-2 font-semibold uppercase tracking-wide">
+                  {entry.data.place}
+                </p>
+                <div class="mb-2">
+                  <TermPills
+                    categories={entry.data.categories}
+                    tags={entry.data.tags}
+                    catTitles={catTitles}
+                    tagTitles={tagTitles}
+                    size="sm"
+                  />
+                </div>
+                <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>
+                <p class="text-xs text-ugr-text-light mt-3 italic">
+                  {entry.data.author || entry.data.collective}
+                </p>
               </div>
-              <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>
-              <p class="text-xs text-ugr-text-light mt-3 italic">{entry.data.author || entry.data.collective}</p>
-            </div>
-          </article>
-        ))}
+            </article>
+          ))
+        }
       </div>
 
-      <p id="no-results" class="hidden text-center text-ugr-text-light py-16">No hay memorias para el filtro seleccionado.</p>
+      <p id="no-results" class="hidden text-center text-ugr-text-light py-16">
+        No hay memorias para el filtro seleccionado.
+      </p>
 
       <!-- Paginación -->
       <nav class="mt-12 flex justify-center items-center gap-2">
-        {page.url.prev && (
-          <a href={page.url.prev} class="btn-green px-4 py-2 text-sm">← Anterior</a>
-        )}
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-          <a
-            href={p === 1 ? '/museo-memorias/' : `/museo-memorias/page/${p}`}
-            class={`w-10 h-10 flex items-center justify-center rounded-lg font-semibold transition-all duration-300 ${
-              p === currentPage ? 'bg-ugr-green text-white shadow-md' : 'bg-gray-100 text-ugr-green hover:bg-ugr-green/10'
-            }`}
-          >
-            {p}
-          </a>
-        ))}
-        {page.url.next && (
-          <a href={page.url.next} class="btn-green px-4 py-2 text-sm">Siguiente →</a>
-        )}
+        {
+          page.url.prev && (
+            <a href={page.url.prev} class="btn-green px-4 py-2 text-sm">
+              ← Anterior
+            </a>
+          )
+        }
+        {
+          Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <a
+              href={p === 1 ? '/museo-memorias/' : `/museo-memorias/page/${p}`}
+              class={`w-10 h-10 flex items-center justify-center rounded-lg font-semibold transition-all duration-300 ${
+                p === currentPage
+                  ? 'bg-ugr-green text-white shadow-md'
+                  : 'bg-gray-100 text-ugr-green hover:bg-ugr-green/10'
+              }`}
+            >
+              {p}
+            </a>
+          ))
+        }
+        {
+          page.url.next && (
+            <a href={page.url.next} class="btn-green px-4 py-2 text-sm">
+              Siguiente →
+            </a>
+          )
+        }
       </nav>
     </div>
   </section>

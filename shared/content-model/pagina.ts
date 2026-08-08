@@ -1,8 +1,10 @@
 import { z } from 'zod';
-import { nonEmptyStringList } from './base.ts';
+import { dateField, editorialMetadataFields, nonEmptyStringList } from './base.ts';
 
 export const paginaSchema = z.object({
   draft: z.boolean().optional().default(false),
+  publish_date: dateField,
+  ...editorialMetadataFields,
   simposio: z.string().default('2026'),
   slug: z.string().optional().default(''),
   parent: z.string().optional().default(''),

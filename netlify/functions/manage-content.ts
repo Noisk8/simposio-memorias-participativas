@@ -5,8 +5,10 @@ import { requirePermission } from '../../shared/auth/require-permission.ts';
 import { recordAudit } from '../../shared/observability/audit.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { getGitHubConfiguration } from '../../shared/github/config.ts';
+import { getAdminClient } from '../../shared/supabase/admin-client.ts';
 import {
   AppError,
+  AuthorizationError,
   ConflictError,
   GitHubError,
   RateLimitError,
@@ -35,6 +37,60 @@ const COLLECTIONS = {
 } as const;
 
 type Collection = keyof typeof COLLECTIONS;
+type WorkflowState =
+  'draft' | 'in_review' | 'changes_requested' | 'approved' | 'published' | 'archived';
+
+const MANAGER_ROLES = new Set(['superadmin', 'admin', 'editor']);
+const LIST_CACHE = new Map<Collection, { expiresAt: number; items: any[] }>();
+const LIST_CACHE_MS = 30_000;
+async function assertOwnership(auth: any, path: string, creating = false) {
+  if (creating) return auth.user.id;
+  const client = getAdminClient();
+  if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
+  const { data, error } = await client
+    .from('cms_content_records')
+    .select('owner_id')
+    .eq('path', path)
+    .maybeSingle();
+  if (auth.roles.some((role: string) => MANAGER_ROLES.has(role)))
+    return data?.owner_id || auth.user.id;
+  if (error || !data || data.owner_id !== auth.user.id) {
+    throw new AuthorizationError('Solo puedes modificar contenido de tu autoría.');
+  }
+  return data.owner_id;
+}
+
+async function registerContent(
+  path: string,
+  collection: Collection,
+  auth: any,
+  ownerId: string,
+  creating: boolean,
+  sha?: string,
+  state: WorkflowState = 'draft'
+) {
+  const client = getAdminClient();
+  if (!client) return;
+  const values = {
+    path,
+    collection,
+    owner_id: ownerId,
+    updated_by: auth.user.id,
+    github_sha: sha || null,
+    workflow_state: state,
+    updated_at: new Date().toISOString(),
+    ...(creating ? { created_by: auth.user.id } : {}),
+  };
+  const { error } = await client
+    .from('cms_content_records')
+    .upsert(values, { onConflict: 'path', ignoreDuplicates: false });
+  if (error)
+    throw new AppError(
+      'INTERNAL_ERROR',
+      'El contenido se guardó, pero no pudo registrarse su estado editorial.',
+      500
+    );
+}
 
 function collectionConfig(value: unknown) {
   if (typeof value !== 'string' || !(value in COLLECTIONS)) {
@@ -174,10 +230,31 @@ export const handler = async (event: any) => {
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify({ ok: true, item: await readFile(filePath), requestId }),
+          body: JSON.stringify({
+            ok: true,
+            item: await readFile(filePath),
+            permissions: auth.permissions,
+            roles: auth.roles,
+            requestId,
+          }),
         };
       }
 
+      const cached = LIST_CACHE.get(config.name);
+      if (cached && cached.expiresAt > Date.now()) {
+        return {
+          statusCode: 200,
+          headers: { ...headers, 'Cache-Control': 'private, max-age=15' },
+          body: JSON.stringify({
+            ok: true,
+            items: cached.items,
+            permissions: auth.permissions,
+            roles: auth.roles,
+            cached: true,
+            requestId,
+          }),
+        };
+      }
       const response = await github(`src/content/${config.name}`);
       if (response.status === 404)
         return {
@@ -198,7 +275,18 @@ export const handler = async (event: any) => {
           { numeric: true }
         )
       );
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, items, requestId }) };
+      LIST_CACHE.set(config.name, { expiresAt: Date.now() + LIST_CACHE_MS, items });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          ok: true,
+          items,
+          permissions: auth.permissions,
+          roles: auth.roles,
+          requestId,
+        }),
+      };
     }
 
     if (event.httpMethod === 'POST') {
@@ -209,6 +297,10 @@ export const handler = async (event: any) => {
       if (!isSafeContentPath(path) || !path.startsWith(`src/content/${config.name}/`)) {
         throw new ValidationError('La ruta de guardado no es válida.');
       }
+      const ownerId = await assertOwnership(auth, path, !payload.sha);
+      const requestedState: WorkflowState = payload.data?.draft === false ? 'published' : 'draft';
+      data.owner_id = ownerId;
+      data.workflow_state = requestedState;
       const content = serializeMarkdownDocument(data, payload.body);
       const githubResponse = await github(path, {
         method: 'PUT',
@@ -229,6 +321,16 @@ export const handler = async (event: any) => {
           status: githubResponse.status,
         });
       const result: any = await githubResponse.json();
+      LIST_CACHE.delete(config.name);
+      await registerContent(
+        path,
+        config.name,
+        auth,
+        ownerId,
+        !payload.sha,
+        result.content?.sha,
+        requestedState
+      );
       await recordAudit({
         requestId,
         actorId: auth.user.id,
@@ -255,6 +357,7 @@ export const handler = async (event: any) => {
     ) {
       throw new ValidationError('La ruta o versión a eliminar no es válida.');
     }
+    await assertOwnership(auth, path);
     const githubResponse = await github(path, {
       method: 'DELETE',
       body: JSON.stringify({
@@ -267,6 +370,8 @@ export const handler = async (event: any) => {
       throw new ConflictError('El contenido cambió. Actualiza la lista antes de eliminarlo.');
     if (!githubResponse.ok)
       throw new GitHubError('No se pudo eliminar el contenido.', { status: githubResponse.status });
+    LIST_CACHE.delete(config.name);
+    await getAdminClient()?.from('cms_content_records').delete().eq('path', path);
     await recordAudit({
       requestId,
       actorId: auth.user.id,

@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 7
-title: "Sabedores RA"
-place: "Región Caribe, Colombia"
-author: ""
-collective: "La Piragua Transmedia - Universidad del Magdalena"
-image: "/images/proyecto-7.jpg"
-description: "Experiencia de realidad aumentada que conecta saberes ancestrales con tecnologías digitales."
+title: 'Sabedores RA'
+place: 'Región Caribe, Colombia'
+author: ''
+collective: 'La Piragua Transmedia - Universidad del Magdalena'
+image: '/images/proyecto-7.jpg'
+description: 'Experiencia de realidad aumentada que conecta saberes ancestrales con tecnologías digitales.'
 tags:
   - museo-memorias
 ---

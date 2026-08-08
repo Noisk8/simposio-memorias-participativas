@@ -12,13 +12,6 @@ const contentDirectory = path.join(projectRoot, 'src', 'content');
 const contentConfigPath = path.join(projectRoot, 'src', 'content.config.ts');
 const identifierPattern = /^[a-z][a-z0-9_]*$/;
 
-function genericSchema(name) {
-  return `const ${name} = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/${name}' }),
-  schema: genericContentSchema,
-});`;
-}
-
 const folders = fs
   .readdirSync(contentDirectory, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -34,15 +27,7 @@ if (invalidFolders.length > 0) {
 
 console.log('Colecciones detectadas:', folders);
 
-let configText = fs.readFileSync(contentConfigPath, 'utf8');
-for (const name of folders) {
-  if (configText.includes(`const ${name} = defineCollection(`)) continue;
-  const exportIndex = configText.indexOf('export const collections');
-  if (exportIndex === -1)
-    throw new Error('No se encontró el export de colecciones en src/content.config.ts.');
-  configText = `${configText.slice(0, exportIndex)}${genericSchema(name)}\n\n${configText.slice(exportIndex)}`;
-  console.log(`✓ Esquema genérico "${name}" añadido a content.config.ts`);
-}
+const configText = fs.readFileSync(contentConfigPath, 'utf8');
 
 const exportMatch = configText.match(/export\s+const\s+collections\s*=\s*\{([^}]*)\}/);
 if (!exportMatch) throw new Error('No se pudo leer el export de colecciones.');
@@ -51,12 +36,12 @@ const existingNames = exportMatch[1]
   .map((name) => name.trim())
   .filter(Boolean);
 const missingNames = folders.filter((name) => !existingNames.includes(name));
-if (missingNames.length > 0) {
-  configText = configText.replace(
-    /export\s+const\s+collections\s*=\s*\{([^}]*)\}/,
-    `export const collections = { ${[...existingNames, ...missingNames].join(', ')} }`
+const missingFolders = existingNames.filter((name) => !folders.includes(name));
+if (missingNames.length || missingFolders.length) {
+  throw new Error(
+    `Colecciones desincronizadas. Sin configurar: ${missingNames.join(', ') || 'ninguna'}. Sin carpeta: ${missingFolders.join(', ') || 'ninguna'}.`
   );
 }
-
-fs.writeFileSync(contentConfigPath, configText, 'utf8');
-console.log('✓ content.config.ts sincronizado con modelos canónicos.');
+console.log(
+  '✓ content.config.ts coincide con las carpetas de contenido; no se modificó ningún archivo.'
+);

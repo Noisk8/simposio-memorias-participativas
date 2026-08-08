@@ -49,8 +49,14 @@ export const handler = async (event: any) => {
     if (!client) throw new InternalError('Supabase no está configurado en este entorno.');
 
     if (event.httpMethod === 'GET') {
+      const page = Math.max(1, Math.min(10000, Number(event.queryStringParameters?.page) || 1));
+      const perPage = Math.max(
+        10,
+        Math.min(100, Number(event.queryStringParameters?.perPage) || 50)
+      );
       const { data: authUsers, error: listError } = await client.auth.admin.listUsers({
-        perPage: 100,
+        page,
+        perPage,
       });
       if (listError) throw new InternalError('No se pudo consultar la lista de usuarios.');
 
@@ -76,7 +82,16 @@ export const handler = async (event: any) => {
         disabled: Boolean(user.banned_until && Date.parse(user.banned_until) > Date.now()),
       }));
 
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, users, requestId }) };
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          ok: true,
+          users,
+          pagination: { page, perPage, hasMore: users.length === perPage },
+          requestId,
+        }),
+      };
     }
 
     let payload: any;
@@ -152,8 +167,8 @@ export const handler = async (event: any) => {
     const invalid = newRoles.filter(
       (role) => typeof role !== 'string' || !ALLOWED_ROLES.includes(role)
     );
-    if (invalid.length > 0 || newRoles.length === 0 || newRoles.length > ALLOWED_ROLES.length) {
-      throw new ValidationError('La lista de roles no es válida.');
+    if (invalid.length > 0 || newRoles.length !== 1) {
+      throw new ValidationError('Cada usuario debe tener exactamente un rol efectivo.');
     }
 
     const { error: updateError } = await client.rpc('cms_set_user_roles', {

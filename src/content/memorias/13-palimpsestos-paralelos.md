@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 13
-title: "Palimpsestos Paralelos: Barrios en Transformación a Través de la Mirada de Niñes"
-place: "Granada, España y Lisboa, Portugal"
-author: ""
-collective: "Periferias Dibujadas"
-image: "/images/proyecto-13.jpg"
-description: "¿Cómo podemos trabajar la memoria y la imaginación de los barrios a través de la mirada de niñes?"
+title: 'Palimpsestos Paralelos: Barrios en Transformación a Través de la Mirada de Niñes'
+place: 'Granada, España y Lisboa, Portugal'
+author: ''
+collective: 'Periferias Dibujadas'
+image: '/images/proyecto-13.jpg'
+description: '¿Cómo podemos trabajar la memoria y la imaginación de los barrios a través de la mirada de niñes?'
 tags:
   - museo-memorias
 ---

@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 5
-title: "Proyecto 6402+"
-place: "Colombia"
-author: ""
-collective: "Wikimedia Colombia - MAFAPO"
-image: "/images/proyecto-5.jpg"
-description: "6402+ es un memorial digital en construcción que dignifica a las víctimas de ejecuciones extrajudiciales en Colombia."
+title: 'Proyecto 6402+'
+place: 'Colombia'
+author: ''
+collective: 'Wikimedia Colombia - MAFAPO'
+image: '/images/proyecto-5.jpg'
+description: '6402+ es un memorial digital en construcción que dignifica a las víctimas de ejecuciones extrajudiciales en Colombia.'
 tags:
   - museo-memorias
 ---

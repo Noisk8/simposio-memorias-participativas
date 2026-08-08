@@ -10,7 +10,7 @@ const { title = 'CMS · Red de Memorias' } = Astro.props;
 <!doctype html>
 <html lang="es" data-admin-theme="light">
   <head><Seo title={title} noindex /></head>
-  <body class="cms-body">
+  <body class="cms-body" data-pagefind-ignore="all">
     <header class="cms-topbar">
       <a class="cms-brand" href="/admin/"><span>◉</span> Red de Memorias</a>
       <nav class="cms-topnav" aria-label="Navegación principal del CMS">

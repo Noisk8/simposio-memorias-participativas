@@ -188,17 +188,13 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   function roleButton(user, role) {
     var btn = document.createElement('button');
     var hasRole = user.roles.indexOf(role) !== -1;
-    btn.textContent = hasRole ? 'Quitar ' + role : 'Hacer ' + role;
+    btn.textContent = hasRole ? 'Rol actual: ' + role : 'Asignar ' + role;
     btn.className = hasRole
       ? 'text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 mr-2 transition-colors'
       : 'text-xs px-3 py-1.5 rounded-lg border border-ugr-green text-ugr-green hover:bg-green-50 mr-2 transition-colors';
+    btn.disabled = hasRole;
     btn.addEventListener('click', function () {
-      var newRoles = hasRole
-        ? user.roles.filter(function (r) {
-            return r !== role;
-          })
-        : user.roles.concat([role]);
-      setRoles(user, newRoles);
+      setRoles(user, [role]);
     });
     return btn;
   }

@@ -4,6 +4,7 @@ import PageTemplate from '../components/PageTemplate.astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { getSimposioDefault, resolveSimposioSlug } from '../lib/simposios';
+import { filterPublished } from '../lib/taxonomies';
 
 interface Props {
   entry: CollectionEntry<'paginas'>;
@@ -11,7 +12,9 @@ interface Props {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const defaultSlug = await resolveSimposioSlug();
-  const paginas = await getCollection('paginas', ({ data }) => !data.draft && data.simposio === defaultSlug);
+  const paginas = filterPublished(await getCollection('paginas')).filter(
+    ({ data }) => data.simposio === defaultSlug
+  );
   return paginas.map((entry) => ({
     params: { pagina: entry.data.slug || entry.data.template },
     props: { entry },

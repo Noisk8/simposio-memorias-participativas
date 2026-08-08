@@ -46,7 +46,9 @@ export function parseFrontmatter(content) {
 }
 
 export function isValidPublicImagePath(value) {
-  return /^\/images\/[a-z0-9][a-z0-9_./-]*\.(?:avif|gif|jpe?g|png|webp)$/i.test(String(value ?? '').trim());
+  return /^\/images\/[a-z0-9][a-z0-9_./-]*\.(?:avif|gif|jpe?g|png|webp)$/i.test(
+    String(value ?? '').trim()
+  );
 }
 
 export function createRateLimiter({ max = 20, windowMs = 60000 } = {}) {

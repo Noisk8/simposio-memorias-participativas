@@ -14,18 +14,16 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
   <!-- Hero Section -->
   <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
-      <img
-        src={simposioImage}
-        alt={simposioTitle}
-        class="w-full h-full object-cover"
-      />
+      <img src={simposioImage} alt={simposioTitle} class="w-full h-full object-cover" />
       <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
     </div>
     <div class="relative z-10 text-center px-4">
       <p class="text-sm md:text-base text-white/80 uppercase tracking-widest mb-3">
         {NETWORK_TITLE}
       </p>
-      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 font-[family-name:var(--font-heading)] drop-shadow-lg">
+      <h1
+        class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 font-[family-name:var(--font-heading)] drop-shadow-lg"
+      >
         {simposioTitle.toUpperCase()}
       </h1>
       <p class="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto drop-shadow-md">
@@ -37,7 +35,9 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
   <!-- Cartel Oficial -->
   <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-4 text-center">
-      <h2 class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+      <h2
+        class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+      >
         Cartel Oficial
       </h2>
       <div class="card-shadow rounded-xl overflow-hidden inline-block">
@@ -53,24 +53,54 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
   <!-- Enlaces principales -->
   <section class="py-16 bg-ugr-cream">
     <div class="max-w-5xl mx-auto px-4">
-      <h2 class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center">
+      <h2
+        class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center"
+      >
         Explora
       </h2>
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <a href="/acerca-de" class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
-          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Acerca de</h3>
+        <a
+          href="/acerca-de"
+          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
+        >
+          <h3
+            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
+          >
+            Acerca de
+          </h3>
           <p class="text-sm text-ugr-text-light">La Red Internacional</p>
         </a>
-        <a href="/simposios" class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
-          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Simposios</h3>
+        <a
+          href="/simposios"
+          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
+        >
+          <h3
+            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
+          >
+            Simposios
+          </h3>
           <p class="text-sm text-ugr-text-light">Ediciones y encuentros</p>
         </a>
-        <a href="/museo-memorias" class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
-          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Museo</h3>
+        <a
+          href="/museo-memorias"
+          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
+        >
+          <h3
+            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
+          >
+            Museo
+          </h3>
           <p class="text-sm text-ugr-text-light">Memorias Vivas</p>
         </a>
-        <a href={`/ediciones/${simposio?.data.slug || '2026'}/`} class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all">
-          <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">Edición actual</h3>
+        <a
+          href={`/ediciones/${simposio?.data.slug || '2026'}/`}
+          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
+        >
+          <h3
+            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
+          >
+            Edición actual
+          </h3>
           <p class="text-sm text-ugr-text-light">Página del simposio</p>
         </a>
       </div>
@@ -80,7 +110,9 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
   <!-- Enlace Instagram -->
   <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-4 text-center">
-      <h2 class="text-3xl font-bold mb-8 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+      <h2
+        class="text-3xl font-bold mb-8 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+      >
         Síguenos en Instagram
       </h2>
 
@@ -93,9 +125,7 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
           />
         </div>
 
-        <p class="text-ugr-text-light mb-6 font-semibold">
-          @memoriasparticipativas
-        </p>
+        <p class="text-ugr-text-light mb-6 font-semibold">@memoriasparticipativas</p>
 
         <a
           href={NETWORK_INSTAGRAM}
@@ -104,15 +134,15 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
           class="btn-green inline-flex items-center gap-2"
         >
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            <path
+              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+            ></path>
           </svg>
           Seguir en Instagram
         </a>
       </div>
 
-      <p class="mt-6 text-ugr-text-light text-sm">
-        Actualizaciones, fotos y vídeos del simposio
-      </p>
+      <p class="mt-6 text-ugr-text-light text-sm">Actualizaciones, fotos y vídeos del simposio</p>
     </div>
   </section>
 </Layout>

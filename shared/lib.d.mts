@@ -11,7 +11,4 @@ export interface RateLimitResult {
 
 export type RateLimitCheck = (key: string, now?: number) => RateLimitResult;
 
-export function createRateLimiter(options?: {
-  max?: number;
-  windowMs?: number;
-}): RateLimitCheck;
+export function createRateLimiter(options?: { max?: number; windowMs?: number }): RateLimitCheck;

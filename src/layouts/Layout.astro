@@ -17,7 +17,17 @@ interface Props {
   tags?: string[];
 }
 
-const { title, description = NETWORK_DESCRIPTION, image, noindex, type, canonical, publishDate, modifiedDate, tags } = Astro.props;
+const {
+  title,
+  description = NETWORK_DESCRIPTION,
+  image,
+  noindex,
+  type,
+  canonical,
+  publishDate,
+  modifiedDate,
+  tags,
+} = Astro.props;
 ---
 
 <!doctype html>

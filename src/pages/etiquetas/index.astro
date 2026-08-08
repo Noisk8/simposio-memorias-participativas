@@ -1,11 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
-import { getEtiquetas } from '../../lib/taxonomies';
+import { getEtiquetas, filterPublished } from '../../lib/taxonomies';
 
 const etiquetas = await getEtiquetas();
-const entradas = await getCollection('entradas', ({ data }) => !data.draft);
-const memorias = await getCollection('memorias', ({ data }) => !data.draft);
+const entradas = filterPublished(await getCollection('entradas'));
+const memorias = filterPublished(await getCollection('memorias'));
 
 const usadas = new Set<string>();
 for (const e of entradas) (e.data.tags || []).forEach((t) => usadas.add(t));
@@ -18,7 +18,8 @@ function countFor(slug: string) {
     memorias.filter((p) => p.data.tags?.includes(slug)).length
   );
 }
-for (const t of etiquetas) terms.set(t.slug, { title: t.title, slug: t.slug, count: countFor(t.slug) });
+for (const t of etiquetas)
+  terms.set(t.slug, { title: t.title, slug: t.slug, count: countFor(t.slug) });
 for (const slug of usadas) {
   if (!terms.has(slug)) {
     const title = etiquetas.find((t) => t.slug === slug)?.title || slug;
@@ -36,7 +37,9 @@ const lista = Array.from(terms.values()).sort((a, b) => b.count - a.count);
         <span class="mx-2">/</span>
         <span class="text-white">Etiquetas</span>
       </nav>
-      <h1 class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-heading)] drop-shadow-lg"
+      >
         Etiquetas
       </h1>
     </div>
@@ -44,19 +47,23 @@ const lista = Array.from(terms.values()).sort((a, b) => b.count - a.count);
 
   <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-4">
-      {lista.length === 0 && (
-        <p class="text-center text-ugr-text-light py-16">No hay etiquetas creadas todavía.</p>
-      )}
+      {
+        lista.length === 0 && (
+          <p class="text-center text-ugr-text-light py-16">No hay etiquetas creadas todavía.</p>
+        )
+      }
       <div class="flex flex-wrap gap-3 justify-center">
-        {lista.map((tag) => (
-          <a
-            href={`/etiquetas/${tag.slug}/`}
-            class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-ugr-text rounded-full font-semibold text-sm hover:bg-ugr-green hover:text-white transition-colors"
-          >
-            #{tag.title}
-            <span class="text-xs opacity-70">({tag.count})</span>
-          </a>
-        ))}
+        {
+          lista.map((tag) => (
+            <a
+              href={`/etiquetas/${tag.slug}/`}
+              class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-ugr-text rounded-full font-semibold text-sm hover:bg-ugr-green hover:text-white transition-colors"
+            >
+              #{tag.title}
+              <span class="text-xs opacity-70">({tag.count})</span>
+            </a>
+          ))
+        }
       </div>
     </div>
   </section>

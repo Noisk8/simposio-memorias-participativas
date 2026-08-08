@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 16
-title: "El territorio en las cosas"
-place: "Colombia"
-author: ""
-collective: "Semilleros Territorios y Estéticas Sociales - Jorge Tadeo Lozano"
-image: "/images/proyecto-16.jpg"
-description: "Una obra de investigación-creación que explora cómo los objetos articulan memorias y territorios en contextos de conflicto."
+title: 'El territorio en las cosas'
+place: 'Colombia'
+author: ''
+collective: 'Semilleros Territorios y Estéticas Sociales - Jorge Tadeo Lozano'
+image: '/images/proyecto-16.jpg'
+description: 'Una obra de investigación-creación que explora cómo los objetos articulan memorias y territorios en contextos de conflicto.'
 tags:
   - museo-memorias
 ---

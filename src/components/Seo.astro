@@ -58,7 +58,11 @@ const pageTitle = title.includes(NETWORK_TITLE) ? title : `${title} · ${NETWORK
 const pageOgTitle = ogTitle || pageTitle;
 const pageOgDescription = ogDescription || description;
 
-const robotsContent = [noindex ? 'noindex' : 'index', nofollow ? 'nofollow' : 'follow', 'max-snippet:-1, max-image-preview:large, max-video-preview:-1'].join(', ');
+const robotsContent = [
+  noindex ? 'noindex' : 'index',
+  nofollow ? 'nofollow' : 'follow',
+  'max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+].join(', ');
 
 const formatDate = (date: Date | string | undefined) => {
   if (!date) return undefined;
@@ -141,21 +145,19 @@ const schema = {
 {twitterHandle && <meta name="twitter:site" content={twitterHandle} />}
 
 <!-- Artículo (Open Graph adicional) -->
-{type === 'article' && publishedTime && (
-  <meta property="article:published_time" content={publishedTime} />
-)}
-{type === 'article' && modifiedTime && (
-  <meta property="article:modified_time" content={modifiedTime} />
-)}
-{type === 'article' && author && (
-  <meta property="article:author" content={author} />
-)}
-{type === 'article' && section && (
-  <meta property="article:section" content={section} />
-)}
-{tags.map((tag) => (
-  <meta property="article:tag" content={tag} />
-))}
+{
+  type === 'article' && publishedTime && (
+    <meta property="article:published_time" content={publishedTime} />
+  )
+}
+{
+  type === 'article' && modifiedTime && (
+    <meta property="article:modified_time" content={modifiedTime} />
+  )
+}
+{type === 'article' && author && <meta property="article:author" content={author} />}
+{type === 'article' && section && <meta property="article:section" content={section} />}
+{tags.map((tag) => <meta property="article:tag" content={tag} />)}
 
 <!-- Favicon / app icons -->
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -164,6 +166,6 @@ const schema = {
 <link rel="manifest" href="/manifest.json" />
 
 <!-- JSON-LD -->
-<script type="application/ld+json" set:html={JSON.stringify(schema)} is:inline></script>
+<script type="application/ld+json" set:html={JSON.stringify(schema)} is:inline />
 
 <title>{pageTitle}</title>

@@ -1,13 +1,13 @@
 ---
 draft: false
-simposio: "2026"
+simposio: '2026'
 number: 4
-title: "PuebloAgua, Universo Anfibio"
-place: "Nueva Venecia, Magdalena, Colombia"
-author: ""
-collective: "La Piragua Transmedia - Universidad del Magdalena"
-image: "/images/proyecto-4.jpg"
-description: "Obra transmedia: obra audiovisual y plataforma interactiva sobre comunidades acuáticas."
+title: 'PuebloAgua, Universo Anfibio'
+place: 'Nueva Venecia, Magdalena, Colombia'
+author: ''
+collective: 'La Piragua Transmedia - Universidad del Magdalena'
+image: '/images/proyecto-4.jpg'
+description: 'Obra transmedia: obra audiovisual y plataforma interactiva sobre comunidades acuáticas.'
 tags:
   - museo-memorias
 ---
