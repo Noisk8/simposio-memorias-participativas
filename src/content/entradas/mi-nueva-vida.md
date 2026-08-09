@@ -7,10 +7,16 @@ date: "2026-08-11"
 author: "juan"
 categories:
 tags:
-image: ""
-description: ""
+image: "/images/captura-desde-2026-07-14-17-25-03.png"
+description: "no se que tal"
 owner_id: "fa2bbf44-8c6b-43fb-8c3a-d30c8c90db9d"
 workflow_state: "draft"
 ---
 
+## Mi vida Después 
 
+> sizas 
+
+
+
+### otro sub más péqueño
