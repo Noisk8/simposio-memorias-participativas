@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 
 export type AccountInviteInput = {
   email: string;
@@ -24,7 +24,14 @@ const ROLE_LABELS: Record<string, string> = {
   read_only: 'Solo lectura',
 };
 
-const PASSWORD_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*?';
+// Keep the alphabet readable: this is not a credential, only the public set
+// of characters used to generate temporary passwords.
+const PASSWORD_CHARSET = [
+  'ABCDEFGHJKLMNPQRSTUVWXYZ',
+  'abcdefghijkmnopqrstuvwxyz',
+  '23456789',
+  '!@#$%*?',
+].join('');
 const DEFAULT_LOGIN_PATH = '/admin/login';
 const DEFAULT_SITE_ORIGIN = 'https://simposio-memorias-participativas.netlify.app';
 
@@ -43,10 +50,9 @@ function envValue(key: string): string {
 
 export function generateTemporaryPassword(length = 16): string {
   const size = Math.max(12, Math.min(32, Math.floor(length)));
-  const bytes = randomBytes(size);
   let password = '';
   for (let index = 0; index < size; index += 1) {
-    password += PASSWORD_CHARSET[bytes[index] % PASSWORD_CHARSET.length];
+    password += PASSWORD_CHARSET[randomInt(PASSWORD_CHARSET.length)];
   }
   return password;
 }
