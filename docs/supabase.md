@@ -24,6 +24,20 @@ on conflict do nothing;
 
 Después crea la cuenta mediante un mecanismo administrativo de Supabase. El registro público debe permanecer desactivado.
 
+## Alta desde el panel
+
+La página `/admin/gestion-usuarios` puede crear cuentas nuevas, asignarles un rol inicial y enviar un correo con las credenciales temporales.
+
+Para activar el envío automático configura estas variables en Netlify o en tu entorno local:
+
+```text
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL=panel@tu-dominio.com
+SITE_URL=https://tu-dominio.com
+```
+
+Si las variables de correo no están presentes, la cuenta se crea igual y el panel muestra la contraseña temporal para compartirla manualmente.
+
 ## Variables
 
 ```text

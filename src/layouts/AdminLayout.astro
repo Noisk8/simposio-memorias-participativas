@@ -1,15 +1,27 @@
 ---
 import Seo from '../components/Seo.astro';
+import { Font } from 'astro:assets';
 import '../styles/global.css';
 interface Props {
   title?: string;
 }
 const { title = 'CMS · Red de Memorias' } = Astro.props;
+const githubRepo = String(
+  import.meta.env.GITHUB_REPO || 'Noisk8/simposio-memorias-participativas'
+).replace(/\.git$/i, '');
+const githubBranch = String(import.meta.env.GITHUB_BRANCH || 'main').trim() || 'main';
+const mediaPreviewBase = `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/images/`;
 ---
 
 <!doctype html>
 <html lang="es" data-admin-theme="light">
-  <head><Seo title={title} noindex /></head>
+  <head>
+    <Font cssVariable="--font-montserrat" />
+    <Seo title={title} noindex />
+    <script is:inline define:vars={{ mediaPreviewBase }}>
+      window.cmsMediaPreviewBase = mediaPreviewBase;
+    </script>
+  </head>
   <body class="cms-body" data-pagefind-ignore="all">
     <header class="cms-topbar">
       <a class="cms-brand" href="/admin/"><span>◉</span> Red de Memorias</a>
@@ -103,7 +115,7 @@ const { title = 'CMS · Red de Memorias' } = Astro.props;
     margin: 0;
     background: var(--cms-bg);
     color: var(--cms-text);
-    font-family: Atkinson, system-ui, sans-serif;
+    font-family: var(--font-montserrat), sans-serif;
     min-height: 100vh;
     font-size: 16px;
     line-height: 1.4;

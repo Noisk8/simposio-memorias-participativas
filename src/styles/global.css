@@ -1,13 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Muli:wght@400;600;700&family=Montserrat:wght@600;700;800&display=swap');
 @import 'tailwindcss';
 
-@theme {
+@theme inline {
   --color-ugr-green: #2f680c;
   --color-ugr-green-light: #70a87a;
   --color-ugr-green-dark: #1e4a08;
   --color-ugr-cream: #f5f0e8;
-  --font-body: 'Muli', sans-serif;
-  --font-heading: 'Montserrat', sans-serif;
+  --font-sans: var(--font-montserrat);
+  --font-body: var(--font-montserrat);
+  --font-heading: var(--font-montserrat);
 }
 
 :root {
@@ -19,8 +19,16 @@
   --ugr-text-light: #666666;
 }
 
-body {
+html,
+body,
+button,
+input,
+select,
+textarea {
   font-family: var(--font-body);
+}
+
+body {
   margin: 0;
   padding: 0;
   text-align: left;

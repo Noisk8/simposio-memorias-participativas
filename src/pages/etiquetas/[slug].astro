@@ -113,6 +113,8 @@ const total = entradas.length + memorias.length;
                           src={entry.data.image}
                           alt={entry.data.title}
                           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          decoding="async"
                         />
                       </div>
                     )}
@@ -167,6 +169,8 @@ const total = entradas.length + memorias.length;
                       src={entry.data.image}
                       alt={entry.data.title}
                       class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div class="absolute top-3 left-3">
                       <span class="bg-ugr-green text-white text-xs font-bold px-3 py-1 rounded-full">

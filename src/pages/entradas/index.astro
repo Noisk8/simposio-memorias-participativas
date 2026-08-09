@@ -10,11 +10,9 @@ import {
   sortByDateDesc,
   filterPublished,
 } from '../../lib/taxonomies';
-import { resolveSimposioSlug } from '../../lib/simposios';
+import { resolvePublicImageUrl } from '../../lib/public-image';
 
-const defaultSlug = await resolveSimposioSlug();
-const allEntradas = await getCollection('entradas', ({ data }) => data.simposio === defaultSlug);
-const entradas = filterPublished(allEntradas);
+const entradas = filterPublished(await getCollection('entradas'));
 sortByDateDesc(entradas);
 
 const catTitles = slugTitleMap(await getCategorias());
@@ -51,9 +49,11 @@ const tagTitles = slugTitleMap(await getEtiquetas());
               {entry.data.image && (
                 <a href={`/entradas/${entry.id}`} class="block relative h-48 overflow-hidden">
                   <img
-                    src={entry.data.image}
+                    src={resolvePublicImageUrl(entry.data.image)}
                     alt={entry.data.title}
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </a>
               )}

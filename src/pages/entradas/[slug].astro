@@ -12,16 +12,14 @@ import {
   formatDate,
   filterPublished,
 } from '../../lib/taxonomies';
-import { resolveSimposioSlug } from '../../lib/simposios';
+import { resolvePublicImageUrl } from '../../lib/public-image';
 
 type Props = {
   entry: CollectionEntry<'entradas'>;
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const defaultSlug = await resolveSimposioSlug();
-  const allEntradas = await getCollection('entradas', ({ data }) => data.simposio === defaultSlug);
-  const entradas = filterPublished(allEntradas);
+  const entradas = filterPublished(await getCollection('entradas'));
   return entradas.map((entry) => ({
     params: { slug: entry.id },
     props: { entry },
@@ -78,7 +76,14 @@ const related = allPublished
       {
         entrada.image && (
           <div class="mb-8">
-            <img src={entrada.image} alt={entrada.title} class="w-full rounded-xl shadow-lg" />
+            <img
+              src={resolvePublicImageUrl(entrada.image)}
+              alt={entrada.title}
+              class="w-full rounded-xl shadow-lg object-cover"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
           </div>
         )
       }
@@ -120,9 +125,11 @@ const related = allPublished
                 >
                   {r.data.image && (
                     <img
-                      src={r.data.image}
+                      src={resolvePublicImageUrl(r.data.image)}
                       alt={r.data.title}
                       class="w-full h-32 object-cover rounded-lg mb-3"
+                      loading="lazy"
+                      decoding="async"
                     />
                   )}
                   <h3 class="font-bold text-ugr-green-dark text-sm line-clamp-2">{r.data.title}</h3>

@@ -17,6 +17,8 @@ La matriz completa se siembra en `supabase/migrations/202608080001_phase1_rbac.s
 
 La página `/admin/gestion-usuarios` consulta y modifica roles mediante `manage-users`. La función exige `users.read` para listar y `users.manage` para crear usuarios o asignar roles. Nunca acepta un rol del cliente como prueba de autorización.
 
+Desde esa misma pantalla el admin también puede crear cuentas nuevas. Si la contraseña se deja vacía, el backend genera una temporal segura, crea la cuenta en Supabase, asigna el rol inicial y, cuando `RESEND_API_KEY` y `RESEND_FROM_EMAIL` están configuradas, envía el correo de acceso.
+
 La RPC `cms_set_user_roles` hace el reemplazo de forma atómica, valida las claves y evita que una persona retire sus propios permisos administrativos o elimine al último administrador.
 
 Los cambios aplican en la petición siguiente porque los permisos se consultan en Supabase en cada llamada.

@@ -27,6 +27,9 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
         src="/images/hero-bg.jpg"
         alt="Museo de Memorias Vivas"
         class="w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
       />
       <div class="absolute inset-0 bg-black/60"></div>
     </div>
@@ -104,6 +107,8 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
                   src={entry.data.image}
                   alt={entry.data.title}
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div class="absolute top-3 left-3">
                   <span class="bg-ugr-green text-white text-xs font-bold px-3 py-1 rounded-full">

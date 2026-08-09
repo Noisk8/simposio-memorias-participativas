@@ -17,6 +17,9 @@ const ordenados = simposios.sort((a, b) => b.data.year - a.data.year);
         src="/images/hero-bg.jpg"
         alt="Simposios de la Red Internacional de Memorias Participativas"
         class="w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
       />
       <div class="absolute inset-0 bg-black/60"></div>
     </div>
@@ -54,6 +57,8 @@ const ordenados = simposios.sort((a, b) => b.data.year - a.data.year);
                   src={simposio.data.image || '/images/hero-bg.jpg'}
                   alt={simposio.data.title}
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div class="absolute top-4 left-4">
                   <span

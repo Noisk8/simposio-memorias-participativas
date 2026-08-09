@@ -1,6 +1,6 @@
 # I Simposio sobre Memorias Participativas
 
-Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build) y desplegado en [Netlify](https://www.netlify.com/). El panel administrativo usa Supabase Auth y RBAC granular como única autoridad de identidad.
+Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build) y desplegado en [Netlify](https://www.netlify.com/). El panel administrativo usa Supabase Auth y RBAC granular como única autoridad de identidad, y el contenido editorial se guarda como Markdown versionado en GitHub.
 
 ## Tecnologías
 
@@ -11,6 +11,18 @@ Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de 
 - **Funciones serverless:** Netlify Functions.
 - **Búsqueda:** Pagefind.
 - **Hosting:** Netlify.
+
+## Estado actual del proyecto
+
+Hoy la aplicación cubre este flujo completo:
+
+- Sitio público rápido con Astro estático, rutas generadas en build y búsqueda con Pagefind.
+- Panel editorial propio en `/admin/` con acceso por Supabase.
+- Gestión real de `entradas`, `paginas`, `memorias`, `simposios`, `categorias`, `etiquetas`, `medios` y `usuarios`.
+- Publicación y borradores con estado editorial (`draft`, `in_review`, `changes_requested`, `approved`, `published`, `archived`).
+- Persistencia del contenido en archivos Markdown dentro de `src/content/` y en GitHub.
+- Auditoría y validación en backend antes de guardar, publicar o eliminar.
+- Rutas públicas separadas por tipo de contenido para mantener claridad y rendimiento.
 
 ## Arquitectura de contenido
 
@@ -38,6 +50,89 @@ src/content/
 ```
 
 La página pública `/museo-memorias/` funciona como archivo de las memorias. Las rutas públicas de cada memoria se mantienen en `/museo-memorias/:number`.
+
+Rutas públicas clave:
+
+- `/` página principal.
+- `/entradas/` listado de entradas publicadas.
+- `/entradas/:slug` detalle de cada entrada.
+- `/museo-memorias/` archivo del museo.
+- `/museo-memorias/:number` detalle de cada memoria.
+- `/ediciones/:slug/` página de una edición.
+- `/:pagina` páginas informativas publicadas.
+- `/categorias/` y `/etiquetas/` archivos taxonómicos.
+- `/404` página personalizada de enlace roto.
+
+## Flujo real de la aplicación
+
+Este esquema resume cómo funciona hoy el sistema de extremo a extremo:
+
+```text
+┌────────────────────────────────────────────┐
+│ Sitio público Astro                        │
+│ Generación estática + Pagefind             │
+│ Rutas públicas solo para contenido publicado│
+└──────────────────────┬─────────────────────┘
+                       │
+                Contenido validado
+                       │
+┌──────────────────────▼─────────────────────┐
+│ Repositorio GitHub                         │
+│ Markdown + frontmatter                     │
+│ Historial, commits y revisiones            │
+└──────────────────────▲─────────────────────┘
+                       │
+             Escritura desde servidor
+                       │
+┌──────────────────────┴─────────────────────┐
+│ API editorial en Netlify Functions         │
+│ Valida esquema, permisos y auditoría       │
+│ Escribe en GitHub y publica contenido      │
+└──────────────────────▲─────────────────────┘
+                       │
+              Formularios del panel
+                       │
+┌──────────────────────┴─────────────────────┐
+│ Panel CMS propio                           │
+│ Entradas, páginas, memorias, medios, roles │
+│ Estado editorial: draft, review, published │
+└──────────────────────▲─────────────────────┘
+                       │
+                 Sesión segura
+                       │
+┌──────────────────────┴─────────────────────┐
+│ Supabase                                   │
+│ Auth + RBAC + permisos + auditoría         │
+│ Fuente de verdad de identidad              │
+└────────────────────────────────────────────┘
+```
+
+### Qué pasa cuando se publica
+
+1. El usuario inicia sesión en el panel con Supabase Auth.
+2. El panel envía el formulario a una Netlify Function protegida.
+3. La función valida el JWT, los permisos efectivos y el esquema del contenido.
+4. Si la acción es `publicar`, el sistema normaliza el contenido para que quede visible.
+5. La función escribe el Markdown en GitHub y registra la auditoría.
+6. Astro toma ese contenido en el siguiente build y genera la página pública.
+7. Pagefind indexa el sitio estático para mantener la búsqueda.
+
+### Qué significa para el cliente
+
+- El contenido editable vive como Markdown versionado en GitHub.
+- La seguridad no depende del navegador, sino del backend y de Supabase.
+- Lo publicado no aparece “porque sí”: pasa por validación, permisos y guardado persistente.
+- El sitio público sigue siendo rápido porque Astro genera páginas estáticas.
+
+### Panel administrativo actual
+
+El panel administrativo ya incluye:
+
+- `/admin/contenidos` para crear, editar, filtrar y publicar contenido.
+- `/admin/gestion-usuarios` para crear cuentas, asignar roles y enviar accesos.
+- `/admin/medios` para gestionar imágenes.
+- `/admin/crear-memoria` como acceso rápido a la creación de memorias.
+- Un dashboard inicial en `/admin/` con accesos rápidos a las tareas frecuentes.
 
 ## Desarrollo local
 
@@ -147,7 +242,7 @@ La ruta anterior `/admin/crear-proyecto` redirige a la nueva para mantener compa
 
 ## Documentación
 
-- **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md):** guía práctica para acceder al panel y gestionar entradas, memorias, páginas, taxonomías, imágenes y borradores.
+- **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md):** guía práctica para acceder al panel y gestionar entradas, memorias, páginas, taxonomías, imágenes, roles y borradores.
 - **[Instrucciones generales](./INSTRUCCIONES.md):** estructura, comandos y operaciones básicas.
 - **[Guía de despliegue](./GUIA-DESPLIEGUE.md):** configuración y publicación en Netlify.
 - **[Documentación técnica](./docs/):** colecciones, roles, creación de contenido y configuración del proyecto.

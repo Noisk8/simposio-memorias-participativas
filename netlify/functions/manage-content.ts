@@ -1,4 +1,7 @@
 import { Buffer } from 'node:buffer';
+import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
 import { checkRateLimit, errorResponse, getCorsHeaders, isSafeContentPath } from '../security';
 import { requirePermission } from '../../shared/auth/require-permission.ts';
@@ -18,6 +21,7 @@ import {
   parseMarkdownDocument,
   serializeMarkdownDocument,
 } from '../../shared/content/frontmatter.ts';
+import { normalizePublishedContent } from '../../shared/content/publication.ts';
 import {
   categoriaSchema,
   entradaSchema,
@@ -84,12 +88,41 @@ async function registerContent(
   const { error } = await client
     .from('cms_content_records')
     .upsert(values, { onConflict: 'path', ignoreDuplicates: false });
-  if (error)
+  if (error) {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        event: 'cms_content_records.upsert.failed',
+        requestId: auth.requestId,
+        path,
+        collection,
+        supabase: {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        },
+      })
+    );
     throw new AppError(
       'INTERNAL_ERROR',
       'El contenido se guardó, pero no pudo registrarse su estado editorial.',
-      500
+      500,
+      {
+        details: {
+          path,
+          collection,
+          workflowState: state,
+          supabase: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+          },
+        },
+      }
     );
+  }
 }
 
 function collectionConfig(value: unknown) {
@@ -142,7 +175,10 @@ async function readFile(path: string) {
   if (response.status === 404) throw new AppError('NOT_FOUND', 'Contenido no encontrado.', 404);
   if (!response.ok)
     throw new GitHubError('No se pudo leer el contenido.', { status: response.status });
-  return decodeFile(await response.json());
+  const file = await response.json();
+  const decoded = decodeFile(file);
+  await mirrorLocalContent(file.path, Buffer.from(String(file.content || '').replace(/\n/g, ''), 'base64').toString('utf8'));
+  return decoded;
 }
 
 function safeSlug(value: unknown) {
@@ -162,6 +198,68 @@ function newPath(collection: Collection, data: Record<string, unknown>) {
   if (collection === 'paginas' && data.simposio) stem = `${safeSlug(data.simposio)}-${stem}`;
   if (!stem) throw new ValidationError('No se pudo generar un nombre de archivo válido.');
   return `src/content/${collection}/${stem}.md`;
+}
+
+function publicUrlFor(collection: Collection, path: string, data: Record<string, unknown>) {
+  const stem = String(path.split('/').pop() || '').replace(/\.md$/i, '');
+  if (!stem) return null;
+  if (collection === 'entradas') return `/entradas/${stem}`;
+  if (collection === 'memorias') {
+    const number = String(data.number || stem.split('-')[0] || '').trim();
+    return number ? `/museo-memorias/${number}` : null;
+  }
+  if (collection === 'paginas') {
+    const slug = String(data.slug || stem.replace(/^\d{4}-/, '') || '').trim();
+    return slug ? `/${slug}` : null;
+  }
+  if (collection === 'simposios') {
+    const slug = String(data.slug || stem || '').trim();
+    return slug ? `/ediciones/${slug}` : null;
+  }
+  return null;
+}
+
+function localWorkspaceRoot() {
+  const candidates = [process.cwd(), path.resolve(process.cwd(), '..'), path.resolve(process.cwd(), '../..')];
+  return candidates.find((candidate) => existsSync(path.join(candidate, 'src', 'content'))) || null;
+}
+
+async function mirrorLocalContent(filePath: string, content: string | null | undefined) {
+  if (typeof filePath !== 'string' || !filePath.startsWith('src/content/')) return;
+  const root = localWorkspaceRoot();
+  if (!root) return;
+  try {
+    const absolutePath = path.join(root, filePath);
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.writeFile(absolutePath, String(content || ''), 'utf8');
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event: 'cms_content.local_mirror.failed',
+        filePath,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
+
+async function removeLocalContent(filePath: string) {
+  if (typeof filePath !== 'string' || !filePath.startsWith('src/content/')) return;
+  const root = localWorkspaceRoot();
+  if (!root) return;
+  try {
+    await fs.rm(path.join(root, filePath), { force: true });
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event: 'cms_content.local_remove.failed',
+        filePath,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
 }
 
 function validateDocument(collection: Collection, data: unknown, body: unknown) {
@@ -301,11 +399,12 @@ export const handler = async (event: any) => {
       const requestedState: WorkflowState = payload.data?.draft === false ? 'published' : 'draft';
       data.owner_id = ownerId;
       data.workflow_state = requestedState;
-      const content = serializeMarkdownDocument(data, payload.body);
+      const normalizedData = normalizePublishedContent(data, requestedState);
+      const content = serializeMarkdownDocument(normalizedData, payload.body);
       const githubResponse = await github(path, {
         method: 'PUT',
         body: JSON.stringify({
-          message: `${payload.sha ? 'Actualizar' : 'Crear'} ${config.name}: ${String(data.title || path)}`,
+          message: `${payload.sha ? 'Actualizar' : 'Crear'} ${config.name}: ${String(normalizedData.title || path)}`,
           content: Buffer.from(content, 'utf8').toString('base64'),
           branch: getGitHubConfiguration().branch,
           ...(payload.sha ? { sha: payload.sha } : {}),
@@ -331,6 +430,7 @@ export const handler = async (event: any) => {
         result.content?.sha,
         requestedState
       );
+      await mirrorLocalContent(path, content);
       await recordAudit({
         requestId,
         actorId: auth.user.id,
@@ -343,7 +443,12 @@ export const handler = async (event: any) => {
       return {
         statusCode: payload.sha ? 200 : 201,
         headers,
-        body: JSON.stringify({ ok: true, item: { path, sha: result.content?.sha }, requestId }),
+        body: JSON.stringify({
+          ok: true,
+          item: { path, sha: result.content?.sha },
+          publicUrl: publicUrlFor(config.name, path, normalizedData),
+          requestId,
+        }),
       };
     }
 
@@ -372,6 +477,7 @@ export const handler = async (event: any) => {
       throw new GitHubError('No se pudo eliminar el contenido.', { status: githubResponse.status });
     LIST_CACHE.delete(config.name);
     await getAdminClient()?.from('cms_content_records').delete().eq('path', path);
+    await removeLocalContent(path);
     await recordAudit({
       requestId,
       actorId: auth.user.id,

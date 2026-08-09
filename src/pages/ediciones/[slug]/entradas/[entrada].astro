@@ -12,6 +12,7 @@ import {
   filterPublished,
 } from '../../../../lib/taxonomies';
 import { getSimposioBySlug } from '../../../../lib/simposios';
+import { resolvePublicImageUrl } from '../../../../lib/public-image';
 
 type Props = {
   entry: CollectionEntry<'entradas'>;
@@ -74,7 +75,14 @@ const simposioTitle = simposio?.data.title || `Edición ${slug}`;
       {
         entrada.image && (
           <div class="mb-8">
-            <img src={entrada.image} alt={entrada.title} class="w-full rounded-xl shadow-lg" />
+            <img
+              src={resolvePublicImageUrl(entrada.image)}
+              alt={entrada.title}
+              class="w-full rounded-xl shadow-lg"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
           </div>
         )
       }

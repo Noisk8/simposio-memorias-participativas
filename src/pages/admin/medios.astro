@@ -4,47 +4,180 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 ---
 
 <AdminLayout title="Biblioteca de imágenes - Admin">
-  <section class="min-h-[70vh] bg-gray-50 py-10">
-    <div class="mx-auto max-w-6xl px-4">
-      <a href="/admin/" class="text-sm text-ugr-green hover:underline">← Panel</a>
-      <h1 class="mt-2 text-3xl font-bold text-ugr-green-dark">Biblioteca de imágenes</h1>
-      <p class="mb-7 mt-2 text-ugr-text-light">
-        Sube imágenes y copia su ruta para utilizarla en los contenidos.
-      </p>
+  <section class="cms-media-page">
+    <div class="cms-media-wrap">
+      <header class="cms-media-hero">
+        <div>
+          <p>Administración</p>
+          <h1>Biblioteca de imágenes</h1>
+          <div>
+            Administra los recursos visuales del CMS, sube imágenes optimizadas y copia sus rutas
+            para usarlas en entradas, memorias y páginas.
+          </div>
+        </div>
+        <a href="/admin/">← Volver al panel</a>
+      </header>
+
       <SupabaseAuth redirectUnauthenticated />
-      <div id="status" class="mb-5 rounded-lg bg-white p-4 text-sm shadow-sm">
+
+      <div id="status" class="cms-media-status" aria-live="polite">
+        <span class="cms-media-spinner" aria-hidden="true"></span>
         Verificando sesión…
       </div>
+
       <div id="media-panel" class="hidden">
-        <form
-          id="upload"
-          class="mb-7 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
-        >
-          <div>
-            <label for="file" class="mb-1 block text-sm font-semibold"
-              >Nueva imagen (máximo 6 MB)</label
-            ><input
-              id="file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-              required
-              class="block text-sm"
-            />
+        <section class="cms-media-stats" aria-label="Resumen de la biblioteca">
+          <article>
+            <span class="cms-media-stat-icon cms-media-stat-blue">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </span>
+            <div><strong id="media-count">0</strong><span>Imágenes cargadas</span></div>
+          </article>
+          <article>
+            <span class="cms-media-stat-icon cms-media-stat-green">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="22" y1="12" x2="2" y2="12"></line>
+                <path
+                  d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+                ></path>
+                <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                <line x1="10" y1="16" x2="10.01" y2="16"></line>
+              </svg>
+            </span>
+            <div><strong id="media-size">0 KB</strong><span>Peso total visible</span></div>
+          </article>
+          <article>
+            <span class="cms-media-stat-icon cms-media-stat-purple">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+            </span>
+            <div><strong id="media-formats">0</strong><span>Formatos usados</span></div>
+          </article>
+          <article>
+            <span class="cms-media-stat-icon cms-media-stat-amber">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </span>
+            <div><strong>4 MB</strong><span>Máximo por archivo</span></div>
+          </article>
+        </section>
+
+        <form id="upload" class="cms-media-upload">
+          <div class="cms-media-upload-copy">
+            <span aria-hidden="true">↑</span>
+            <div>
+              <h2>Subir nueva imagen</h2>
+              <p>JPG, PNG, WebP, GIF o AVIF. Tamaño máximo: 4 MB.</p>
+            </div>
           </div>
-          <button class="rounded-lg bg-ugr-green px-5 py-2.5 font-semibold text-white"
-            >Subir imagen</button
-          >
+
+          <div class="cms-media-upload-controls">
+            <label class="cms-media-file-picker" for="file">
+              <input
+                id="file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                required
+              />
+              <span id="file-name">Seleccionar archivo</span>
+            </label>
+            <button id="upload-button" type="submit">Subir imagen</button>
+          </div>
         </form>
-        <div id="images" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"></div>
+
+        <section class="cms-media-library">
+          <header class="cms-media-library-header">
+            <div>
+              <p>Recursos disponibles</p>
+              <h2>Galería del sitio</h2>
+              <span id="media-summary">Carga la biblioteca para ver las imágenes.</span>
+            </div>
+            <div class="cms-media-tools">
+              <label>
+                <span class="sr-only">Buscar imágenes</span>
+                <input id="media-search" type="search" placeholder="Buscar por nombre o formato…" />
+              </label>
+              <button id="refresh-media" type="button">↻ Actualizar</button>
+            </div>
+          </header>
+
+          <div id="images" class="cms-media-grid"></div>
+
+          <div id="media-empty" class="cms-media-empty hidden">
+            <span>⌕</span>
+            <strong>No encontramos imágenes</strong>
+            <p>Prueba con otro nombre, extensión o limpia la búsqueda.</p>
+          </div>
+        </section>
       </div>
     </div>
   </section>
 </AdminLayout>
+
 <script is:inline>
   // @ts-nocheck
-  const panel = document.getElementById('media-panel'),
-    statusNode = document.getElementById('status'),
-    imagesNode = document.getElementById('images');
+  const panel = document.getElementById('media-panel');
+  const statusNode = document.getElementById('status');
+  const imagesNode = document.getElementById('images');
+  const uploadForm = document.getElementById('upload');
+  const fileInput = document.getElementById('file');
+  const fileName = document.getElementById('file-name');
+  const uploadButton = document.getElementById('upload-button');
+  const mediaSearch = document.getElementById('media-search');
+  const refreshMedia = document.getElementById('refresh-media');
+  const mediaEmpty = document.getElementById('media-empty');
+  const mediaSummary = document.getElementById('media-summary');
+  const maxImageBytes = 4 * 1024 * 1024;
+  let allImages = [];
+
   async function api(url, options = {}) {
     const token = await window.supabaseAuth.getToken();
     const response = await fetch(url, {
@@ -52,94 +185,646 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
     });
     const type = response.headers.get('content-type') || '';
-    if (!type.includes('application/json'))
+    if (!type.includes('application/json')) {
       throw new Error(
         'Las funciones administrativas no están disponibles. Usa netlify dev o producción.'
       );
+    }
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || 'Error inesperado.');
     return data;
   }
-  function status(message, error = false) {
+
+  function setStatus(message, kind = 'loading') {
     statusNode.textContent = message;
-    statusNode.className =
-      'mb-5 rounded-lg p-4 text-sm shadow-sm ' + (error ? 'bg-red-50 text-red-700' : 'bg-white');
+    statusNode.dataset.kind = kind;
   }
-  function escapeHtml(value) {
-    const span = document.createElement('span');
-    span.textContent = String(value || '');
-    return span.innerHTML;
+
+  function formatBytes(bytes) {
+    if (!bytes) return '0 KB';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size = size / 1024;
+      unitIndex++;
+    }
+    const precision = size >= 10 || unitIndex === 0 ? 0 : 1;
+    return size.toFixed(precision) + ' ' + units[unitIndex];
   }
-  async function load() {
+
+  function getExtension(name) {
+    return (
+      String(name || '')
+        .split('.')
+        .pop()
+        ?.toUpperCase() || 'IMG'
+    );
+  }
+
+  function updateStats(images) {
+    const totalSize = images.reduce((sum, image) => sum + Number(image.size || 0), 0);
+    const formats = new Set(images.map((image) => getExtension(image.name)));
+    document.getElementById('media-count').textContent = images.length;
+    document.getElementById('media-size').textContent = formatBytes(totalSize);
+    document.getElementById('media-formats').textContent = formats.size;
+  }
+
+  function renderImages() {
+    const query = mediaSearch.value.trim().toLocaleLowerCase('es');
+    const visibleImages = allImages.filter((image) =>
+      [image.name, image.path, getExtension(image.name)]
+        .join(' ')
+        .toLocaleLowerCase('es')
+        .includes(query)
+    );
+
+    imagesNode.innerHTML = '';
+    imagesNode.classList.toggle('hidden', visibleImages.length === 0);
+    mediaEmpty.classList.toggle('hidden', visibleImages.length !== 0);
+    mediaSummary.textContent =
+      visibleImages.length === allImages.length
+        ? allImages.length +
+          (allImages.length === 1 ? ' imagen disponible.' : ' imágenes disponibles.')
+        : visibleImages.length + ' de ' + allImages.length + ' imágenes.';
+
+    visibleImages.forEach((image) => imagesNode.appendChild(createImageCard(image)));
+  }
+
+  function createImageCard(image) {
+    const card = document.createElement('article');
+    card.className = 'cms-media-card';
+
+    const preview = document.createElement('div');
+    preview.className = 'cms-media-preview';
+    const img = document.createElement('img');
+    img.src = image.downloadUrl || image.path;
+    img.alt = '';
+    img.loading = 'lazy';
+    preview.appendChild(img);
+
+    const body = document.createElement('div');
+    body.className = 'cms-media-card-body';
+
+    const meta = document.createElement('div');
+    meta.className = 'cms-media-card-meta';
+    const name = document.createElement('strong');
+    name.textContent = image.name;
+    const details = document.createElement('span');
+    details.textContent = getExtension(image.name) + ' · ' + formatBytes(image.size);
+    meta.append(name, details);
+
+    const actions = document.createElement('div');
+    actions.className = 'cms-media-actions';
+
+    const copyButton = document.createElement('button');
+    copyButton.type = 'button';
+    copyButton.className = 'cms-media-copy';
+    copyButton.textContent = 'Copiar ruta';
+    copyButton.addEventListener('click', async function () {
+      try {
+        await navigator.clipboard.writeText(image.path);
+        setStatus('Ruta copiada: ' + image.path, 'success');
+      } catch (error) {
+        setStatus('No se pudo copiar la ruta: ' + error.message, 'error');
+      }
+    });
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'cms-media-delete';
+    deleteButton.textContent = 'Eliminar';
+    deleteButton.addEventListener('click', async function () {
+      if (!confirm('¿Eliminar ' + image.name + '?')) return;
+      deleteButton.disabled = true;
+      setStatus('Eliminando ' + image.name + '…', 'loading');
+      try {
+        await api(
+          '/.netlify/functions/manage-media?name=' +
+            encodeURIComponent(image.name) +
+            '&sha=' +
+            image.sha,
+          { method: 'DELETE' }
+        );
+        await loadImages();
+      } catch (error) {
+        deleteButton.disabled = false;
+        setStatus(error.message, 'error');
+      }
+    });
+
+    actions.append(copyButton, deleteButton);
+    body.append(meta, actions);
+    card.append(preview, body);
+    return card;
+  }
+
+  async function loadImages() {
+    refreshMedia.disabled = true;
+    setStatus('Cargando biblioteca de imágenes…', 'loading');
     try {
       const data = await api('/.netlify/functions/manage-media');
-      imagesNode.innerHTML = '';
-      data.images.forEach((image) => {
-        const card = document.createElement('article');
-        card.className = 'overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm';
-        card.innerHTML =
-          '<img src="' +
-          escapeHtml(image.path) +
-          '" alt="" loading="lazy" class="h-32 w-full bg-gray-100 object-cover"><div class="p-3"><p class="truncate text-xs font-medium">' +
-          escapeHtml(image.name) +
-          '</p><div class="mt-2 flex gap-2"><button class="copy text-xs text-ugr-green">Copiar ruta</button><button class="delete text-xs text-red-700">Eliminar</button></div></div>';
-        card.querySelector('.copy').onclick = async () => {
-          await navigator.clipboard.writeText(image.path);
-          status('Ruta copiada: ' + image.path);
-        };
-        card.querySelector('.delete').onclick = async () => {
-          if (!confirm('¿Eliminar ' + image.name + '?')) return;
-          try {
-            await api(
-              '/.netlify/functions/manage-media?name=' +
-                encodeURIComponent(image.name) +
-                '&sha=' +
-                image.sha,
-              { method: 'DELETE' }
-            );
-            await load();
-          } catch (error) {
-            status(error.message, true);
-          }
-        };
-        imagesNode.appendChild(card);
-      });
-      status(data.images.length + ' imágenes cargadas.');
+      allImages = data.images || [];
+      updateStats(allImages);
+      renderImages();
+      setStatus(
+        allImages.length + (allImages.length === 1 ? ' imagen cargada.' : ' imágenes cargadas.'),
+        'success'
+      );
     } catch (error) {
-      status(error.message, true);
+      setStatus(error.message, 'error');
+    } finally {
+      refreshMedia.disabled = false;
     }
   }
-  document.getElementById('upload').onsubmit = async (event) => {
+
+  uploadForm.addEventListener('submit', async function (event) {
     event.preventDefault();
-    const file = document.getElementById('file').files[0];
+    const file = fileInput.files[0];
     if (!file) return;
-    status('Subiendo imagen…');
+    if (file.size > maxImageBytes) {
+      setStatus('La imagen debe pesar máximo 4 MB.', 'error');
+      return;
+    }
+
+    uploadButton.disabled = true;
+    setStatus('Subiendo ' + file.name + '…', 'loading');
     const reader = new FileReader();
-    reader.onload = async () => {
+    reader.onload = async function () {
       try {
         const content = String(reader.result).split(',')[1];
         await api('/.netlify/functions/manage-media', {
           method: 'POST',
           body: JSON.stringify({ name: file.name, content }),
         });
-        event.target.reset();
-        await load();
+        uploadForm.reset();
+        fileName.textContent = 'Seleccionar archivo';
+        await loadImages();
       } catch (error) {
-        status(error.message, true);
+        setStatus(error.message, 'error');
+      } finally {
+        uploadButton.disabled = false;
       }
     };
+    reader.onerror = function () {
+      uploadButton.disabled = false;
+      setStatus('No se pudo leer la imagen seleccionada.', 'error');
+    };
     reader.readAsDataURL(file);
-  };
+  });
+
+  fileInput.addEventListener('change', function () {
+    const file = fileInput.files[0];
+    fileName.textContent = file
+      ? file.name + ' · ' + formatBytes(file.size)
+      : 'Seleccionar archivo';
+  });
+
+  refreshMedia.addEventListener('click', loadImages);
+  mediaSearch.addEventListener('input', renderImages);
+
   function start() {
     window.supabaseAuth.ready.then(async () => {
       if (await window.supabaseAuth.getUser()) {
         panel.classList.remove('hidden');
-        load();
+        loadImages();
       }
     });
   }
+
   (function wait() {
     if (window.supabaseAuth) return start();
     setTimeout(wait, 100);
   })();
 </script>
+
+<style is:global>
+  .cms-media-page {
+    min-height: calc(100vh - 54px);
+    padding: 30px;
+    background: var(--cms-bg);
+    color: var(--cms-text);
+  }
+  .cms-media-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .cms-media-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 30px 34px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #287bb8, #1d5d91);
+    color: #fff;
+    box-shadow: 0 18px 45px #10182820;
+  }
+  .cms-media-hero p,
+  .cms-media-library-header p {
+    margin: 0 0 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .cms-media-hero h1 {
+    margin: 0 0 8px;
+    color: #fff;
+    font-size: clamp(30px, 4vw, 40px);
+    line-height: 1.15;
+  }
+  .cms-media-hero > div > div {
+    max-width: 720px;
+    color: #e9f4ff;
+  }
+  .cms-media-hero a {
+    flex: 0 0 auto;
+    border: 1px solid #ffffff70;
+    border-radius: 8px;
+    padding: 9px 13px;
+    background: #ffffff12;
+    color: #fff !important;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .cms-media-hero a:hover {
+    background: #fff;
+    color: #175486 !important;
+  }
+  .cms-media-page #supabase-user-info,
+  .cms-media-page #supabase-signout {
+    display: none !important;
+  }
+  .cms-media-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 17px 20px;
+    border: 1px solid var(--cms-border);
+    border-radius: 12px;
+    background: var(--cms-panel);
+    color: var(--cms-muted);
+  }
+  .cms-media-status[data-kind='success'] {
+    border-color: #abefc6;
+    background: #ecfdf3;
+    color: #067647;
+  }
+  .cms-media-status[data-kind='error'] {
+    border-color: #fecdca;
+    background: #fef3f2;
+    color: #b42318;
+  }
+  .cms-media-status[data-kind='loading']::before {
+    width: 17px;
+    height: 17px;
+    border: 2px solid var(--cms-border);
+    border-top-color: var(--cms-blue);
+    border-radius: 50%;
+    animation: cms-media-spin 0.8s linear infinite;
+    content: '';
+  }
+  .cms-media-spinner {
+    width: 17px;
+    height: 17px;
+    border: 2px solid var(--cms-border);
+    border-top-color: var(--cms-blue);
+    border-radius: 50%;
+    animation: cms-media-spin 0.8s linear infinite;
+  }
+  .cms-media-status[data-kind] .cms-media-spinner {
+    display: none;
+  }
+  @keyframes cms-media-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .cms-media-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 22px 0;
+  }
+  .cms-media-stats article {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--cms-border);
+    border-radius: 14px;
+    background: var(--cms-panel);
+    box-shadow: 0 8px 20px #1018280a;
+  }
+  .cms-media-stat-icon {
+    display: grid;
+    flex: 0 0 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 11px;
+    box-sizing: border-box;
+    padding: 6px;
+  }
+  .cms-media-stat-icon svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 100%;
+  }
+  .cms-media-stat-blue {
+    background: #e8f2fb;
+    color: #287bb8;
+  }
+  .cms-media-stat-green {
+    background: #e8f7ef;
+    color: #18794e;
+  }
+  .cms-media-stat-purple {
+    background: #f0eafe;
+    color: #6941c6;
+  }
+  .cms-media-stat-amber {
+    background: #fff4df;
+    color: #b54708;
+  }
+  .cms-media-stats strong,
+  .cms-media-stats span {
+    display: block;
+  }
+  .cms-media-stats strong {
+    font-size: 24px;
+    line-height: 1;
+  }
+  .cms-media-stats article div span {
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--cms-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-media-upload,
+  .cms-media-library {
+    border: 1px solid var(--cms-border);
+    border-radius: 18px;
+    background: var(--cms-panel);
+    box-shadow: 0 14px 35px #10182810;
+  }
+  .cms-media-upload {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+    padding: 20px 24px;
+  }
+  .cms-media-upload-copy {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+  }
+  .cms-media-upload-copy > span {
+    display: grid;
+    flex: 0 0 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 12px;
+    background: #e8f2fb;
+    color: var(--cms-blue);
+    font-size: 22px;
+    font-weight: 800;
+  }
+  .cms-media-upload h2 {
+    margin: 0 0 4px;
+    color: var(--cms-text);
+    font-size: 21px;
+  }
+  .cms-media-upload p {
+    margin: 0;
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-media-upload-controls,
+  .cms-media-tools,
+  .cms-media-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .cms-media-file-picker {
+    display: inline-flex;
+    align-items: center;
+    max-width: 280px;
+    height: 42px;
+    box-sizing: border-box;
+    border: 1px solid var(--cms-border);
+    border-radius: 9px;
+    padding: 0 13px;
+    background: color-mix(in srgb, var(--cms-bg) 42%, var(--cms-panel));
+    color: var(--cms-text);
+    cursor: pointer;
+  }
+  .cms-media-file-picker input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .cms-media-file-picker span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-media-upload button,
+  .cms-media-tools button,
+  .cms-media-actions button {
+    height: 40px;
+    border: 0;
+    border-radius: 8px;
+    padding: 0 14px;
+    background: var(--cms-blue);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cms-media-upload button:disabled,
+  .cms-media-tools button:disabled,
+  .cms-media-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .cms-media-library {
+    overflow: hidden;
+  }
+  .cms-media-library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--cms-border);
+  }
+  .cms-media-library-header p {
+    color: var(--cms-blue);
+  }
+  .cms-media-library-header h2 {
+    margin: 0 0 3px;
+    color: var(--cms-text);
+    font-size: 23px;
+  }
+  .cms-media-library-header span {
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-media-tools input {
+    width: 260px;
+    height: 40px;
+    box-sizing: border-box;
+    border: 1px solid var(--cms-border);
+    border-radius: 9px;
+    padding: 0 12px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    font: inherit;
+  }
+  .cms-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+    padding: 22px 24px 24px;
+  }
+  .cms-media-card {
+    overflow: hidden;
+    border: 1px solid var(--cms-border);
+    border-radius: 14px;
+    background: var(--cms-panel);
+    box-shadow: 0 8px 18px #1018280d;
+  }
+  .cms-media-preview {
+    aspect-ratio: 4 / 3;
+    background:
+      linear-gradient(45deg, color-mix(in srgb, var(--cms-bg) 82%, #fff) 25%, transparent 25%) 0 0 /
+        18px 18px,
+      linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--cms-bg) 82%, #fff) 75%) 0 0 /
+        18px 18px,
+      var(--cms-bg);
+  }
+  .cms-media-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .cms-media-card-body {
+    padding: 13px;
+  }
+  .cms-media-card-meta strong,
+  .cms-media-card-meta span {
+    display: block;
+  }
+  .cms-media-card-meta strong {
+    overflow: hidden;
+    color: var(--cms-text);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-media-card-meta span {
+    margin-top: 4px;
+    color: var(--cms-muted);
+    font-size: 12px;
+  }
+  .cms-media-actions {
+    justify-content: space-between;
+    margin-top: 13px;
+  }
+  .cms-media-actions button {
+    flex: 1 1 auto;
+    height: 36px;
+    padding: 0 10px;
+  }
+  .cms-media-actions .cms-media-delete {
+    border: 1px solid #fecdca;
+    background: #fef3f2;
+    color: #b42318;
+  }
+  .cms-media-empty {
+    padding: 48px 20px 52px;
+    border-top: 1px solid var(--cms-border);
+    color: var(--cms-muted);
+    text-align: center;
+  }
+  .cms-media-empty span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--cms-blue);
+    font-size: 32px;
+  }
+  .cms-media-empty strong {
+    display: block;
+    color: var(--cms-text);
+    font-size: 18px;
+  }
+  .cms-media-empty p {
+    margin: 6px 0 0;
+  }
+  .cms-media-page .hidden {
+    display: none !important;
+  }
+  [data-theme='dark'] .cms-media-status[data-kind='success'] {
+    border-color: #18794e;
+    background: #103522;
+    color: #abefc6;
+  }
+  [data-theme='dark'] .cms-media-status[data-kind='error'],
+  [data-theme='dark'] .cms-media-actions .cms-media-delete {
+    border-color: #7a271a;
+    background: #3f1511;
+    color: #fecdca;
+  }
+  @media (max-width: 900px) {
+    .cms-media-page {
+      padding: 20px;
+    }
+    .cms-media-hero,
+    .cms-media-upload,
+    .cms-media-library-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .cms-media-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cms-media-tools,
+    .cms-media-upload-controls {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .cms-media-tools input,
+    .cms-media-file-picker {
+      width: 100%;
+      max-width: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .cms-media-page {
+      padding: 14px;
+    }
+    .cms-media-hero {
+      padding: 24px;
+    }
+    .cms-media-stats {
+      grid-template-columns: 1fr;
+    }
+    .cms-media-grid {
+      grid-template-columns: 1fr;
+      padding: 18px;
+    }
+  }
+</style>

@@ -12,6 +12,7 @@ import {
   filterPublished,
 } from '../../../../lib/taxonomies';
 import { getSimposioBySlug } from '../../../../lib/simposios';
+import { resolvePublicImageUrl } from '../../../../lib/public-image';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const entradas = filterPublished(await getCollection('entradas'));
@@ -66,9 +67,11 @@ const tagTitles = slugTitleMap(await getEtiquetas());
               {entry.data.image && (
                 <a href={`/entradas/${entry.id}`} class="block relative h-48 overflow-hidden">
                   <img
-                    src={entry.data.image}
+                    src={resolvePublicImageUrl(entry.data.image)}
                     alt={entry.data.title}
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </a>
               )}

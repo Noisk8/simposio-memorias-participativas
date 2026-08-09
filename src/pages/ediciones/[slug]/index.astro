@@ -5,6 +5,7 @@ import type { GetStaticPaths } from 'astro';
 import { getSimposioBySlug } from '../../../lib/simposios';
 import { NETWORK_INSTAGRAM } from '../../../consts';
 import { filterPublished } from '../../../lib/taxonomies';
+import { resolvePublicImageUrl } from '../../../lib/public-image';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const simposios = await getCollection('simposios');
@@ -33,9 +34,12 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
   <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
       <img
-        src={data.image || '/images/hero-bg.jpg'}
+        src={resolvePublicImageUrl(data.image || '/images/hero-bg.jpg')}
         alt={data.title}
         class="w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
       />
       <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
     </div>
@@ -65,9 +69,11 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           </h2>
           <div class="card-shadow rounded-xl overflow-hidden inline-block">
             <img
-              src={data.poster}
+              src={resolvePublicImageUrl(data.poster)}
               alt={`Cartel Oficial del ${data.title}`}
               class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </div>

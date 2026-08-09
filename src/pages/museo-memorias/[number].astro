@@ -7,6 +7,7 @@ import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { getCategorias, getEtiquetas, slugTitleMap, filterPublished } from '../../lib/taxonomies';
 import { getSimposioBySlug } from '../../lib/simposios';
+import { resolvePublicImageUrl } from '../../lib/public-image';
 
 type Props = {
   entry: CollectionEntry<'memorias'>;
@@ -82,7 +83,14 @@ const related = allPublished
   <section class="py-12 bg-white">
     <div class="max-w-4xl mx-auto px-4">
       <div class="mb-8">
-        <img src={memoria.image} alt={memoria.title} class="w-full rounded-xl shadow-lg" />
+        <img
+          src={resolvePublicImageUrl(memoria.image)}
+          alt={memoria.title}
+          class="w-full rounded-xl shadow-lg object-cover"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
       </div>
 
       <div class="flex flex-wrap gap-4 mb-8 text-sm">
@@ -170,9 +178,11 @@ const related = allPublished
                   class="block bg-gray-50 rounded-xl p-4 hover:bg-ugr-green/5 transition-colors"
                 >
                   <img
-                    src={r.data.image}
+                    src={resolvePublicImageUrl(r.data.image)}
                     alt={r.data.title}
                     class="w-full h-32 object-cover rounded-lg mb-3"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <h3 class="font-bold text-ugr-green-dark text-sm line-clamp-2">{r.data.title}</h3>
                   <p class="text-xs text-ugr-text-light mt-1">{r.data.place}</p>

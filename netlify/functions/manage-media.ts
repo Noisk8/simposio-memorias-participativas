@@ -16,6 +16,11 @@ import {
 const EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif']);
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
+function buildPreviewUrl(name: string) {
+  const config = getGitHubConfiguration();
+  return `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/public/images/${name}`;
+}
+
 async function findImageReferences(name: string) {
   const config = getGitHubConfiguration();
   const query = encodeURIComponent(
@@ -103,7 +108,7 @@ export const handler = async (event: any) => {
           path: `/images/${item.name}`,
           sha: item.sha,
           size: item.size,
-          downloadUrl: item.download_url,
+          downloadUrl: item.download_url || buildPreviewUrl(item.name),
         }));
       images.sort((a: any, b: any) => a.name.localeCompare(b.name));
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, images, requestId }) };
@@ -146,7 +151,13 @@ export const handler = async (event: any) => {
             headers,
             body: JSON.stringify({
               ok: true,
-              image: { name, path: `/images/${name}`, sha: existing.sha, existing: true },
+              image: {
+                name,
+                path: `/images/${name}`,
+                previewUrl: existing.download_url || buildPreviewUrl(name),
+                sha: existing.sha,
+                existing: true,
+              },
               requestId,
             }),
           };
@@ -186,7 +197,12 @@ export const handler = async (event: any) => {
         headers,
         body: JSON.stringify({
           ok: true,
-          image: { name, path: `/images/${name}`, sha: result.content?.sha },
+          image: {
+            name,
+            path: `/images/${name}`,
+            previewUrl: result.content?.download_url || buildPreviewUrl(name),
+            sha: result.content?.sha,
+          },
           requestId,
         }),
       };

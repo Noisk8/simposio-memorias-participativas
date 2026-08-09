@@ -9,7 +9,18 @@ function scalar(value: string): unknown {
   if (trimmed === 'true') return true;
   if (trimmed === 'false') return false;
   if (trimmed === 'null') return null;
+  if (trimmed === '[]') return [];
   if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  if (
+    (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+    (trimmed.startsWith('{') && trimmed.endsWith('}'))
+  ) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return trimmed;
+    }
+  }
   if (
     (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
     (trimmed.startsWith("'") && trimmed.endsWith("'"))
@@ -61,8 +72,12 @@ export function serializeMarkdownDocument(data: Record<string, unknown>, body = 
   const lines = ['---'];
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
-      lines.push(`${key}:`);
-      for (const item of value) lines.push(`  - ${yamlScalar(item)}`);
+      if (value.length === 0) {
+        lines.push(`${key}: []`);
+      } else {
+        lines.push(`${key}:`);
+        for (const item of value) lines.push(`  - ${yamlScalar(item)}`);
+      }
     } else {
       lines.push(`${key}: ${yamlScalar(value)}`);
     }

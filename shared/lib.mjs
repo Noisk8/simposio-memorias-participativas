@@ -29,10 +29,18 @@ export function parseFrontmatter(content) {
       const val = kv[2].trim();
       if (val === '' || val === '""' || val === "''") {
         data[currentKey] = '';
+      } else if (val === '[]') {
+        data[currentKey] = [];
       } else if (val === 'true') {
         data[currentKey] = true;
       } else if (val === 'false') {
         data[currentKey] = false;
+      } else if ((val.startsWith('[') && val.endsWith(']')) || (val.startsWith('{') && val.endsWith('}'))) {
+        try {
+          data[currentKey] = JSON.parse(val);
+        } catch {
+          data[currentKey] = val;
+        }
       } else if (!isNaN(Number(val))) {
         data[currentKey] = Number(val);
       } else if (/^"(.*)"$/.test(val) || /^'(.*)'$/.test(val)) {

@@ -7,9 +7,7 @@ export const dateField = z
   .transform((value) => (value instanceof Date ? value.toISOString().slice(0, 10) : value));
 
 export const nonEmptyStringList = z
-  .array(z.string())
-  .optional()
-  .default([])
+  .preprocess((value) => (Array.isArray(value) ? value : []), z.array(z.string()))
   .transform((items) => [...new Set(items.map((item) => item.trim()).filter(Boolean))]);
 
 export const legacyPublicationFields = {

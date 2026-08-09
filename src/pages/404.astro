@@ -2,31 +2,285 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Página no encontrada - Red Internacional de Memorias Participativas">
-  <section class="min-h-[60vh] flex items-center justify-center px-4 py-16">
-    <div class="text-center max-w-lg">
-      <div class="mb-8">
-        <span class="text-8xl font-bold text-ugr-green/20 font-[family-name:var(--font-heading)]"
-          >404</span
-        >
+<Layout
+  title="Página no encontrada - Red Internacional de Memorias Participativas"
+  description="La página que buscas no existe o fue movida."
+  noindex
+>
+  <section class="notfound-shell">
+    <div class="notfound-backdrop" aria-hidden="true">
+      <span class="blob blob-a"></span>
+      <span class="blob blob-b"></span>
+      <span class="grid"></span>
+    </div>
+
+    <div class="notfound-wrap">
+      <div class="notfound-card">
+        <p class="notfound-kicker">Ruta rota</p>
+        <div class="notfound-code" aria-hidden="true">404</div>
+        <h1>Página no encontrada</h1>
+        <p class="notfound-text">
+          El enlace que abriste no existe, fue movido o está escrito con una dirección
+          incorrecta. Puedes volver al inicio o ir directo a las secciones principales.
+        </p>
+
+        <div class="notfound-actions">
+          <a href="/" class="btn-green">Volver al inicio</a>
+          <a href="/entradas" class="notfound-secondary">Ver entradas</a>
+        </div>
+
+        <div class="notfound-links" aria-label="Accesos rápidos">
+          <a href="/simposios">Simposios</a>
+          <a href="/acerca-de">Acerca de</a>
+          <a href="/buscar">Buscar</a>
+          <a href="/admin/login">Administración</a>
+        </div>
       </div>
-      <h1
-        class="text-2xl md:text-3xl font-bold text-ugr-green-dark mb-4 font-[family-name:var(--font-heading)]"
-      >
-        Página no encontrada
-      </h1>
-      <p class="text-lg text-[var(--ugr-text-light)] mb-8 leading-relaxed">
-        Lo sentimos, la página que buscas no existe o ha sido movida a otra ubicación.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <a href="/" class="btn-green text-center"> Volver al inicio </a>
-        <a
-          href="/entradas"
-          class="inline-block text-center px-6 py-3 rounded-lg font-semibold border-2 border-ugr-green text-ugr-green hover:bg-ugr-green hover:text-white transition-all duration-300"
-        >
-          Ver entradas
-        </a>
-      </div>
+
+      <aside class="notfound-aside" aria-label="Sugerencias">
+        <h2>Qué puedes hacer ahora</h2>
+        <ul>
+          <li>Revisar si la dirección tiene un error de escritura.</li>
+          <li>Volver a la portada y navegar desde el menú principal.</li>
+          <li>Usar el buscador para encontrar la entrada o memoria.</li>
+        </ul>
+      </aside>
     </div>
   </section>
 </Layout>
+
+<style>
+  .notfound-shell {
+    position: relative;
+    overflow: hidden;
+    min-height: calc(100vh - 120px);
+    padding: 48px 20px 72px;
+    background:
+      radial-gradient(circle at top left, rgba(47, 104, 12, 0.14), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(112, 168, 122, 0.16), transparent 30%),
+      linear-gradient(180deg, #fff 0%, #f7faf4 100%);
+  }
+
+  .notfound-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(8px);
+    opacity: 0.85;
+    animation: float 10s ease-in-out infinite;
+  }
+
+  .blob-a {
+    top: 7%;
+    left: 8%;
+    width: 180px;
+    height: 180px;
+    background: rgba(47, 104, 12, 0.12);
+  }
+
+  .blob-b {
+    right: 7%;
+    bottom: 14%;
+    width: 240px;
+    height: 240px;
+    background: rgba(112, 168, 122, 0.14);
+    animation-delay: -3s;
+  }
+
+  .grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(47, 104, 12, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(47, 104, 12, 0.04) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 75%);
+  }
+
+  .notfound-wrap {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+    gap: 24px;
+    max-width: 1080px;
+    margin: 0 auto;
+    align-items: stretch;
+  }
+
+  .notfound-card,
+  .notfound-aside {
+    border: 1px solid rgba(47, 104, 12, 0.12);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: 0 30px 70px rgba(17, 24, 39, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .notfound-card {
+    padding: 36px 34px 30px;
+  }
+
+  .notfound-kicker {
+    margin: 0 0 14px;
+    color: var(--ugr-green);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .notfound-code {
+    margin: 0 0 12px;
+    color: rgba(47, 104, 12, 0.14);
+    font-family: var(--font-heading);
+    font-size: clamp(88px, 18vw, 180px);
+    font-weight: 900;
+    line-height: 0.88;
+    letter-spacing: -0.08em;
+  }
+
+  .notfound-card h1 {
+    margin: 0 0 14px;
+    color: var(--ugr-green-dark);
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.05;
+    max-width: 10ch;
+  }
+
+  .notfound-text {
+    max-width: 60ch;
+    margin: 0;
+    color: var(--ugr-text-light);
+    font-size: 18px;
+    line-height: 1.75;
+  }
+
+  .notfound-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .notfound-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid rgba(47, 104, 12, 0.22);
+    border-radius: 0.5rem;
+    background: #fff;
+    color: var(--ugr-green);
+    font-weight: 700;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  .notfound-secondary:hover {
+    border-color: rgba(47, 104, 12, 0.45);
+    box-shadow: 0 10px 22px rgba(17, 24, 39, 0.08);
+    transform: translateY(-2px);
+    color: var(--ugr-green-dark);
+  }
+
+  .notfound-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .notfound-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(47, 104, 12, 0.06);
+    color: var(--ugr-green-dark);
+    font-size: 14px;
+    font-weight: 700;
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .notfound-links a:hover {
+    background: rgba(47, 104, 12, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .notfound-aside {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    padding: 30px 28px;
+  }
+
+  .notfound-aside h2 {
+    margin: 0;
+    color: var(--ugr-green-dark);
+    font-size: 22px;
+  }
+
+  .notfound-aside ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--ugr-text-light);
+    line-height: 1.75;
+  }
+
+  .notfound-aside li + li {
+    margin-top: 10px;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-14px);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .notfound-wrap {
+      grid-template-columns: 1fr;
+    }
+
+    .notfound-card,
+    .notfound-aside {
+      border-radius: 24px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .notfound-shell {
+      min-height: calc(100vh - 96px);
+      padding: 24px 16px 48px;
+    }
+
+    .notfound-card {
+      padding: 28px 22px 24px;
+    }
+
+    .notfound-aside {
+      padding: 24px 22px;
+    }
+
+    .notfound-text {
+      font-size: 16px;
+    }
+  }
+</style>

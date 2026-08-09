@@ -3,10 +3,10 @@ import DynamicMenu from './DynamicMenu.astro';
 ---
 
 <header class="bg-white sticky top-0 z-50">
-  <!-- Fila 1: Franja arcoíris + Logos -->
+  <!-- Fila 1: Logos + Título centrado -->
   <div class="flex items-stretch">
-    <!-- Contenido del header -->
-    <div class="flex-1 max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8 py-2 gap-4">
+    <div class="flex-1 max-w-7xl mx-auto px-4 md:px-8 py-3">
+      <div class="header-brand-grid">
       <!-- Logo UGR -->
       <a
         href="https://www.ugr.es"
@@ -17,8 +17,18 @@ import DynamicMenu from './DynamicMenu.astro';
         <img
           src="/images/logologo.png"
           alt="Universidad de Granada"
+          loading="eager"
+          decoding="async"
           class="!h-8 md:!h-10 lg:!h-12 w-auto !max-w-[100px] md:!max-w-[130px] lg:!max-w-[160px]"
         />
+      </a>
+
+      <a href="/" class="header-title-link">
+        <h1
+          class="header-title text-base md:text-lg lg:text-xl font-bold text-ugr-green leading-tight font-[family-name:var(--font-heading)] tracking-tight"
+        >
+          Red Internacional de Memorias Participativas
+        </h1>
       </a>
 
       <!-- Logo EUROM -->
@@ -31,37 +41,55 @@ import DynamicMenu from './DynamicMenu.astro';
         <img
           src="/images/logo-eurom-real.jpg"
           alt="EUROM - European Observatory on Memories"
+          loading="eager"
+          decoding="async"
           class="!h-8 md:!h-10 lg:!h-12 w-auto !max-w-[100px] md:!max-w-[130px] lg:!max-w-[160px]"
         />
       </a>
+      </div>
     </div>
   </div>
 
-  <!-- Fila 2: Título + Navegación -->
+  <!-- Fila 2: Navegación + Usuario -->
   <div class="border-t border-gray-200">
     <div
-      class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+      class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-col gap-3 md:flex-row md:items-center md:gap-4 lg:gap-6"
     >
-      <!-- Título de la Red -->
-      <a href="/" class="flex-shrink-0">
-        <h1
-          class="text-base md:text-lg lg:text-xl font-bold text-ugr-green leading-tight font-[family-name:var(--font-heading)] tracking-tight"
+      <!-- Navegación -->
+      <nav class="order-3 md:order-none md:flex-1 md:min-w-0">
+        <!-- Botón menú móvil -->
+        <button
+          id="mobile-menu-btn"
+          class="md:hidden text-ugr-green p-2 rounded-lg hover:bg-ugr-green/10 transition-colors ml-auto block"
+          aria-label="Menú"
         >
-          Red Internacional de Memorias Participativas
-        </h1>
-      </a>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+
+        <!-- Navegación desktop -->
+        <DynamicMenu
+          slug="principal"
+          class="hidden md:inline-flex md:flex-wrap md:items-center md:justify-start md:gap-1 lg:gap-2"
+          itemClass="nav-link"
+        />
+
+        <!-- Navegación móvil -->
+        <DynamicMenu
+          slug="principal"
+          class="hidden md:hidden flex-col gap-1 mt-3 pb-2"
+          itemClass="nav-link-mobile"
+          mobile
+        />
+      </nav>
 
       <!-- Usuario -->
-      <div class="flex items-center gap-2 flex-shrink-0 order-2 md:order-3">
-        <!-- Estado: no autenticado -->
-        <a
-          href="/admin/login"
-          id="login-btn"
-          class="text-sm font-semibold text-ugr-green hover:bg-ugr-green hover:text-white px-3 py-2 rounded-md transition-all duration-200"
-        >
-          Entrar
-        </a>
-
+      <div class="flex items-center gap-2 flex-shrink-0 order-2 md:order-none md:ml-auto md:justify-end">
         <!-- Estado: autenticado — dropdown hover -->
         <div id="user-info" class="hidden relative group">
           <!-- Trigger: avatar + nombre -->
@@ -83,7 +111,7 @@ import DynamicMenu from './DynamicMenu.astro';
             </div>
             <span
               id="user-name"
-              class="text-sm font-medium text-ugr-text max-w-[150px] truncate hidden md:block"
+              class="text-sm font-medium text-ugr-text max-w-[140px] truncate hidden md:block"
             ></span>
             <!-- chevron pequeño -->
             <svg
@@ -125,39 +153,6 @@ import DynamicMenu from './DynamicMenu.astro';
           </div>
         </div>
       </div>
-
-      <!-- Navegación -->
-      <nav class="flex-1 order-3 md:order-2">
-        <!-- Botón menú móvil -->
-        <button
-          id="mobile-menu-btn"
-          class="md:hidden text-ugr-green p-2 rounded-lg hover:bg-ugr-green/10 transition-colors ml-auto block"
-          aria-label="Menú"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
-        </button>
-
-        <!-- Navegación desktop -->
-        <DynamicMenu
-          slug="principal"
-          class="hidden md:flex md:items-center md:gap-1 md:flex-wrap md:justify-end"
-          itemClass="nav-link"
-        />
-
-        <!-- Navegación móvil -->
-        <DynamicMenu
-          slug="principal"
-          class="hidden md:hidden flex-col gap-1 mt-3 pb-2"
-          itemClass="nav-link-mobile"
-          mobile
-        />
-      </nav>
     </div>
   </div>
 </header>
@@ -166,29 +161,39 @@ import DynamicMenu from './DynamicMenu.astro';
   /* Estilos base de los enlaces de navegación */
   .nav-link,
   .nav-link-mobile {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #2f680c; /* ugr-green */
     text-decoration: none;
-    border-radius: 0.375rem;
+    letter-spacing: 0.01em;
+    border-radius: 9999px;
     transition:
       background-color 0.2s,
-      color 0.2s;
+      color 0.2s,
+      transform 0.2s,
+      box-shadow 0.2s;
   }
   .nav-link {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.8rem;
+    line-height: 1;
+    white-space: nowrap;
   }
   .nav-link-mobile {
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.9rem 1rem;
+    border-radius: 0.875rem;
   }
 
   /* Hover */
   .nav-link:hover,
   .nav-link-mobile:hover {
-    background-color: #2f680c;
+    background-color: rgba(47, 104, 12, 0.12);
     color: #ffffff;
+    transform: translateY(-1px);
   }
 
   /* Página activa */
@@ -196,6 +201,41 @@ import DynamicMenu from './DynamicMenu.astro';
   .nav-link-mobile[aria-current='page'] {
     background-color: #2f680c;
     color: #ffffff !important;
+    box-shadow: 0 8px 20px rgba(47, 104, 12, 0.18);
+  }
+
+  .nav-link[aria-current='page']:hover,
+  .nav-link-mobile[aria-current='page']:hover {
+    background-color: #245108;
+  }
+
+  .header-brand-grid {
+    display: grid;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .header-title-link {
+    min-width: 0;
+    justify-self: center;
+    text-align: center;
+  }
+
+  .header-title {
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .header-brand-grid {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      row-gap: 0.9rem;
+    }
+
+    .header-title-link {
+      order: -1;
+    }
   }
 
   /* Puente invisible para no perder el hover en el gap del dropdown */
@@ -225,10 +265,18 @@ import DynamicMenu from './DynamicMenu.astro';
   const userInfo = document.getElementById('user-info');
   const userName = document.getElementById('user-name');
   const adminLink = document.getElementById('admin-link');
-  const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const userTrigger = document.getElementById('user-trigger');
   const userDropdown = document.getElementById('user-dropdown');
+
+  function isTypingTarget(target) {
+    if (!(target instanceof HTMLElement)) return false;
+    return Boolean(
+      target.isContentEditable ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+        target.closest('[contenteditable="true"]')
+    );
+  }
 
   function setDropdownOpen(open) {
     if (open) {
@@ -246,6 +294,17 @@ import DynamicMenu from './DynamicMenu.astro';
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') setDropdownOpen(false);
+    if (
+      e.ctrlKey &&
+      e.altKey &&
+      !e.metaKey &&
+      !e.shiftKey &&
+      String(e.key).toLowerCase() === 'y' &&
+      !isTypingTarget(e.target)
+    ) {
+      e.preventDefault();
+      window.location.assign('/admin/login');
+    }
   });
 
   // Cerrar dropdown al hacer click fuera
@@ -261,12 +320,10 @@ import DynamicMenu from './DynamicMenu.astro';
       const displayName = metadata.full_name || metadata.name || user.email;
       userName.textContent = displayName;
       userInfo?.classList.remove('hidden');
-      loginBtn?.classList.add('hidden');
       adminLink?.classList.remove('hidden');
       adminLink?.classList.add('block');
     } else {
       userInfo?.classList.add('hidden');
-      loginBtn?.classList.remove('hidden');
       adminLink?.classList.add('hidden');
       adminLink?.classList.remove('block');
     }

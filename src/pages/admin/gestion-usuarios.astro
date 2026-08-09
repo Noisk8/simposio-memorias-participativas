@@ -1,53 +1,212 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import SupabaseAuth from '../../components/SupabaseAuth.astro';
+
+const roles = ['superadmin', 'admin', 'editor', 'reviewer', 'author', 'read_only'];
+const roleLabels: Record<string, string> = {
+  superadmin: 'Superadministración',
+  admin: 'Administración',
+  editor: 'Edición',
+  reviewer: 'Revisión',
+  author: 'Autoría',
+  read_only: 'Solo lectura',
+};
 ---
 
-<AdminLayout title="Gestionar usuarios - Admin">
-  <section class="py-16 bg-white min-h-[60vh]">
-    <div class="max-w-4xl mx-auto px-4">
-      <h1
-        class="text-3xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]"
-      >
-        Gestionar usuarios y roles
-      </h1>
-      <p class="text-ugr-text-light mb-8">
-        Asigna roles granulares a los usuarios registrados. Solo quienes tengan el permiso <strong
-          >users.manage</strong
-        > pueden modificarlos.
-      </p>
+<AdminLayout title="Usuarios y roles - Admin">
+  <section class="cms-users-page">
+    <div class="cms-users-wrap">
+      <header class="cms-users-hero">
+        <div>
+          <p>Administración</p>
+          <h1>Usuarios y roles</h1>
+          <div>
+            Gestiona el acceso al CMS y asigna un rol efectivo a cada integrante del equipo.
+          </div>
+        </div>
+        <a href="/admin/">← Volver al panel</a>
+      </header>
 
       <SupabaseAuth redirectUnauthenticated />
 
-      <div id="not-allowed" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-6"></div>
-
-      <div id="loading" class="text-ugr-text-light mb-6">Verificando sesión...</div>
+      <div id="not-allowed" class="cms-users-alert hidden" role="alert"></div>
+      <div id="loading" class="cms-users-loading">
+        <span class="cms-users-spinner" aria-hidden="true"></span>
+        Verificando sesión…
+      </div>
 
       <div id="admin-panel" class="hidden">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-ugr-text">Usuarios registrados</h2>
-          <button id="refresh-btn" class="text-sm text-ugr-green hover:underline"
-            >Actualizar lista</button
-          >
-        </div>
+        <section class="cms-users-card cms-users-create">
+          <header class="cms-users-card-header">
+            <div>
+              <p>Alta de usuarios</p>
+              <h2>Crear y notificar acceso</h2>
+              <span
+                >Si dejas la contraseña vacía, el sistema generará una temporal segura y la
+                enviará por correo.</span
+              >
+            </div>
+          </header>
 
-        <div id="users-loading" class="text-ugr-text-light mb-4">Cargando usuarios...</div>
-        <div id="users-error" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-4"></div>
+          <form id="create-user-form" class="cms-create-form">
+            <div class="cms-create-grid">
+              <label>
+                <span>Nombre completo</span>
+                <input id="create-user-name" type="text" maxlength="100" autocomplete="name" required />
+              </label>
+              <label>
+                <span>Email</span>
+                <input id="create-user-email" type="email" autocomplete="email" required />
+              </label>
+              <label>
+                <span>Rol inicial</span>
+                <select id="create-user-role">
+                  {roles.map((role) => (
+                    <option value={role} selected={role === 'author'}>
+                      {roleLabels[role]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Contraseña temporal</span>
+                <input
+                  id="create-user-password"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  maxlength="72"
+                  placeholder="Opcional: se autogenera si lo dejas vacío"
+                />
+              </label>
+            </div>
 
-        <div class="overflow-x-auto">
-          <table id="users-table" class="hidden w-full text-sm border border-gray-200 rounded-lg">
-            <thead>
-              <tr class="bg-gray-50 text-left">
-                <th class="px-4 py-3 font-semibold text-ugr-text">Usuario</th>
-                <th class="px-4 py-3 font-semibold text-ugr-text">Roles actuales</th>
-                <th class="px-4 py-3 font-semibold text-ugr-text">Asignar rol</th>
-              </tr>
-            </thead>
-            <tbody id="users-body"></tbody>
-          </table>
-        </div>
+            <div class="cms-create-actions">
+              <button id="create-user-btn" type="submit">Crear usuario y enviar acceso</button>
+              <p>
+                El correo de acceso incluye el email, la contraseña temporal y el enlace al panel.
+              </p>
+            </div>
+          </form>
 
-        <p id="action-status" class="mt-4 text-sm font-medium"></p>
+          <div id="create-user-error" class="cms-users-alert hidden" role="alert"></div>
+          <div id="invite-credentials" class="cms-invite-credentials hidden" aria-live="polite"></div>
+        </section>
+
+        <section class="cms-users-stats" aria-label="Resumen de usuarios">
+          <article>
+            <span class="cms-stat-icon cms-stat-blue">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <div><strong id="stat-total">0</strong><span>Usuarios cargados</span></div>
+          </article>
+          <article>
+            <span class="cms-stat-icon cms-stat-purple">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </span>
+            <div><strong id="stat-managers">0</strong><span>Administración</span></div>
+          </article>
+          <article>
+            <span class="cms-stat-icon cms-stat-green">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+            </span>
+            <div><strong id="stat-editorial">0</strong><span>Equipo editorial</span></div>
+          </article>
+          <article>
+            <span class="cms-stat-icon cms-stat-amber">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="18" y1="8" x2="23" y2="13"></line>
+                <line x1="23" y1="8" x2="18" y2="13"></line>
+              </svg>
+            </span>
+            <div><strong id="stat-inactive">0</strong><span>Sin acceso activo</span></div>
+          </article>
+        </section>
+
+        <section class="cms-users-card">
+          <header class="cms-users-card-header">
+            <div>
+              <p>Directorio del CMS</p>
+              <h2>Usuarios registrados</h2>
+              <span id="users-summary">Consulta y modifica los permisos del equipo.</span>
+            </div>
+            <div class="cms-users-tools">
+              <label>
+                <span class="sr-only">Buscar usuarios</span>
+                <input id="user-search" type="search" placeholder="Buscar por nombre o correo…" />
+              </label>
+              <button id="refresh-btn" type="button">↻ Actualizar</button>
+            </div>
+          </header>
+
+          <div id="users-loading" class="cms-users-table-loading">Cargando usuarios…</div>
+          <div id="users-error" class="cms-users-alert hidden" role="alert"></div>
+
+          <div class="cms-users-table-wrap">
+            <table id="users-table" class="hidden">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Estado</th>
+                  <th>Rol actual</th>
+                  <th>Asignar rol</th>
+                </tr>
+              </thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+
+          <div id="users-empty" class="cms-users-empty hidden">
+            <span>⌕</span>
+            <strong>No encontramos usuarios</strong>
+            <p>Prueba con otro nombre o correo electrónico.</p>
+          </div>
+
+          <p id="action-status" class="cms-users-action-status" aria-live="polite"></p>
+        </section>
       </div>
     </div>
   </section>
@@ -62,16 +221,122 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   const usersError = document.getElementById('users-error');
   const usersTable = document.getElementById('users-table');
   const usersBody = document.getElementById('users-body');
+  const usersEmpty = document.getElementById('users-empty');
+  const usersSummary = document.getElementById('users-summary');
   const actionStatus = document.getElementById('action-status');
   const refreshBtn = document.getElementById('refresh-btn');
+  const userSearch = document.getElementById('user-search');
+  const createForm = document.getElementById('create-user-form');
+  const createUserError = document.getElementById('create-user-error');
+  const inviteCredentials = document.getElementById('invite-credentials');
+  const createUserBtn = document.getElementById('create-user-btn');
+  const createUserName = document.getElementById('create-user-name');
+  const createUserEmail = document.getElementById('create-user-email');
+  const createUserRole = document.getElementById('create-user-role');
+  const createUserPassword = document.getElementById('create-user-password');
+  let allUsers = [];
+
+  const roles = ['superadmin', 'admin', 'editor', 'reviewer', 'author', 'read_only'];
+  const roleLabels = {
+    superadmin: 'Superadministración',
+    admin: 'Administración',
+    editor: 'Edición',
+    reviewer: 'Revisión',
+    author: 'Autoría',
+    read_only: 'Solo lectura',
+  };
+
+  function md5(value) {
+    function rotateLeft(x, n) {
+      return ((x << n) | (x >>> (32 - n))) >>> 0;
+    }
+    const utf8 = unescape(encodeURIComponent(value));
+    const blocks = [];
+    const bytes = [];
+    for (let i = 0; i < utf8.length; i++) bytes.push(utf8.charCodeAt(i));
+    let len = bytes.length;
+    let i;
+    for (i = 0; i + 64 <= bytes.length; i += 64) {
+      for (let j = 0; j < 16; j++) {
+        blocks.push(
+          bytes[i + j * 4] |
+            (bytes[i + j * 4 + 1] << 8) |
+            (bytes[i + j * 4 + 2] << 16) |
+            (bytes[i + j * 4 + 3] << 24)
+        );
+      }
+    }
+    const tail = bytes.slice(i);
+    tail.push(0x80);
+    while (tail.length % 64 !== 56) tail.push(0);
+    const bitLength = len * 8;
+    for (let j = 0; j < 8; j++) tail.push((bitLength >>> (j * 8)) & 0xff);
+    for (let k = 0; k + 64 <= tail.length; k += 64) {
+      for (let j = 0; j < 16; j++) {
+        blocks.push(
+          tail[k + j * 4] |
+            (tail[k + j * 4 + 1] << 8) |
+            (tail[k + j * 4 + 2] << 16) |
+            (tail[k + j * 4 + 3] << 24)
+        );
+      }
+    }
+    const s = [
+      7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9,
+      14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15,
+      21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
+    ];
+    const k = [];
+    for (let j = 0; j < 64; j++) {
+      k[j] = Math.floor(Math.abs(Math.sin(j + 1)) * 4294967296);
+    }
+    let a0 = 0x67452301;
+    let b0 = 0xefcdab89;
+    let c0 = 0x98badcfe;
+    let d0 = 0x10325476;
+    for (let q = 0; q < blocks.length; q += 16) {
+      let A = a0;
+      let B = b0;
+      let C = c0;
+      let D = d0;
+      const M = blocks.slice(q, q + 16);
+      for (let j = 0; j < 64; j++) {
+        let F;
+        let g;
+        if (j < 16) {
+          F = (B & C) | (~B & D);
+          g = j;
+        } else if (j < 32) {
+          F = (D & B) | (~D & C);
+          g = (5 * j + 1) % 16;
+        } else if (j < 48) {
+          F = B ^ C ^ D;
+          g = (3 * j + 5) % 16;
+        } else {
+          F = C ^ (B | ~D);
+          g = (7 * j) % 16;
+        }
+        F = (F + A + k[j] + M[g]) >>> 0;
+        A = D;
+        D = C;
+        C = B;
+        B = (B + rotateLeft(F, s[j])) >>> 0;
+      }
+      a0 = (a0 + A) >>> 0;
+      b0 = (b0 + B) >>> 0;
+      c0 = (c0 + C) >>> 0;
+      d0 = (d0 + D) >>> 0;
+    }
+    function hex32(n) {
+      return ('00000000' + n.toString(16)).slice(-8);
+    }
+    return hex32(a0) + hex32(b0) + hex32(c0) + hex32(d0);
+  }
 
   function waitForAuth(callback) {
-    if (window.supabaseAuth) {
-      callback(window.supabaseAuth);
-      return;
-    }
-    var attempts = 0;
-    var interval = setInterval(function () {
+    if (window.supabaseAuth) return callback(window.supabaseAuth);
+    let attempts = 0;
+    const interval = setInterval(function () {
       attempts++;
       if (window.supabaseAuth) {
         clearInterval(interval);
@@ -84,162 +349,324 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   }
 
   async function getToken() {
-    var auth = window.supabaseAuth;
-    return auth ? await auth.getToken() : null;
+    return window.supabaseAuth ? await window.supabaseAuth.getToken() : null;
+  }
+
+  function setActionStatus(message, kind = '') {
+    actionStatus.textContent = message;
+    actionStatus.dataset.kind = kind;
+  }
+
+  function clearCreateFeedback() {
+    createUserError?.classList.add('hidden');
+    if (inviteCredentials) {
+      inviteCredentials.classList.add('hidden');
+      inviteCredentials.textContent = '';
+    }
+  }
+
+  function showCreateError(message) {
+    if (!createUserError) return;
+    createUserError.textContent = message;
+    createUserError.classList.remove('hidden');
+  }
+
+  function renderInviteSummary(user, invite) {
+    if (!inviteCredentials) return;
+
+    inviteCredentials.classList.remove('hidden');
+    inviteCredentials.innerHTML = '';
+    const currentRole = Array.isArray(user.roles) ? user.roles[0] : '';
+
+    const title = document.createElement('strong');
+    title.textContent = 'Cuenta creada correctamente';
+
+    const summary = document.createElement('p');
+    summary.textContent = user.email + ' · ' + (roleLabels[currentRole] || currentRole || 'Sin rol');
+
+    const passwordLabel = document.createElement('span');
+    passwordLabel.textContent = 'Contraseña temporal';
+
+    const passwordValue = document.createElement('code');
+    passwordValue.textContent = invite.password || '';
+
+    const status = document.createElement('p');
+    status.textContent = invite.emailSent
+      ? 'El correo de acceso fue enviado.'
+      : 'El correo no pudo enviarse automáticamente.';
+
+    const reason = document.createElement('small');
+    if (!invite.emailSent && invite.emailReason) {
+      reason.textContent = 'Detalle: ' + invite.emailReason;
+    } else {
+      reason.textContent = 'Guarda la contraseña temporal si necesitas reenviarla manualmente.';
+    }
+
+    inviteCredentials.append(title, summary, passwordLabel, passwordValue, status, reason);
   }
 
   async function loadUsers() {
     usersLoading.classList.remove('hidden');
     usersError.classList.add('hidden');
     usersTable.classList.add('hidden');
+    usersEmpty.classList.add('hidden');
+    refreshBtn.disabled = true;
 
-    var token = await getToken();
+    const token = await getToken();
     if (!token) {
-      usersError.textContent = 'No se encontró el token de sesión.';
-      usersError.classList.remove('hidden');
-      usersLoading.classList.add('hidden');
+      showLoadError('No se encontró el token de sesión.');
       return;
     }
 
     try {
-      var res = await fetch('/.netlify/functions/manage-users', {
+      const response = await fetch('/.netlify/functions/manage-users', {
         headers: { Authorization: 'Bearer ' + token },
       });
-
-      // Si el servidor no es Netlify (p. ej. `astro dev` puro), la ruta
-      // /.netlify/functions/* devuelve el HTML del 404 en vez de JSON.
-      var contentType = res.headers.get('content-type') || '';
-      if (contentType.indexOf('application/json') === -1) {
-        usersLoading.classList.add('hidden');
-        usersError.textContent =
-          'Las funciones de Netlify no están disponibles en este servidor. Abre esta página desde "netlify dev" (http://localhost:8888) o desde el sitio en producción.';
-        usersError.classList.remove('hidden');
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        showLoadError(
+          'Las funciones administrativas no están disponibles. Abre esta página con netlify dev o desde producción.'
+        );
         return;
       }
 
-      var data = await res.json();
-
-      usersLoading.classList.add('hidden');
-
-      if (!res.ok) {
-        usersError.textContent =
-          (data.error && data.error.message) || 'Error al cargar los usuarios.';
-        usersError.classList.remove('hidden');
+      const data = await response.json();
+      if (!response.ok) {
+        showLoadError(data.error?.message || 'Error al cargar los usuarios.');
         return;
       }
 
-      renderUsers(data.users || []);
-      usersTable.classList.remove('hidden');
-    } catch (err) {
+      allUsers = data.users || [];
+      updateStats(allUsers);
+      renderFilteredUsers();
       usersLoading.classList.add('hidden');
-      usersError.textContent = 'Error de red: ' + err.message;
-      usersError.classList.remove('hidden');
+      refreshBtn.disabled = false;
+    } catch (error) {
+      showLoadError('Error de red: ' + error.message);
     }
+  }
+
+  function showLoadError(message) {
+    usersLoading.classList.add('hidden');
+    usersError.textContent = message;
+    usersError.classList.remove('hidden');
+    refreshBtn.disabled = false;
+  }
+
+  function updateStats(users) {
+    const hasRole = (user, expected) => user.roles.some((role) => expected.includes(role));
+    document.getElementById('stat-total').textContent = users.length;
+    document.getElementById('stat-managers').textContent = users.filter((user) =>
+      hasRole(user, ['superadmin', 'admin'])
+    ).length;
+    document.getElementById('stat-editorial').textContent = users.filter((user) =>
+      hasRole(user, ['editor', 'reviewer', 'author'])
+    ).length;
+    document.getElementById('stat-inactive').textContent = users.filter(
+      (user) => user.disabled || !user.roles.length
+    ).length;
+  }
+
+  function renderFilteredUsers() {
+    const query = userSearch.value.trim().toLocaleLowerCase('es');
+    const visible = allUsers.filter((user) =>
+      [user.name, user.email, ...(user.roles || [])]
+        .join(' ')
+        .toLocaleLowerCase('es')
+        .includes(query)
+    );
+    renderUsers(visible);
+    usersSummary.textContent =
+      visible.length === allUsers.length
+        ? allUsers.length + (allUsers.length === 1 ? ' usuario cargado.' : ' usuarios cargados.')
+        : visible.length + ' de ' + allUsers.length + ' usuarios.';
   }
 
   function renderUsers(users) {
     usersBody.innerHTML = '';
-    users.forEach(function (u) {
-      var tr = document.createElement('tr');
-      tr.className = 'border-t border-gray-200';
+    usersTable.classList.toggle('hidden', users.length === 0);
+    usersEmpty.classList.toggle('hidden', users.length !== 0);
 
-      var tdUser = document.createElement('td');
-      tdUser.className = 'px-4 py-3';
-      tdUser.innerHTML =
-        '<div class="font-medium text-ugr-text">' +
-        escapeHtml(u.name || u.email) +
-        '</div>' +
-        '<div class="text-xs text-ugr-text-light">' +
-        escapeHtml(u.email) +
-        '</div>';
+    users.forEach(function (user) {
+      const row = document.createElement('tr');
+      const currentRole = user.roles[0] || '';
 
-      var tdRoles = document.createElement('td');
-      tdRoles.className = 'px-4 py-3';
-      if (u.roles.length > 0) {
-        tdRoles.innerHTML = u.roles
-          .map(function (r) {
-            var color = r === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
-            return (
-              '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mr-1 ' +
-              color +
-              '">' +
-              escapeHtml(r) +
-              '</span>'
-            );
-          })
-          .join('');
-      } else {
-        tdRoles.innerHTML = '<span class="text-xs text-ugr-text-light italic">Sin rol</span>';
+      const userCell = document.createElement('td');
+      const identity = document.createElement('div');
+      identity.className = 'cms-user-identity';
+      const avatar = document.createElement('span');
+      avatar.className = 'cms-user-avatar';
+      const initial = String(user.name || user.email || '?')
+        .slice(0, 1)
+        .toUpperCase();
+      avatar.setAttribute('data-initial', initial);
+      avatar.textContent = initial;
+      const email = String(user.email || '')
+        .trim()
+        .toLowerCase();
+      if (email) {
+        const avatarImg = document.createElement('img');
+        avatarImg.alt = '';
+        avatarImg.loading = 'lazy';
+        avatarImg.referrerPolicy = 'no-referrer';
+        avatarImg.src = 'https://www.gravatar.com/avatar/' + md5(email) + '?s=80&d=404';
+        avatarImg.addEventListener('error', function () {
+          avatarImg.remove();
+        });
+        avatar.appendChild(avatarImg);
       }
+      const userText = document.createElement('div');
+      const userName = document.createElement('strong');
+      userName.textContent = user.name || user.email;
+      const userEmail = document.createElement('span');
+      userEmail.textContent = user.email;
+      userText.append(userName, userEmail);
+      identity.append(avatar, userText);
+      userCell.appendChild(identity);
 
-      var tdActions = document.createElement('td');
-      tdActions.className = 'px-4 py-3';
-      ['superadmin', 'admin', 'editor', 'reviewer', 'author', 'read_only'].forEach(function (role) {
-        tdActions.appendChild(roleButton(u, role));
+      const statusCell = document.createElement('td');
+      const statusBadge = document.createElement('span');
+      statusBadge.className = 'cms-user-status';
+      statusBadge.dataset.disabled = String(Boolean(user.disabled));
+      statusBadge.textContent = user.disabled ? 'Deshabilitado' : 'Activo';
+      statusCell.appendChild(statusBadge);
+
+      const roleCell = document.createElement('td');
+      const roleBadge = document.createElement('span');
+      roleBadge.className = 'cms-role-badge';
+      roleBadge.dataset.role = currentRole || 'none';
+      roleBadge.textContent = roleLabels[currentRole] || 'Sin rol';
+      roleCell.appendChild(roleBadge);
+
+      const actionsCell = document.createElement('td');
+      const form = document.createElement('div');
+      form.className = 'cms-role-control';
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', 'Nuevo rol para ' + user.email);
+      roles.forEach(function (role) {
+        const option = document.createElement('option');
+        option.value = role;
+        option.textContent = roleLabels[role];
+        option.selected = role === (currentRole || 'author');
+        select.appendChild(option);
       });
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Guardar';
+      button.disabled = select.value === currentRole;
+      select.addEventListener('change', function () {
+        button.disabled = select.value === currentRole;
+      });
+      button.addEventListener('click', function () {
+        setRoles(user, [select.value], button);
+      });
+      form.append(select, button);
+      actionsCell.appendChild(form);
 
-      tr.appendChild(tdUser);
-      tr.appendChild(tdRoles);
-      tr.appendChild(tdActions);
-      usersBody.appendChild(tr);
+      row.append(userCell, statusCell, roleCell, actionsCell);
+      usersBody.appendChild(row);
     });
   }
 
-  function roleButton(user, role) {
-    var btn = document.createElement('button');
-    var hasRole = user.roles.indexOf(role) !== -1;
-    btn.textContent = hasRole ? 'Rol actual: ' + role : 'Asignar ' + role;
-    btn.className = hasRole
-      ? 'text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 mr-2 transition-colors'
-      : 'text-xs px-3 py-1.5 rounded-lg border border-ugr-green text-ugr-green hover:bg-green-50 mr-2 transition-colors';
-    btn.disabled = hasRole;
-    btn.addEventListener('click', function () {
-      setRoles(user, [role]);
-    });
-    return btn;
-  }
-
-  async function setRoles(user, roles) {
-    actionStatus.textContent = 'Actualizando roles de ' + user.email + '...';
-    actionStatus.className = 'mt-4 text-sm font-medium text-ugr-text-light';
-
-    var token = await getToken();
+  async function setRoles(user, selectedRoles, button) {
+    setActionStatus('Actualizando el rol de ' + user.email + '…');
+    button.disabled = true;
+    const token = await getToken();
     if (!token) {
-      actionStatus.textContent = 'No se encontró el token de sesión.';
-      actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
+      setActionStatus('No se encontró el token de sesión.', 'error');
+      button.disabled = false;
       return;
     }
 
     try {
-      var res = await fetch('/.netlify/functions/manage-users', {
+      const response = await fetch('/.netlify/functions/manage-users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + token,
         },
-        body: JSON.stringify({ userId: user.id, roles: roles }),
+        body: JSON.stringify({ userId: user.id, roles: selectedRoles }),
       });
-      var data = await res.json();
-
-      if (res.ok) {
-        actionStatus.textContent = 'Roles actualizados para ' + user.email + '.';
-        actionStatus.className = 'mt-4 text-sm font-medium text-green-600';
-        loadUsers();
-      } else {
-        actionStatus.textContent =
-          (data.error && data.error.message) || 'Error al actualizar los roles.';
-        actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
+      const data = await response.json();
+      if (!response.ok) {
+        setActionStatus(data.error?.message || 'Error al actualizar el rol.', 'error');
+        button.disabled = false;
+        return;
       }
-    } catch (err) {
-      actionStatus.textContent = 'Error de red: ' + err.message;
-      actionStatus.className = 'mt-4 text-sm font-medium text-red-600';
+      setActionStatus('Rol actualizado correctamente para ' + user.email + '.', 'success');
+      await loadUsers();
+    } catch (error) {
+      setActionStatus('Error de red: ' + error.message, 'error');
+      button.disabled = false;
     }
   }
 
-  function escapeHtml(str) {
-    var div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
+  async function createUser(event) {
+    event.preventDefault();
+    clearCreateFeedback();
+    setActionStatus('');
+
+    if (!createUserBtn) return;
+
+    createUserBtn.disabled = true;
+
+    const name = String(createUserName?.value || '').trim();
+    const email = String(createUserEmail?.value || '').trim();
+    const role = String(createUserRole?.value || 'author');
+    const password = String(createUserPassword?.value || '').trim();
+
+    if (!name || !email) {
+      showCreateError('Completa el nombre y el correo antes de crear la cuenta.');
+      createUserBtn.disabled = false;
+      return;
+    }
+
+    const token = await getToken();
+    if (!token) {
+      showCreateError('No se encontró el token de sesión.');
+      createUserBtn.disabled = false;
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/manage-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          action: 'create',
+          name,
+          email,
+          role,
+          ...(password ? { password } : {}),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        showCreateError(data.error?.message || 'No se pudo crear el usuario.');
+        createUserBtn.disabled = false;
+        return;
+      }
+
+      const createdUser = data.user || { email, roles: [role] };
+      const invite = data.invite || {};
+      setActionStatus(
+        invite.emailSent
+          ? 'Usuario creado y correo enviado a ' + createdUser.email + '.'
+          : 'Usuario creado, pero el correo no se pudo enviar automáticamente.',
+        invite.emailSent ? 'success' : 'warning'
+      );
+      renderInviteSummary(createdUser, invite);
+      createForm?.reset();
+      if (createUserRole) createUserRole.value = 'author';
+      await loadUsers();
+    } catch (error) {
+      showCreateError('Error de red: ' + error.message);
+    } finally {
+      createUserBtn.disabled = false;
+    }
   }
 
   waitForAuth(function (auth) {
@@ -248,20 +675,553 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         loading.classList.add('hidden');
         if (!user) {
           adminPanel.classList.add('hidden');
-          notAllowed.classList.add('hidden');
           return;
         }
-
-        // El acceso real lo valida la Netlify Function; aquí solo mostramos el panel.
         notAllowed.classList.add('hidden');
         adminPanel.classList.remove('hidden');
         loadUsers();
       });
     }
-
     auth.ready.then(refresh);
     window.addEventListener('supabase-auth', refresh);
   });
 
   refreshBtn?.addEventListener('click', loadUsers);
+  userSearch?.addEventListener('input', renderFilteredUsers);
+  createForm?.addEventListener('submit', createUser);
 </script>
+
+<style is:global>
+  .cms-users-page {
+    min-height: calc(100vh - 54px);
+    padding: 30px;
+    background: var(--cms-bg);
+    color: var(--cms-text);
+  }
+  .cms-users-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .cms-users-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 30px 34px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #287bb8, #1d5d91);
+    color: #fff;
+    box-shadow: 0 18px 45px #10182820;
+  }
+  .cms-users-hero p,
+  .cms-users-card-header p {
+    margin: 0 0 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .cms-users-hero h1 {
+    margin: 0 0 8px;
+    color: #fff;
+    font-size: clamp(30px, 4vw, 40px);
+    line-height: 1.15;
+  }
+  .cms-users-hero > div > div {
+    max-width: 690px;
+    color: #e9f4ff;
+  }
+  .cms-users-hero a {
+    flex: 0 0 auto;
+    border: 1px solid #ffffff70;
+    border-radius: 8px;
+    padding: 9px 13px;
+    background: #ffffff12;
+    color: #fff !important;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .cms-users-hero a:hover {
+    background: #fff;
+    color: #175486 !important;
+  }
+  .cms-users-page #supabase-user-info,
+  .cms-users-page #supabase-signout {
+    display: none !important;
+  }
+  .cms-users-loading,
+  .cms-users-table-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 17px 20px;
+    border: 1px solid var(--cms-border);
+    border-radius: 12px;
+    background: var(--cms-panel);
+    color: var(--cms-muted);
+  }
+  .cms-users-spinner {
+    width: 17px;
+    height: 17px;
+    border: 2px solid var(--cms-border);
+    border-top-color: var(--cms-blue);
+    border-radius: 50%;
+    animation: cms-users-spin 0.8s linear infinite;
+  }
+  @keyframes cms-users-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .cms-users-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 22px 0;
+  }
+  .cms-users-stats article {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--cms-border);
+    border-radius: 14px;
+    background: var(--cms-panel);
+    box-shadow: 0 8px 20px #1018280a;
+  }
+  .cms-stat-icon {
+    display: grid;
+    flex: 0 0 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 11px;
+    box-sizing: border-box;
+    padding: 6px;
+  }
+  .cms-stat-icon svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 100%;
+  }
+  .cms-stat-blue {
+    background: #e8f2fb;
+    color: #287bb8;
+  }
+  .cms-stat-purple {
+    background: #f0eafe;
+    color: #6941c6;
+  }
+  .cms-stat-green {
+    background: #e8f7ef;
+    color: #18794e;
+  }
+  .cms-stat-amber {
+    background: #fff4df;
+    color: #b54708;
+  }
+  .cms-users-stats strong,
+  .cms-users-stats span {
+    display: block;
+  }
+  .cms-users-stats strong {
+    font-size: 24px;
+    line-height: 1;
+  }
+  .cms-users-stats article div span {
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--cms-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-users-card {
+    overflow: hidden;
+    border: 1px solid var(--cms-border);
+    border-radius: 18px;
+    background: var(--cms-panel);
+    box-shadow: 0 14px 35px #10182810;
+  }
+  .cms-users-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--cms-border);
+  }
+  .cms-users-card-header p {
+    color: var(--cms-blue);
+  }
+  .cms-users-card-header h2 {
+    margin: 0 0 3px;
+    color: var(--cms-text);
+    font-size: 23px;
+  }
+  .cms-users-card-header span {
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-users-create {
+    margin-top: 22px;
+  }
+  .cms-create-form {
+    padding: 22px 24px 24px;
+  }
+  .cms-create-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .cms-create-grid label {
+    display: grid;
+    gap: 7px;
+    color: var(--cms-text);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .cms-create-grid label span {
+    color: var(--cms-text);
+  }
+  .cms-create-grid input,
+  .cms-create-grid select {
+    width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+    border: 1px solid var(--cms-border);
+    border-radius: 10px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    font: inherit;
+    padding: 0 12px;
+  }
+  .cms-create-grid select {
+    padding-right: 32px;
+  }
+  .cms-create-grid input::placeholder {
+    color: color-mix(in srgb, var(--cms-muted) 80%, transparent);
+  }
+  .cms-create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .cms-create-actions button {
+    height: 42px;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 16px;
+    background: linear-gradient(135deg, #287bb8, #1d5d91);
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 20px #1d5d9122;
+  }
+  .cms-create-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .cms-create-actions p {
+    margin: 0;
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-invite-credentials {
+    display: grid;
+    gap: 8px;
+    margin: 0 24px 24px;
+    border: 1px solid #d0e7f7;
+    border-radius: 14px;
+    padding: 16px 18px;
+    background: linear-gradient(180deg, #f8fcff, #eef7fd);
+    color: var(--cms-text);
+  }
+  .cms-invite-credentials strong {
+    color: #175486;
+    font-size: 15px;
+  }
+  .cms-invite-credentials p,
+  .cms-invite-credentials small {
+    margin: 0;
+    color: var(--cms-muted);
+  }
+  .cms-invite-credentials code {
+    width: fit-content;
+    border: 1px solid #d0e7f7;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #fff;
+    color: #175486;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    word-break: break-word;
+  }
+  .cms-users-create .cms-users-alert {
+    margin: 0 24px 16px;
+  }
+  .cms-users-tools,
+  .cms-role-control {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .cms-users-tools input,
+  .cms-role-control select {
+    height: 40px;
+    box-sizing: border-box;
+    border: 1px solid var(--cms-border);
+    border-radius: 9px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    font: inherit;
+  }
+  .cms-users-tools input {
+    width: 250px;
+    padding: 0 12px;
+  }
+  .cms-users-tools button,
+  .cms-role-control button {
+    height: 40px;
+    border: 0;
+    border-radius: 8px;
+    padding: 0 14px;
+    background: var(--cms-blue);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cms-users-tools button:disabled,
+  .cms-role-control button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .cms-users-table-wrap {
+    overflow-x: auto;
+  }
+  .cms-users-card table {
+    width: 100%;
+    min-width: 820px;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .cms-users-card th {
+    padding: 12px 20px;
+    background: color-mix(in srgb, var(--cms-bg) 70%, var(--cms-panel));
+    color: var(--cms-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .cms-users-card td {
+    padding: 16px 20px;
+    border-top: 1px solid var(--cms-border);
+    color: var(--cms-text);
+    vertical-align: middle;
+  }
+  .cms-users-card tbody tr:hover {
+    background: color-mix(in srgb, var(--cms-blue) 5%, var(--cms-panel));
+  }
+  .cms-user-identity {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .cms-user-avatar {
+    display: grid;
+    flex: 0 0 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #287bb8, #1d5d91);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1;
+    user-select: none;
+  }
+  .cms-user-identity strong,
+  .cms-user-identity span {
+    display: block;
+  }
+  .cms-user-identity .cms-user-avatar {
+    display: grid;
+    place-items: center;
+  }
+  .cms-user-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .cms-user-identity div span {
+    margin-top: 2px;
+    color: var(--cms-muted);
+    font-size: 12px;
+  }
+  .cms-user-status,
+  .cms-role-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .cms-user-status {
+    background: #e8f7ef;
+    color: #18794e;
+  }
+  .cms-user-status::before {
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    content: '';
+  }
+  .cms-user-status[data-disabled='true'] {
+    background: #fef0ec;
+    color: #b42318;
+  }
+  .cms-role-badge {
+    background: #e8f2fb;
+    color: #175486;
+  }
+  .cms-role-badge[data-role='superadmin'],
+  .cms-role-badge[data-role='admin'] {
+    background: #f0eafe;
+    color: #6941c6;
+  }
+  .cms-role-badge[data-role='author'],
+  .cms-role-badge[data-role='reviewer'] {
+    background: #fff4df;
+    color: #b54708;
+  }
+  .cms-role-badge[data-role='read_only'],
+  .cms-role-badge[data-role='none'] {
+    background: #f2f4f7;
+    color: #475467;
+  }
+  .cms-role-control select {
+    min-width: 170px;
+    padding: 0 34px 0 10px;
+    font-size: 13px;
+  }
+  .cms-users-alert {
+    margin: 18px 0;
+    border: 1px solid #fecdca;
+    border-radius: 11px;
+    padding: 14px 17px;
+    background: #fef3f2;
+    color: #b42318;
+  }
+  .cms-users-table-loading {
+    margin: 18px;
+    box-shadow: none;
+  }
+  .cms-users-empty {
+    padding: 55px 20px;
+    color: var(--cms-muted);
+    text-align: center;
+  }
+  .cms-users-empty > span,
+  .cms-users-empty strong {
+    display: block;
+  }
+  .cms-users-empty > span {
+    margin-bottom: 8px;
+    font-size: 36px;
+  }
+  .cms-users-empty strong {
+    color: var(--cms-text);
+  }
+  .cms-users-empty p {
+    margin: 5px 0 0;
+  }
+  .cms-users-action-status {
+    min-height: 20px;
+    margin: 0;
+    padding: 12px 20px;
+    border-top: 1px solid var(--cms-border);
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-users-action-status:empty {
+    display: none;
+  }
+  .cms-users-action-status[data-kind='success'] {
+    background: #ecfdf3;
+    color: #18794e;
+  }
+  .cms-users-action-status[data-kind='warning'] {
+    background: #fffaeb;
+    color: #b54708;
+  }
+  .cms-users-action-status[data-kind='error'] {
+    background: #fef3f2;
+    color: #b42318;
+  }
+  .cms-users-page .hidden {
+    display: none !important;
+  }
+  @media (max-width: 900px) {
+    .cms-create-grid {
+      grid-template-columns: 1fr;
+    }
+    .cms-users-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cms-users-card-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .cms-create-actions {
+      align-items: flex-start;
+    }
+    .cms-users-tools input {
+      width: min(100%, 360px);
+    }
+  }
+  @media (max-width: 600px) {
+    .cms-users-page {
+      padding: 14px;
+    }
+    .cms-users-hero {
+      padding: 24px;
+      flex-direction: column;
+    }
+    .cms-create-form {
+      padding: 18px 18px 20px;
+    }
+    .cms-invite-credentials {
+      margin: 0 18px 18px;
+    }
+    .cms-users-create .cms-users-alert {
+      margin: 0 18px 14px;
+    }
+    .cms-users-stats {
+      grid-template-columns: 1fr;
+    }
+    .cms-users-tools {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .cms-users-tools input,
+    .cms-users-tools button {
+      width: 100%;
+    }
+  }
+</style>

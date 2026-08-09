@@ -340,6 +340,48 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     node.textContent = String(value || '');
     return node.innerHTML;
   }
+  function getPublicUrl(collectionName, path, data = {}) {
+    const origin = String(window.location.origin).replace(/\/+$/, '');
+    const stem = String(path || '')
+      .split('/')
+      .pop()
+      .replace(/\.md$/i, '');
+    if (!stem) return '';
+    if (collectionName === 'entradas') return origin + '/entradas/' + stem;
+    if (collectionName === 'memorias') {
+      const number = String(data.number || stem.split('-')[0] || '').trim();
+      return number ? origin + '/museo-memorias/' + number : '';
+    }
+    if (collectionName === 'paginas') {
+      const slug = String(data.slug || stem.replace(/^\d{4}-/, '') || '').trim();
+      return slug ? origin + '/' + slug.replace(/^\/+/, '') : '';
+    }
+    if (collectionName === 'simposios') {
+      const slug = String(data.slug || stem || '').trim();
+      return slug ? origin + '/ediciones/' + slug : '';
+    }
+    return '';
+  }
+  function isPublishedContent(data, fallbackState = '') {
+    return String(fallbackState || data.workflow_state || '').toLowerCase() === 'published' || data.draft === false;
+  }
+  function resolvePreviewUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(?:https?:\/\/|data:|blob:)/i.test(raw)) return raw;
+    if (raw.startsWith('/images/') && window.cmsMediaPreviewBase) {
+      return window.cmsMediaPreviewBase + raw.replace(/^\/images\//, '');
+    }
+    return raw;
+  }
+  function absoluteUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(?:https?:\/\/|data:|blob:)/i.test(raw)) return raw;
+    const origin = String(window.location.origin).replace(/\/+$/, '');
+    if (raw.startsWith('/')) return origin + raw;
+    return origin + '/' + raw.replace(/^\/+/, '');
+  }
   async function token() {
     return window.supabaseAuth ? await window.supabaseAuth.getToken() : null;
   }
@@ -361,15 +403,22 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     const data = await response.json();
     if (!response.ok) {
       const fields = data.error?.details?.fields;
+      const supabase = data.error?.details?.supabase;
+      const detailBits = [];
+      if (supabase?.code) detailBits.push('Supabase ' + supabase.code);
+      if (supabase?.message) detailBits.push(supabase.message);
+      if (supabase?.hint) detailBits.push(supabase.hint);
       throw new Error(
         data.error?.message +
           (fields ? ' ' + fields.map((f) => f.path + ': ' + f.message).join('; ') : '')
+          + (detailBits.length ? ' (' + detailBits.join(' · ') + ')' : '')
       );
     }
     return data;
   }
-  function setStatus(message, error) {
-    statusNode.textContent = message;
+  function setStatus(message, error, allowHtml = false) {
+    if (allowHtml) statusNode.innerHTML = message;
+    else statusNode.textContent = message;
     statusNode.className =
       'cms-api-status mb-5 rounded-lg p-4 text-sm shadow-sm ' +
       (error ? 'bg-red-50 text-red-700' : 'bg-white text-ugr-text-light');
@@ -559,16 +608,20 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'cms-entry-card';
+      const imageUrl = resolvePreviewUrl(item.data.image);
+      const publicUrl = isPublishedContent(item.data)
+        ? getPublicUrl(item.collection, item.path, item.data)
+        : '';
       button.innerHTML =
         '<span class="cms-card-title">' +
         esc(item.data.title || item.name) +
         '</span>' +
-        (item.data.image
-          ? '<img src="' + esc(item.data.image) + '" alt="" loading="lazy">'
+        (imageUrl
+          ? '<img src="' + esc(imageUrl) + '" alt="" loading="lazy" decoding="async">'
           : '<div class="cms-card-placeholder"></div>') +
         '<span class="cms-card-meta">' +
         (item.data.draft ? 'Borrador · ' : '') +
-        esc(item.name) +
+        esc(publicUrl || item.path || item.name) +
         '</span>';
       button.onclick = () => {
         if (item.collection !== collection.value) {
@@ -662,6 +715,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         if (!file) return;
         if (file.size > 4 * 1024 * 1024) return setStatus('La imagen supera 4 MB.', true);
         setStatus('Subiendo imagen…');
+        const localPreviewUrl = URL.createObjectURL(file);
+        input.dataset.previewSrc = localPreviewUrl;
+        updatePreview();
         const reader = new FileReader();
         reader.onload = async () => {
           try {
@@ -671,6 +727,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
               body: JSON.stringify({ name: file.name, content }),
             });
             input.value = result.image.path;
+            input.dataset.previewSrc = result.image.previewUrl || localPreviewUrl;
             updatePreview();
             setStatus('Imagen subida: ' + result.image.path);
           } catch (error) {
@@ -727,11 +784,19 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     document
       .getElementById('save-draft-button')
       .classList.toggle('hidden', !can(item ? 'update' : 'create'));
+    const workflowState = String(item?.data.workflow_state || 'draft');
     document.getElementById('publish-button').classList.toggle('hidden', !can('publish'));
+    document.getElementById('publish-button').textContent =
+      workflowState === 'published' ? 'Actualizar publicado' : 'Publicar';
     document
       .getElementById('submit-review-button')
-      .classList.toggle('hidden', !item || !can('submit_review'));
-    document.getElementById('approve-button').classList.toggle('hidden', !item || !can('approve'));
+      .classList.toggle(
+        'hidden',
+        !item || !can('submit_review') || !['draft', 'changes_requested'].includes(workflowState)
+      );
+    document
+      .getElementById('approve-button')
+      .classList.toggle('hidden', !item || !can('approve') || workflowState !== 'in_review');
   }
   function draftStorageKey() {
     return 'cms-editor:' + collection.value + ':' + (current?.path || 'new');
@@ -796,7 +861,12 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       return;
     }
     const body = document.getElementById('body').value;
-    const image = data.image || data.poster;
+    const imageInputs = ['image', 'poster', 'instituciones_image']
+      .map((key) => fieldsNode.querySelector('[data-key="' + key + '"]'))
+      .filter(Boolean);
+    const image = imageInputs
+      .map((input) => input.dataset.previewSrc || input.value)
+      .find((value) => Boolean(value));
     const badges = [...(data.categories || []), ...(data.tags || [])]
       .map(
         (value) =>
@@ -809,9 +879,14 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       .filter(Boolean)
       .map(esc)
       .join(' · ');
+    const publishedUrl = isPublishedContent(data, current?.data.workflow_state)
+      ? getPublicUrl(collection.value, current?.path || '', data)
+      : '';
     previewNode.innerHTML =
       (image
-        ? '<img src="' + esc(image) + '" alt="" class="h-56 w-full object-cover">'
+        ? '<img src="' +
+          esc(resolvePreviewUrl(image)) +
+          '" alt="" class="h-56 w-full object-cover">'
         : '<div class="h-24 bg-gradient-to-r from-ugr-green to-ugr-green-dark"></div>') +
       '<div class="p-6">' +
       (data.draft
@@ -823,6 +898,16 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       (meta ? '<p class="mt-2 text-sm text-gray-500">' + meta + '</p>' : '') +
       (data.description
         ? '<p class="mt-4 text-lg text-gray-700">' + esc(data.description) + '</p>'
+        : '') +
+      (publishedUrl
+        ? '<div class="mt-5 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">' +
+          '<strong class="block mb-1">Publicado</strong>' +
+          '<a href="' +
+          esc(publishedUrl) +
+          '" target="_blank" rel="noopener noreferrer" class="font-semibold text-ugr-green underline">→ ' +
+          esc(publishedUrl) +
+          '</a>' +
+          '</div>'
         : '') +
       (badges ? '<div class="mt-4 flex flex-wrap gap-2">' + badges + '</div>' : '') +
       '<div class="prose mt-6 text-gray-800"><p>' +
@@ -836,23 +921,45 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   }
   editor.addEventListener('submit', async (event) => {
     event.preventDefault();
+    const payloadData = formData();
+    const isPublishing = payloadData.draft === false;
+    const currentState = String(current?.data.workflow_state || 'draft');
     setStatus('Guardando…');
     try {
-      await api('/.netlify/functions/manage-content?collection=' + collection.value, {
+      const result = await api('/.netlify/functions/manage-content?collection=' + collection.value, {
         method: 'POST',
         body: JSON.stringify({
           path: current?.path,
           sha: current?.sha,
-          data: formData(),
+          data: payloadData,
           body: document.getElementById('body').value,
         }),
       });
-      setStatus('Contenido guardado. El despliegue se actualizará desde GitHub.');
       checkDeployment();
       dirty = false;
       localStorage.removeItem(draftStorageKey());
       await loadReferences();
       await loadItems();
+      if (isPublishing) {
+        const finalUrl =
+          absoluteUrl(result.publicUrl) ||
+          getPublicUrl(collection.value, result.item?.path || current?.path || '', payloadData);
+        const verb = currentState === 'published' ? 'actualizado' : 'publicado';
+        setStatus(
+          'Contenido ' +
+            verb +
+            '. ' +
+            (finalUrl
+              ? '<a href="' +
+                esc(finalUrl) +
+                '" class="font-semibold text-ugr-green underline" target="_blank" rel="noopener noreferrer">Abrir la URL final</a>'
+              : 'No se pudo calcular la URL final.'),
+          false,
+          true
+        );
+      } else {
+        setStatus('Contenido guardado. El despliegue se actualizará desde GitHub.');
+      }
     } catch (error) {
       setStatus(error.message, true);
     }
@@ -1118,7 +1225,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     box-shadow: 0 12px 30px #1018280c;
   }
   .cms-collection-header h1 {
-    font-family: Atkinson, system-ui, sans-serif;
+    font-family: var(--font-montserrat), sans-serif;
     font-size: 25px;
     margin: 0 0 14px;
     color: var(--cms-text);
@@ -1258,6 +1365,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     border-color: var(--cms-blue) !important;
     color: var(--cms-blue) !important;
     background: transparent !important;
+    cursor: pointer;
   }
   #save-draft-button:hover {
     background: color-mix(in srgb, var(--cms-blue) 12%, transparent) !important;
@@ -1266,6 +1374,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     border-color: var(--cms-blue) !important;
     background: var(--cms-blue) !important;
     color: #fff !important;
+    cursor: pointer;
   }
   #publish-button:hover {
     filter: brightness(1.08);

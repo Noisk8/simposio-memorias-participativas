@@ -3,6 +3,10 @@ import { requirePermission } from '../../shared/auth/require-permission.ts';
 import { recordAudit } from '../../shared/observability/audit.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import {
+  generateTemporaryPassword,
+  sendAccountInviteEmail,
+} from '../../shared/users/account-invite.ts';
+import {
   AppError,
   ConflictError,
   InternalError,
@@ -103,12 +107,14 @@ export const handler = async (event: any) => {
 
     if (payload.action === 'create') {
       const email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : '';
-      const password = typeof payload.password === 'string' ? payload.password : '';
+      const providedPassword = typeof payload.password === 'string' ? payload.password.trim() : '';
+      const password = providedPassword || generateTemporaryPassword();
+      const generatedPassword = !providedPassword;
       const name = typeof payload.name === 'string' ? payload.name.trim() : '';
       const role = payload.role || 'author';
 
       if (!isValidEmail(email)) throw new ValidationError('Introduce un email válido.');
-      if (password.length < 8 || password.length > 72) {
+      if (providedPassword && (password.length < 8 || password.length > 72)) {
         throw new ValidationError('La contraseña debe tener entre 8 y 72 caracteres.');
       }
       if (name.length > 100)
@@ -137,6 +143,13 @@ export const handler = async (event: any) => {
         throw new InternalError('No se pudo asignar el rol inicial.');
       }
 
+      const inviteResult = await sendAccountInviteEmail({
+        email,
+        name,
+        password,
+        role,
+      });
+
       await recordAudit({
         requestId,
         actorId: auth.user.id,
@@ -144,7 +157,14 @@ export const handler = async (event: any) => {
         resourceType: 'user',
         resourceId: created.user.id,
         result: 'success',
-        metadata: { email, roles: [role] },
+        metadata: {
+          email,
+          roles: [role],
+          passwordGenerated: generatedPassword,
+          inviteEmailSent: inviteResult.sent,
+          inviteProvider: inviteResult.provider,
+          ...(inviteResult.reason ? { inviteReason: inviteResult.reason } : {}),
+        },
       });
 
       return {
@@ -153,6 +173,13 @@ export const handler = async (event: any) => {
         body: JSON.stringify({
           ok: true,
           user: { id: created.user.id, email, name, roles: [role] },
+          invite: {
+            password,
+            passwordGenerated: generatedPassword,
+            emailSent: inviteResult.sent,
+            emailProvider: inviteResult.provider,
+            ...(inviteResult.reason ? { emailReason: inviteResult.reason } : {}),
+          },
           requestId,
         }),
       };

@@ -39,6 +39,7 @@ El mismo UUID se devuelve en `x-request-id` y se incorpora a logs JSON y `public
 
 - `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`: solo Functions.
 - `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY`: login en navegador.
+- `RESEND_API_KEY` y `RESEND_FROM_EMAIL`: envío de correo para altas desde `/admin/gestion-usuarios`.
 - `SITE_URL`: origen principal permitido.
 - `ALLOWED_ORIGINS`: orígenes adicionales separados por comas.
 - `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_BRANCH`: integración GitHub heredada hasta las fases 2 y 6.

@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import { resolvePublicImageUrl } from '../lib/public-image';
 
 interface Crumb {
   label: string;
@@ -15,7 +16,7 @@ interface Props {
 
 const { data, simposio, simposioTitle, crumbs = [] } = Astro.props;
 
-const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
+const heroImage = resolvePublicImageUrl(data.image || simposio?.data.image || '/images/hero-bg.jpg');
 
 const organizadores = data.organizadores.map((o: string) => {
   const [nombre, institucion] = o.split(' | ');
@@ -25,7 +26,14 @@ const organizadores = data.organizadores.map((o: string) => {
 
 <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
   <div class="absolute inset-0">
-    <img src={heroImage} alt={data.title} class="w-full h-full object-cover" />
+    <img
+      src={heroImage}
+      alt={data.title}
+      class="w-full h-full object-cover"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
     <div class="absolute inset-0 bg-black/60"></div>
   </div>
   <div class="relative z-10 text-center px-4">
@@ -89,10 +97,12 @@ const organizadores = data.organizadores.map((o: string) => {
               Instituciones organizadoras
             </h2>
             <div class="card-shadow rounded-xl overflow-hidden inline-block bg-white p-4">
-              <img
-                src={data.instituciones_image}
-                alt="Instituciones organizadoras"
-                class="w-full max-w-2xl mx-auto"
+                <img
+                  src={resolvePublicImageUrl(data.instituciones_image)}
+                  alt="Instituciones organizadoras"
+                  class="w-full max-w-2xl mx-auto"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
@@ -108,9 +118,11 @@ const organizadores = data.organizadores.map((o: string) => {
       <div class="max-w-4xl mx-auto px-4 text-center">
         <div class="card-shadow rounded-xl overflow-hidden inline-block mb-8">
           <img
-            src={simposio?.data.poster || '/images/programa.jpg'}
+            src={resolvePublicImageUrl(simposio?.data.poster || '/images/programa.jpg')}
             alt={`Programa del ${simposioTitle}`}
             class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500"
+            loading="lazy"
+            decoding="async"
           />
         </div>
         {simposio?.data.program_url && (

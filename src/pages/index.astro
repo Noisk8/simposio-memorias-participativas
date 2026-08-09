@@ -14,7 +14,14 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
   <!-- Hero Section -->
   <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
-      <img src={simposioImage} alt={simposioTitle} class="w-full h-full object-cover" />
+      <img
+        src={simposioImage}
+        alt={simposioTitle}
+        class="w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
       <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
     </div>
     <div class="relative z-10 text-center px-4">
@@ -45,6 +52,8 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
           src={simposioPoster}
           alt={`Cartel Oficial del ${simposioTitle}`}
           class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500"
+          loading="lazy"
+          decoding="async"
         />
       </div>
     </div>
@@ -122,6 +131,8 @@ const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
             src="/images/instagram-icon.jpg"
             alt="Instagram @memoriasparticipativas"
             class="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         </div>
 

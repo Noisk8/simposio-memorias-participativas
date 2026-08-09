@@ -69,7 +69,14 @@ const tagTitles = slugTitleMap(await getEtiquetas());
       {
         data.image && (
           <div class="mb-8">
-            <img src={data.image} alt={data.title} class="w-full rounded-xl shadow-lg" />
+            <img
+              src={data.image}
+              alt={data.title}
+              class="w-full rounded-xl shadow-lg"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
           </div>
         )
       }

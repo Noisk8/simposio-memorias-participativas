@@ -2,6 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Seo from '../components/Seo.astro';
+import { Font } from 'astro:assets';
 import '../styles/global.css';
 import { NETWORK_DESCRIPTION } from '../consts';
 
@@ -33,6 +34,7 @@ const {
 <!doctype html>
 <html lang="es">
   <head>
+    <Font cssVariable="--font-montserrat" />
     <Seo
       title={title}
       description={description}
