@@ -14,3 +14,11 @@ dist/
 
 # Astro generated files
 .astro/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Generado por netlify dev (Deno); se regenera solo y rompe git diff en CI
+deno.lock

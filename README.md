@@ -243,13 +243,23 @@ La ruta anterior `/admin/crear-proyecto` redirige a la nueva para mantener compa
 ## Documentación
 
 - **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md):** guía práctica para acceder al panel y gestionar entradas, memorias, páginas, taxonomías, imágenes, roles y borradores.
-- **[Instrucciones generales](./INSTRUCCIONES.md):** estructura, comandos y operaciones básicas.
-- **[Guía de despliegue](./GUIA-DESPLIEGUE.md):** configuración y publicación en Netlify.
+- **[Guía de despliegue](./docs/despliegue.md):** configuración y publicación en Netlify.
 - **[Documentación técnica](./docs/):** colecciones, roles, creación de contenido y configuración del proyecto.
 - **[Seguridad del CMS](./docs/SEGURIDAD.md):** autenticación, funciones administrativas, variables y checklist de seguridad.
 - **[Fase 1: RBAC y seguridad](./docs/FASE-1-RBAC.md):** migración, despliegue, pruebas y reversión.
 
 Si una persona solo necesita gestionar contenidos, debe comenzar por el **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md)**.
+
+## Personalización
+
+Los colores principales se definen como variables CSS en `src/styles/global.css`:
+
+```css
+--ugr-green: #2f680c;
+--ugr-green-light: #70a87a;
+--ugr-green-dark: #1e4a08;
+--ugr-cream: #f5f0e8;
+```
 
 ## Calidad y validación
 

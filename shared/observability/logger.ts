@@ -12,6 +12,20 @@ function sanitize(value: unknown): unknown {
   );
 }
 
+function sendAlert(entry: Record<string, unknown>) {
+  const webhookUrl = process.env.ALERT_WEBHOOK_URL;
+  if (!webhookUrl) return;
+  const text = `[simposio-cms] ${entry.event}: ${JSON.stringify(entry)}`;
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+    signal: AbortSignal.timeout(5000),
+  }).catch(() => {
+    // La alerta nunca debe interrumpir la petición que la originó.
+  });
+}
+
 export function logEvent(
   level: 'info' | 'warn' | 'error',
   event: string,
@@ -22,9 +36,11 @@ export function logEvent(
     event,
     timestamp: new Date().toISOString(),
     ...context,
-  });
+  }) as Record<string, unknown>;
   const line = JSON.stringify(entry);
-  if (level === 'error') console.error(line);
-  else if (level === 'warn') console.warn(line);
+  if (level === 'error') {
+    console.error(line);
+    sendAlert(entry);
+  } else if (level === 'warn') console.warn(line);
   else console.log(line);
 }

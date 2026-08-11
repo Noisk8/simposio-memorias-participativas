@@ -15,8 +15,10 @@
     "check": "node scripts/lint-taxonomies.mjs && astro check",
     "check:taxonomies": "node scripts/lint-taxonomies.mjs",
     "test": "node --experimental-strip-types --test \"tests/*.test.mjs\"",
-    "lint": "eslint src scripts netlify shared tests",
-    "lint:fix": "eslint src scripts netlify shared tests --fix",
+    "test:api": "node scripts/test-api-contract.mjs",
+    "test:e2e": "npm run build && playwright test",
+    "lint": "eslint src scripts netlify shared tests e2e",
+    "lint:fix": "eslint src scripts netlify shared tests e2e --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -38,6 +40,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@playwright/test": "^1.62.1",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
     "eslint": "^10.6.0",

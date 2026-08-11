@@ -40,8 +40,18 @@ jobs:
       - name: Tests
         run: npm test
 
+      - name: API contract tests
+        run: |
+          npm install -g netlify-cli
+          npm run test:api
+
       - name: Build
         run: npm run build
+
+      - name: Smoke E2E
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
 
       - name: Build must not mutate sources
         run: git diff --exit-code
