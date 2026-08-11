@@ -124,6 +124,28 @@ test('requirePermission: devuelve el contexto efectivo y audita autorización', 
   assert.equal(audits[0].result, 'allowed');
 });
 
+test('requirePermission: sin token devuelve 401 aunque Supabase no esté configurado', async () => {
+  await assert.rejects(
+    requirePermission({ headers: {} }, 'memoria.read', {
+      client: null,
+      verifySession: verifySupabaseSession,
+      audit: async () => {},
+    }),
+    (error) => error.statusCode === 401 && error.code === 'AUTHENTICATION_REQUIRED'
+  );
+});
+
+test('requirePermission: con token pero sin Supabase devuelve error de configuración', async () => {
+  await assert.rejects(
+    requirePermission({ headers: { authorization: 'Bearer token' } }, 'memoria.read', {
+      client: null,
+      verifySession: verifySupabaseSession,
+      audit: async () => {},
+    }),
+    (error) => error.statusCode === 500 && error.code === 'CONFIGURATION_ERROR'
+  );
+});
+
 test('requirePermission: ignora roles enviados en metadatos y devuelve 403', async () => {
   await assert.rejects(
     requirePermission({ headers: {} }, 'memoria.publish', {

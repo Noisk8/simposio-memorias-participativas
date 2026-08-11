@@ -41,25 +41,29 @@ export async function requirePermission(
   const client = dependencies.client || getAdminClient();
   const verifySession = dependencies.verifySession || verifySupabaseSession;
   const audit = dependencies.audit || recordAudit;
-  if (!client) throw new InternalError('Supabase no está configurado en este entorno.');
 
+  // La autenticación se evalúa antes que la configuración: una petición sin
+  // token recibe 401 aunque Supabase no esté configurado en este entorno.
   let user: any;
   try {
     user = await verifySession(event, client);
   } catch (error) {
-    await audit(
-      {
-        requestId,
-        actorId: null,
-        action: 'authentication.check',
-        resourceType: 'session',
-        result: 'denied',
-        metadata: {},
-      },
-      client
-    );
+    if (client) {
+      await audit(
+        {
+          requestId,
+          actorId: null,
+          action: 'authentication.check',
+          resourceType: 'session',
+          result: 'denied',
+          metadata: {},
+        },
+        client
+      );
+    }
     throw error;
   }
+  if (!client) throw new InternalError('Supabase no está configurado en este entorno.');
 
   const { data, error } = await client
     .from('user_roles')

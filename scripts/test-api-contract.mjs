@@ -1,7 +1,7 @@
 /**
- * Levanta `netlify dev`, espera a que las Functions respondan y ejecuta los
- * tests de contrato de tests/api-contract.test.mjs. Al terminar, detiene el
- * servidor y propaga el código de salida de los tests.
+ * Levanta las Functions con `netlify functions:serve`, espera a que respondan
+ * y ejecuta los tests de contrato de tests/api-contract.test.mjs. Al terminar,
+ * detiene el servidor y propaga el código de salida de los tests.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -12,10 +12,14 @@ const baseUrl = process.env.API_BASE_URL || 'http://127.0.0.1:8888';
 const startupTimeoutMs = 120_000;
 
 const netlifyBin = process.platform === 'win32' ? 'netlify.cmd' : 'netlify';
-const server = spawn(netlifyBin, ['dev', '--offline'], {
+// functions:serve levanta solo las Functions: sin astro dev, más rápido y sin
+// procesos huérfanos. Las rutas /.netlify/functions/* son idénticas.
+const server = spawn(netlifyBin, ['functions:serve', '--port', '8888', '--offline'], {
   cwd: projectRoot,
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, BROWSER: 'none' },
+  // Grupo de procesos propio para poder detener también los hijos (astro dev).
+  detached: process.platform !== 'win32',
 });
 
 server.stderr.on('data', (chunk) => process.stderr.write(chunk));
@@ -34,7 +38,13 @@ async function waitForServer() {
 }
 
 function stopServer() {
-  if (server.exitCode === null) server.kill('SIGTERM');
+  if (server.exitCode !== null) return;
+  try {
+    if (process.platform === 'win32') server.kill('SIGTERM');
+    else process.kill(-server.pid, 'SIGTERM');
+  } catch {
+    server.kill('SIGTERM');
+  }
 }
 
 process.on('SIGINT', () => {
