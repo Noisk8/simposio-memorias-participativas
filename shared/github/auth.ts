@@ -11,11 +11,23 @@ function base64url(value: string): string {
   return Buffer.from(value, 'utf8').toString('base64url');
 }
 
+export function normalizeGitHubPrivateKey(value: unknown): string {
+  let normalized = String(value || '').trim();
+  if (normalized.startsWith('GITHUB_APP_PRIVATE_KEY=')) {
+    normalized = normalized.slice('GITHUB_APP_PRIVATE_KEY='.length).trim();
+  }
+  const quote = normalized.at(0);
+  if ((quote === '"' || quote === "'") && normalized.at(-1) === quote) {
+    normalized = normalized.slice(1, -1).trim();
+  }
+  return normalized.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+}
+
 function appEnvironment() {
   const values = {
     appId: String(process.env.GITHUB_APP_ID || '').trim(),
     installationId: String(process.env.GITHUB_APP_INSTALLATION_ID || '').trim(),
-    privateKey: String(process.env.GITHUB_APP_PRIVATE_KEY || '').trim(),
+    privateKey: normalizeGitHubPrivateKey(process.env.GITHUB_APP_PRIVATE_KEY),
   };
   const configured = Object.values(values).filter(Boolean).length;
   if (configured > 0 && configured < 3) {
@@ -48,9 +60,8 @@ export function createGitHubAppJwt(now = new Date()): string {
     JSON.stringify({ iat: issuedAt, exp: issuedAt + 9 * 60, iss: app.appId })
   );
   const unsigned = `${header}.${payload}`;
-  const privateKey = app.privateKey.replace(/\\n/g, '\n');
   try {
-    const signature = createSign('RSA-SHA256').update(unsigned).sign(privateKey, 'base64url');
+    const signature = createSign('RSA-SHA256').update(unsigned).sign(app.privateKey, 'base64url');
     return `${unsigned}.${signature}`;
   } catch {
     throw new ConfigurationError('GITHUB_APP_PRIVATE_KEY no contiene una clave PEM válida.');

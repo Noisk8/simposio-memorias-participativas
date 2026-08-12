@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import { normalizeGitHubPrivateKey } from '../shared/github/auth.ts';
+
+test('normaliza PEM multilinea, escapado, entre comillas o como asignación', () => {
+  const pem = '-----BEGIN PRIVATE KEY-----\nABC123\n-----END PRIVATE KEY-----';
+  assert.equal(normalizeGitHubPrivateKey(pem), pem);
+  assert.equal(normalizeGitHubPrivateKey(pem.replaceAll('\n', '\\n')), pem);
+  assert.equal(normalizeGitHubPrivateKey(`"${pem}"`), pem);
+  assert.equal(normalizeGitHubPrivateKey(`'${pem.replaceAll('\n', '\\n')}'`), pem);
+  assert.equal(normalizeGitHubPrivateKey(`GITHUB_APP_PRIVATE_KEY="${pem}"`), pem);
+});
 
 test('todas las llamadas GitHub del backend pasan por la capa compartida', () => {
   const backend = [
