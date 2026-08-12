@@ -20,6 +20,12 @@ test('acepta la private key en Base64 sin depender de saltos de línea', () => {
   const encoded = Buffer.from(pem, 'utf8').toString('base64');
   assert.equal(githubPrivateKeyFromEnvironment('', encoded), pem);
   assert.equal(githubPrivateKeyFromEnvironment('PEM INCORRECTO', `"${encoded}"`), pem);
+  const wrapped = encoded.match(/.{1,12}/g).join('\n');
+  assert.equal(githubPrivateKeyFromEnvironment('', wrapped), pem);
+  assert.equal(
+    githubPrivateKeyFromEnvironment('', `GITHUB_APP_PRIVATE_KEY_BASE64='${wrapped}'`),
+    pem
+  );
 });
 
 test('todas las llamadas GitHub del backend pasan por la capa compartida', () => {

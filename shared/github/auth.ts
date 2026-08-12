@@ -20,16 +20,24 @@ export function normalizeGitHubPrivateKey(value: unknown): string {
   if ((quote === '"' || quote === "'") && normalized.at(-1) === quote) {
     normalized = normalized.slice(1, -1).trim();
   }
-  return normalized.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+  return normalized
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n');
 }
 
-export function githubPrivateKeyFromEnvironment(
-  pemValue: unknown,
-  base64Value: unknown
-): string {
-  const encoded = String(base64Value || '')
-    .trim()
-    .replace(/^(["'])|(["'])$/g, '');
+export function githubPrivateKeyFromEnvironment(pemValue: unknown, base64Value: unknown): string {
+  let encoded = String(base64Value || '').trim();
+  if (encoded.startsWith('GITHUB_APP_PRIVATE_KEY_BASE64=')) {
+    encoded = encoded.slice('GITHUB_APP_PRIVATE_KEY_BASE64='.length).trim();
+  }
+  const quote = encoded.at(0);
+  if ((quote === '"' || quote === "'") && encoded.at(-1) === quote) {
+    encoded = encoded.slice(1, -1);
+  }
+  // Algunos comandos base64 envuelven el resultado cada 76 caracteres. El
+  // whitespace no forma parte del secreto y puede retirarse con seguridad.
+  encoded = encoded.replace(/\s+/g, '');
   if (!encoded) return normalizeGitHubPrivateKey(pemValue);
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length % 4 !== 0) {
     throw new ConfigurationError('GITHUB_APP_PRIVATE_KEY_BASE64 no contiene Base64 válido.');
