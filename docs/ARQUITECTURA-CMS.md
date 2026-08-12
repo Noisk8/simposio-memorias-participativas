@@ -54,6 +54,10 @@ Netlify Function
 
 El frontend puede usar los permisos devueltos por la API para mostrar u ocultar controles, pero esa decisión es solo de interfaz. Cada Function vuelve a autorizar la operación.
 
+La vista previa editorial interpreta CommonMark y GitHub Flavored Markdown mediante `marked` —incluyendo tablas, listas de tareas, citas y bloques de código— y sanitiza el resultado con `DOMPurify` antes de insertarlo en el DOM. La vista previa no ejecuta HTML activo aportado por el contenido.
+
+Una entrada puede apuntar opcionalmente a una página mediante `page_id`, que conserva el UUID estable de la página y no su título o slug mutable. El selector del panel limita las opciones a la misma edición del simposio. Una entrada publicada conserva su ruta canónica y aparece además como tarjeta relacionada en la página asignada; el build rechaza referencias inexistentes, páginas no publicadas y relaciones entre ediciones diferentes.
+
 ## Funciones activas
 
 | Function               | Responsabilidad                                                                               |
@@ -118,6 +122,8 @@ El inicio de sesión del navegador llama directamente a Supabase Auth y conserva
 `manage-media` acepta únicamente JPEG, PNG, WebP y PDF, con un máximo absoluto de 2 MiB. Para imágenes contrasta extensión, MIME declarado, firma y formato decodificado por `sharp`; fuerza la decodificación completa y limita ancho, alto y píxeles mediante configuración server-side. Cualquier otro tipo, imágenes animadas, nombres peligrosos y archivos corruptos se rechazan antes de consultar Storage.
 
 Las imágenes nuevas requieren crédito, licencia y una decisión explícita entre texto alternativo no vacío o `is_decorative=true`. El original se conserva en `original_filename`, pero nunca se usa como key: las cargas nuevas emplean `images|documents/YYYY/MM/<uuid>-<slug-seguro>.<ext>`. Los paths históricos por SHA-256 siguen siendo válidos. El SHA-256 permanece en `checksum_sha256` para deduplicación, integridad y trazabilidad.
+
+Los campos de imagen del editor permiten elegir un recurso existente mediante un selector autenticado que consulta `manage-media`, además de subir una imagen nueva. La URL manual se conserva únicamente para compatibilidad con referencias legacy; seleccionar o subir un medio actualiza el borrador y su vista previa sin exponer credenciales de Storage al navegador.
 
 No se generan `thumbnail`, `medium` y `large` en esta fase: el Markdown y los componentes públicos consumen una única URL y todavía no tienen un modelo de variantes. Añadir derivados ahora multiplicaría objetos sin un consumidor ni una política clara de borrado. `sharp` queda centralizado para incorporarlos cuando el modelo público use `srcset`/`picture`.
 

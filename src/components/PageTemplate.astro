@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import PageEntries from './PageEntries.astro';
 import { resolvePublicImageUrl } from '../lib/public-image';
 
 interface Crumb {
@@ -12,9 +13,10 @@ interface Props {
   simposio: CollectionEntry<'simposios'> | null;
   simposioTitle: string;
   crumbs?: Crumb[];
+  entries?: CollectionEntry<'entradas'>[];
 }
 
-const { data, simposio, simposioTitle, crumbs = [] } = Astro.props;
+const { data, simposio, simposioTitle, crumbs = [], entries = [] } = Astro.props;
 
 const heroImage = resolvePublicImageUrl(
   data.image || simposio?.data.image || '/images/hero-bg.jpg'
@@ -227,3 +229,5 @@ const organizadores = data.organizadores.map((o: string) => {
     </section>
   )
 }
+
+<PageEntries entries={entries} />

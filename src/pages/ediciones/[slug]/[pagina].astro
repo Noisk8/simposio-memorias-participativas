@@ -4,7 +4,8 @@ import PageTemplate from '../../../components/PageTemplate.astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { getSimposioBySlug } from '../../../lib/simposios';
-import { filterPublished } from '../../../lib/taxonomies';
+import { filterPublished, sortByDateDesc } from '../../../lib/taxonomies';
+import { entryBelongsToPage } from '../../../../shared/content/page-relations';
 
 interface Props {
   entry: CollectionEntry<'paginas'>;
@@ -24,6 +25,10 @@ const { Content } = await render(entry);
 const data = entry.data;
 const simposio = await getSimposioBySlug(slug || data.simposio);
 const simposioTitle = simposio?.data.title || `Edición ${data.simposio}`;
+const entries = filterPublished(await getCollection('entradas')).filter((item) =>
+  entryBelongsToPage(item, entry)
+);
+sortByDateDesc(entries);
 
 const pageTitle = `${data.title} - ${simposioTitle}`;
 const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
@@ -34,6 +39,7 @@ const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
     data={data}
     simposio={simposio}
     simposioTitle={simposioTitle}
+    entries={entries}
     crumbs={[{ label: simposioTitle, href: `/ediciones/${slug}/` }]}
   >
     <Content />

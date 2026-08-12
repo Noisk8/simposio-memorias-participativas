@@ -4,7 +4,8 @@ import PageTemplate from '../components/PageTemplate.astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { getSimposioDefault } from '../lib/simposios';
-import { filterPublished } from '../lib/taxonomies';
+import { filterPublished, sortByDateDesc } from '../lib/taxonomies';
+import { entryBelongsToPage } from '../../shared/content/page-relations';
 
 interface Props {
   entry: CollectionEntry<'paginas'>;
@@ -23,13 +24,17 @@ const { Content } = await render(entry);
 const data = entry.data;
 const simposio = await getSimposioDefault();
 const simposioTitle = simposio?.data.title || 'I Simposio sobre Memorias Participativas';
+const entries = filterPublished(await getCollection('entradas')).filter((item) =>
+  entryBelongsToPage(item, entry)
+);
+sortByDateDesc(entries);
 
 const pageTitle = `${data.title} - ${simposioTitle}`;
 const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
 ---
 
 <Layout title={pageTitle} description={data.description} image={heroImage}>
-  <PageTemplate data={data} simposio={simposio} simposioTitle={simposioTitle}>
+  <PageTemplate data={data} simposio={simposio} simposioTitle={simposioTitle} entries={entries}>
     <Content />
   </PageTemplate>
 </Layout>

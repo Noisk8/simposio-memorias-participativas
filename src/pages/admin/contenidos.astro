@@ -187,14 +187,59 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         </main>
       </div>
     </div>
+
+    <div
+      id="media-library-dialog"
+      class="cms-media-picker hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="media-library-title"
+    >
+      <button
+        type="button"
+        class="cms-media-picker-backdrop"
+        data-close-media-picker
+        aria-label="Cerrar biblioteca de imágenes"></button>
+      <section class="cms-media-picker-panel">
+        <header class="cms-media-picker-header">
+          <div>
+            <p>Biblioteca de medios</p>
+            <h2 id="media-library-title">Elegir una imagen</h2>
+          </div>
+          <button type="button" class="cms-media-picker-close" data-close-media-picker>
+            <span aria-hidden="true">×</span><span class="sr-only">Cerrar</span>
+          </button>
+        </header>
+        <div class="cms-media-picker-tools">
+          <label>
+            <span class="sr-only">Buscar imágenes</span>
+            <input
+              id="media-library-search"
+              type="search"
+              placeholder="Buscar por nombre, crédito o licencia…"
+              autocomplete="off"
+            />
+          </label>
+          <button id="media-library-refresh" type="button">↻ Actualizar</button>
+        </div>
+        <p id="media-library-status" class="cms-media-picker-status" aria-live="polite">
+          Cargando biblioteca…
+        </p>
+        <div id="media-library-grid" class="cms-media-picker-grid"></div>
+      </section>
+    </div>
   </section>
 </AdminLayout>
 
-<script is:inline>
+<script>
   // @ts-nocheck
+  import DOMPurify from 'dompurify';
+  import { marked } from 'marked';
+
   const schemas = {
     entradas: [
       ['simposio', 'Simposio', 'relation:simposios'],
+      ['page_id', 'Página donde aparecerá', 'relation:paginas'],
       ['title', 'Título', 'text', 'required'],
       ['date', 'Fecha', 'date'],
       ['publish_date', 'Fecha de publicación', 'date'],
@@ -286,6 +331,11 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   const collectionView = document.getElementById('collection-view');
   const collectionTitle = document.getElementById('collection-title');
   const collectionDescription = document.getElementById('collection-description');
+  const mediaLibraryDialog = document.getElementById('media-library-dialog');
+  const mediaLibrarySearch = document.getElementById('media-library-search');
+  const mediaLibraryRefresh = document.getElementById('media-library-refresh');
+  const mediaLibraryStatus = document.getElementById('media-library-status');
+  const mediaLibraryGrid = document.getElementById('media-library-grid');
   let items = [];
   let globalItems = [];
   let current = null;
@@ -296,6 +346,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   let saveInFlight = false;
   let localDraftTimer;
   let autosaveTimer;
+  let mediaLibrary = [];
+  let mediaPickerTarget = null;
+  let mediaPickerLastFocus = null;
   const references = { categorias: [], etiquetas: [], simposios: [], paginas: [] };
   const labels = {
     entradas: 'Entradas',
@@ -411,6 +464,157 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     }
     return data;
   }
+  function formatMediaBytes(bytes) {
+    const size = Number(bytes || 0);
+    if (size < 1024) return size + ' B';
+    if (size < 1024 * 1024) return Math.round(size / 1024) + ' KB';
+    return (size / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  function mediaValue(media) {
+    return String(media?.publicUrl || media?.path || '').trim();
+  }
+  function renderSelectedMedia(input, selectedNode, media = null) {
+    selectedNode.innerHTML = '';
+    const value = String(input.value || '').trim();
+    selectedNode.classList.toggle('hidden', !value);
+    if (!value) return;
+
+    const image = document.createElement('img');
+    image.src = media?.previewUrl || media?.publicUrl || resolvePreviewUrl(value);
+    image.alt = media?.decorative ? '' : media?.altText || '';
+    image.loading = 'lazy';
+
+    const copy = document.createElement('div');
+    const name = document.createElement('strong');
+    name.textContent = media?.name || 'Imagen seleccionada';
+    const detail = document.createElement('span');
+    detail.textContent = media
+      ? [
+          media.width && media.height ? media.width + ' × ' + media.height + ' px' : '',
+          formatMediaBytes(media.size),
+          media.credit || '',
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : value;
+    copy.append(name, detail);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Quitar';
+    remove.addEventListener('click', () => {
+      input.value = '';
+      delete input.dataset.previewSrc;
+      renderSelectedMedia(input, selectedNode);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    selectedNode.append(image, copy, remove);
+  }
+  function chooseLibraryMedia(media) {
+    if (!mediaPickerTarget) return;
+    const value = mediaValue(media);
+    if (!value) return;
+    mediaPickerTarget.input.value = value;
+    mediaPickerTarget.input.dataset.previewSrc = media.previewUrl || value;
+    renderSelectedMedia(mediaPickerTarget.input, mediaPickerTarget.selectedNode, media);
+    mediaPickerTarget.uploadPanel.classList.add('hidden');
+    mediaPickerTarget.input.dispatchEvent(new Event('input', { bubbles: true }));
+    closeMediaPicker();
+  }
+  function renderMediaLibrary() {
+    const query = mediaLibrarySearch.value.trim().toLocaleLowerCase('es');
+    const images = mediaLibrary.filter(
+      (media) =>
+        (media.kind === 'image' || String(media.mimeType || '').startsWith('image/')) &&
+        [media.name, media.altText, media.credit, media.license]
+          .filter(Boolean)
+          .join(' ')
+          .toLocaleLowerCase('es')
+          .includes(query)
+    );
+    mediaLibraryGrid.innerHTML = '';
+    mediaLibraryStatus.dataset.kind = images.length ? 'success' : 'empty';
+    mediaLibraryStatus.textContent = images.length
+      ? images.length + (images.length === 1 ? ' imagen disponible.' : ' imágenes disponibles.')
+      : query
+        ? 'No hay imágenes que coincidan con la búsqueda.'
+        : 'La biblioteca todavía no contiene imágenes.';
+
+    images.forEach((media) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'cms-media-picker-card';
+      card.setAttribute('aria-label', 'Usar ' + (media.name || 'esta imagen'));
+      if (mediaPickerTarget && mediaValue(media) === mediaPickerTarget.input.value) {
+        card.dataset.selected = 'true';
+      }
+      const image = document.createElement('img');
+      image.src = media.previewUrl || media.publicUrl || media.path;
+      image.alt = media.decorative ? '' : media.altText || '';
+      image.loading = 'lazy';
+      const text = document.createElement('span');
+      const name = document.createElement('strong');
+      name.textContent = media.name || 'Imagen sin nombre';
+      const detail = document.createElement('small');
+      detail.textContent = [
+        media.width && media.height ? media.width + ' × ' + media.height : '',
+        formatMediaBytes(media.size),
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      text.append(name, detail);
+      const action = document.createElement('b');
+      action.textContent = card.dataset.selected ? 'Seleccionada' : 'Usar imagen';
+      card.append(image, text, action);
+      card.addEventListener('click', () => chooseLibraryMedia(media));
+      mediaLibraryGrid.appendChild(card);
+    });
+  }
+  async function loadMediaLibrary(force = false) {
+    if (mediaLibrary.length && !force) {
+      renderMediaLibrary();
+      return;
+    }
+    mediaLibraryRefresh.disabled = true;
+    mediaLibraryStatus.dataset.kind = 'loading';
+    mediaLibraryStatus.textContent = 'Cargando biblioteca…';
+    mediaLibraryGrid.innerHTML = '';
+    try {
+      const result = await api('/.netlify/functions/manage-media');
+      mediaLibrary = result.media || [];
+      renderMediaLibrary();
+    } catch (error) {
+      mediaLibraryStatus.dataset.kind = 'error';
+      mediaLibraryStatus.textContent = error.message;
+    } finally {
+      mediaLibraryRefresh.disabled = false;
+    }
+  }
+  function openMediaPicker(target, trigger) {
+    mediaPickerTarget = target;
+    mediaPickerLastFocus = trigger || document.activeElement;
+    mediaLibrarySearch.value = '';
+    mediaLibraryDialog.classList.remove('hidden');
+    document.body.classList.add('cms-modal-open');
+    loadMediaLibrary().then(() => mediaLibrarySearch.focus());
+  }
+  function closeMediaPicker() {
+    mediaLibraryDialog.classList.add('hidden');
+    document.body.classList.remove('cms-modal-open');
+    mediaPickerTarget = null;
+    if (mediaPickerLastFocus?.focus) mediaPickerLastFocus.focus();
+    mediaPickerLastFocus = null;
+  }
+  mediaLibrarySearch.addEventListener('input', renderMediaLibrary);
+  mediaLibraryRefresh.addEventListener('click', () => loadMediaLibrary(true));
+  document
+    .querySelectorAll('[data-close-media-picker]')
+    .forEach((button) => button.addEventListener('click', closeMediaPicker));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !mediaLibraryDialog.classList.contains('hidden')) {
+      closeMediaPicker();
+    }
+  });
   function setStatus(message, error, allowHtml = false) {
     if (allowHtml) statusNode.innerHTML = message;
     else statusNode.textContent = message;
@@ -674,11 +878,32 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         empty.textContent = '— Sin seleccionar —';
         input.appendChild(empty);
       }
-      references[source].forEach((item) => {
+      const currentSimposio =
+        fieldsNode.querySelector('[data-key="simposio"]')?.value ||
+        current?.data?.simposio ||
+        defaults.simposio;
+      const sourceItems =
+        key === 'page_id'
+          ? references[source].filter(
+              (item) =>
+                isPublishedReference(item) &&
+                String(item.data.simposio || defaults.simposio) === String(currentSimposio)
+            )
+          : references[source];
+      sourceItems.forEach((item) => {
         if (current && item.path === current.path) return;
         const option = document.createElement('option');
-        option.value = item.data.slug || String(item.data.year || item.data.title || '');
-        option.textContent = item.data.title + (item.data.year ? ' · ' + item.data.year : '');
+        option.value =
+          key === 'page_id'
+            ? item.data.id
+            : item.data.slug || String(item.data.year || item.data.title || '');
+        option.textContent =
+          item.data.title +
+          (key === 'page_id' && item.data.slug
+            ? ' · /' + item.data.slug
+            : item.data.year
+              ? ' · ' + item.data.year
+              : '');
         const selected = multiple
           ? Array.isArray(value) && value.includes(option.value)
           : value === option.value;
@@ -700,9 +925,46 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
             ? JSON.stringify(value || [], null, 2)
             : (value ?? '');
     wrapper.appendChild(input);
+    if (key === 'page_id') {
+      const help = document.createElement('p');
+      help.className = 'cms-field-help';
+      help.textContent =
+        'Opcional. Al publicar, la entrada aparecerá también al final de la página seleccionada. Solo se muestran páginas ya publicadas de esta edición.';
+      wrapper.appendChild(help);
+    }
     if (['image', 'poster', 'instituciones_image'].includes(key)) {
+      wrapper.className = (wrapper.className + ' cms-image-field').trim();
+      input.autocomplete = 'off';
+      const help = document.createElement('p');
+      help.className = 'cms-image-help';
+      help.textContent =
+        'Elige una imagen existente, sube una nueva o conserva una URL compatible.';
+
+      const selectedMedia = document.createElement('div');
+      selectedMedia.className = 'cms-selected-media hidden';
+
+      const mediaActions = document.createElement('div');
+      mediaActions.className = 'cms-image-actions';
+      const libraryButton = document.createElement('button');
+      libraryButton.type = 'button';
+      libraryButton.className = 'cms-image-library-button';
+      libraryButton.textContent = '▧ Elegir de la biblioteca';
+
+      const uploadToggle = document.createElement('button');
+      uploadToggle.type = 'button';
+      uploadToggle.className = 'cms-image-upload-button';
+      uploadToggle.textContent = '↑ Subir nueva';
+      mediaActions.append(libraryButton, uploadToggle);
+
+      const uploadPanel = document.createElement('div');
+      uploadPanel.className = 'cms-image-upload-panel hidden';
+      const uploadTitle = document.createElement('strong');
+      uploadTitle.textContent = 'Nueva imagen';
+      const uploadHelp = document.createElement('p');
+      uploadHelp.textContent = 'JPEG, PNG o WebP. Máximo 2 MiB.';
+
       const mediaMetadata = document.createElement('div');
-      mediaMetadata.className = 'mt-2 grid gap-2 rounded-lg border border-gray-200 p-3 text-xs';
+      mediaMetadata.className = 'cms-image-metadata';
 
       const decorativeLabel = document.createElement('label');
       decorativeLabel.className = 'flex items-center gap-2';
@@ -729,18 +991,47 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       const picker = document.createElement('input');
       picker.type = 'file';
       picker.accept = 'image/jpeg,image/png,image/webp';
-      picker.className = 'mt-2 block w-full text-xs';
+      picker.className = 'cms-image-file';
+      const uploadStatus = document.createElement('p');
+      uploadStatus.className = 'cms-image-upload-status';
+      uploadStatus.setAttribute('aria-live', 'polite');
+      const pickerLabel = document.createElement('label');
+      pickerLabel.className = 'cms-image-file-label';
+      pickerLabel.append(document.createTextNode('Seleccionar archivo'), picker);
+
+      libraryButton.onclick = () =>
+        openMediaPicker({ input, selectedNode: selectedMedia, uploadPanel }, libraryButton);
+      uploadToggle.onclick = () => {
+        uploadPanel.classList.toggle('hidden');
+        if (!uploadPanel.classList.contains('hidden')) mediaAlt.focus();
+      };
+      input.addEventListener('input', () => {
+        const knownMedia = mediaLibrary.find((media) => mediaValue(media) === input.value);
+        renderSelectedMedia(input, selectedMedia, knownMedia || null);
+      });
       picker.onchange = async () => {
         const file = picker.files?.[0];
         if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          uploadStatus.dataset.kind = 'error';
+          uploadStatus.textContent = 'La imagen supera el máximo de 2 MiB.';
+          return;
+        }
         if (!decorative.checked && !mediaAlt.value.trim()) {
-          return setStatus('Añade texto alternativo o marca la imagen como decorativa.', true);
+          uploadStatus.dataset.kind = 'error';
+          uploadStatus.textContent = 'Añade texto alternativo o marca la imagen como decorativa.';
+          return;
         }
         if (!mediaCredit.value.trim() || !mediaLicense.value.trim()) {
-          return setStatus('El crédito y la licencia de la imagen son obligatorios.', true);
+          uploadStatus.dataset.kind = 'error';
+          uploadStatus.textContent = 'El crédito y la licencia son obligatorios.';
+          return;
         }
-        setStatus('Subiendo imagen…');
+        uploadStatus.dataset.kind = 'loading';
+        uploadStatus.textContent = 'Subiendo ' + file.name + '…';
+        picker.disabled = true;
         const localPreviewUrl = URL.createObjectURL(file);
+        const previousPreview = input.dataset.previewSrc;
         input.dataset.previewSrc = localPreviewUrl;
         updatePreview();
         const reader = new FileReader();
@@ -759,19 +1050,78 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
                 decorative: decorative.checked,
               }),
             });
-            input.value = result.image.path;
-            input.dataset.previewSrc = result.image.previewUrl || localPreviewUrl;
-            updatePreview();
-            setStatus('Imagen subida: ' + result.image.path);
+            const uploaded = result.image;
+            input.value = mediaValue(uploaded);
+            input.dataset.previewSrc = uploaded.previewUrl || mediaValue(uploaded);
+            mediaLibrary = [uploaded, ...mediaLibrary.filter((media) => media.id !== uploaded.id)];
+            renderSelectedMedia(input, selectedMedia, uploaded);
+            uploadStatus.dataset.kind = 'success';
+            uploadStatus.textContent = result.image.existing
+              ? 'La imagen ya existía y fue seleccionada.'
+              : 'Imagen subida y seleccionada.';
+            uploadPanel.classList.add('hidden');
+            picker.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
           } catch (error) {
-            setStatus(error.message, true);
+            if (previousPreview) input.dataset.previewSrc = previousPreview;
+            else delete input.dataset.previewSrc;
+            updatePreview();
+            uploadStatus.dataset.kind = 'error';
+            uploadStatus.textContent = error.message;
+          } finally {
+            picker.disabled = false;
+            URL.revokeObjectURL(localPreviewUrl);
           }
+        };
+        reader.onerror = () => {
+          if (previousPreview) input.dataset.previewSrc = previousPreview;
+          else delete input.dataset.previewSrc;
+          picker.disabled = false;
+          URL.revokeObjectURL(localPreviewUrl);
+          uploadStatus.dataset.kind = 'error';
+          uploadStatus.textContent = 'No se pudo leer el archivo seleccionado.';
+          updatePreview();
         };
         reader.readAsDataURL(file);
       };
-      wrapper.append(mediaMetadata, picker);
+      uploadPanel.append(uploadTitle, uploadHelp, mediaMetadata, pickerLabel, uploadStatus);
+      wrapper.append(help, selectedMedia, mediaActions, uploadPanel);
+      renderSelectedMedia(input, selectedMedia);
     }
     return wrapper;
+  }
+
+  function isPublishedReference(item) {
+    return Boolean(
+      item?.workflow?.published_sha ||
+      item?.data?.workflow_state === 'published' ||
+      item?.data?.draft === false
+    );
+  }
+
+  function syncEntryPageOptions() {
+    if (collection.value !== 'entradas') return;
+    const simposioInput = fieldsNode.querySelector('[data-key="simposio"]');
+    const pageInput = fieldsNode.querySelector('[data-key="page_id"]');
+    if (!simposioInput || !pageInput) return;
+    const selected = pageInput.value;
+    const pages = references.paginas.filter(
+      (item) =>
+        isPublishedReference(item) &&
+        String(item.data.simposio || defaults.simposio) === String(simposioInput.value)
+    );
+    pageInput.innerHTML = '<option value="">— Sin página asignada —</option>';
+    pages.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.data.id;
+      option.textContent = item.data.title + (item.data.slug ? ' · /' + item.data.slug : '');
+      option.selected = item.data.id === selected;
+      pageInput.appendChild(option);
+    });
+    if (selected && pageInput.value !== selected) {
+      pageInput.value = '';
+      pageInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   }
   function shortSha(value) {
     return value ? String(value).slice(0, 12) : '—';
@@ -843,6 +1193,12 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     schemas[collection.value].forEach((def) =>
       fieldsNode.appendChild(fieldElement(def, data[def[0]]))
     );
+    if (collection.value === 'entradas') {
+      fieldsNode
+        .querySelector('[data-key="simposio"]')
+        ?.addEventListener('change', syncEntryPageOptions);
+      syncEntryPageOptions();
+    }
     document.getElementById('body').value = item ? item.body : '';
     document.getElementById('delete-button').classList.toggle('hidden', !item);
     document.getElementById('history-button').classList.toggle('hidden', !item);
@@ -859,6 +1215,12 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
           if (input.type === 'checkbox') input.checked = Boolean(value);
           else input.value = Array.isArray(value) ? value.join(', ') : value;
         });
+        if (collection.value === 'entradas') {
+          const savedPageId = String(saved.data?.page_id || '');
+          syncEntryPageOptions();
+          const pageInput = fieldsNode.querySelector('[data-key="page_id"]');
+          if (pageInput) pageInput.value = savedPageId;
+        }
         document.getElementById('body').value = saved.body || '';
         updatePreview();
       } catch {}
@@ -912,18 +1274,17 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     return data;
   }
   function markdown(value) {
-    return esc(value)
-      .replace(/^### (.+)$/gm, '<h3 class="mt-5 text-xl font-bold">$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2 class="mt-6 text-2xl font-bold">$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1 class="mt-6 text-3xl font-bold">$1</h1>')
-      .replace(
-        /^&gt; (.+)$/gm,
-        '<blockquote class="my-4 border-l-4 border-ugr-green pl-4 italic">$1</blockquote>'
-      )
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\n\n/g, '</p><p class="mt-4">')
-      .replace(/\n/g, '<br>');
+    const rendered = marked.parse(String(value || ''), {
+      async: false,
+      breaks: true,
+      gfm: true,
+      pedantic: false,
+    });
+    return DOMPurify.sanitize(String(rendered), {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: ['style', 'form', 'iframe', 'object', 'embed'],
+      FORBID_ATTR: ['style'],
+    });
   }
   function updatePreview() {
     if (editor.classList.contains('hidden')) return;
@@ -985,9 +1346,15 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
           '</div>'
         : '') +
       (badges ? '<div class="mt-4 flex flex-wrap gap-2">' + badges + '</div>' : '') +
-      '<div class="prose mt-6 text-gray-800"><p>' +
+      '<div class="cms-markdown-preview">' +
       markdown(body || 'El contenido escrito en Markdown aparecerá aquí en tiempo real.') +
-      '</p></div></div>';
+      '</div></div>';
+
+    previewNode.querySelectorAll('.cms-markdown-preview a').forEach((link) => {
+      link.setAttribute('rel', 'noopener noreferrer');
+      if (/^https?:\/\//i.test(link.getAttribute('href') || ''))
+        link.setAttribute('target', '_blank');
+    });
   }
   async function persistDraft(autosave = false) {
     if (saveInFlight || (autosave && !current)) return false;
@@ -1516,6 +1883,405 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   #live-preview {
     color: #333;
   }
+  .cms-markdown-preview {
+    margin-top: 24px;
+    color: #344054;
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  .cms-markdown-preview > :first-child {
+    margin-top: 0;
+  }
+  .cms-markdown-preview > :last-child {
+    margin-bottom: 0;
+  }
+  .cms-markdown-preview h1,
+  .cms-markdown-preview h2,
+  .cms-markdown-preview h3,
+  .cms-markdown-preview h4,
+  .cms-markdown-preview h5,
+  .cms-markdown-preview h6 {
+    margin: 1.35em 0 0.55em;
+    color: #182230;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+  .cms-markdown-preview h1 {
+    font-size: 2em;
+  }
+  .cms-markdown-preview h2 {
+    border-bottom: 1px solid #e4e7ec;
+    padding-bottom: 0.3em;
+    font-size: 1.6em;
+  }
+  .cms-markdown-preview h3 {
+    font-size: 1.35em;
+  }
+  .cms-markdown-preview h4 {
+    font-size: 1.15em;
+  }
+  .cms-markdown-preview h5,
+  .cms-markdown-preview h6 {
+    font-size: 1em;
+  }
+  .cms-markdown-preview p,
+  .cms-markdown-preview ul,
+  .cms-markdown-preview ol,
+  .cms-markdown-preview blockquote,
+  .cms-markdown-preview pre,
+  .cms-markdown-preview table,
+  .cms-markdown-preview hr {
+    margin: 0 0 1em;
+  }
+  .cms-markdown-preview ul,
+  .cms-markdown-preview ol {
+    padding-left: 1.6em;
+  }
+  .cms-markdown-preview ul {
+    list-style: disc;
+  }
+  .cms-markdown-preview ol {
+    list-style: decimal;
+  }
+  .cms-markdown-preview li + li {
+    margin-top: 0.25em;
+  }
+  .cms-markdown-preview li > ul,
+  .cms-markdown-preview li > ol {
+    margin: 0.3em 0 0;
+  }
+  .cms-markdown-preview blockquote {
+    border-left: 4px solid var(--cms-blue);
+    background: #f8fafc;
+    color: #475467;
+    padding: 12px 16px;
+  }
+  .cms-markdown-preview blockquote > :last-child {
+    margin-bottom: 0;
+  }
+  .cms-markdown-preview code {
+    border-radius: 5px;
+    background: #eef2f6;
+    color: #9f1239;
+    padding: 0.12em 0.35em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  .cms-markdown-preview pre {
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: 9px;
+    background: #172033;
+    color: #f8fafc;
+    padding: 14px 16px;
+    line-height: 1.55;
+  }
+  .cms-markdown-preview pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: 0.86em;
+  }
+  .cms-markdown-preview a {
+    color: #176da8;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .cms-markdown-preview img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1em auto;
+    border-radius: 9px;
+  }
+  .cms-markdown-preview table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  .cms-markdown-preview th,
+  .cms-markdown-preview td {
+    border: 1px solid #d0d5dd;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  .cms-markdown-preview th {
+    background: #f2f4f7;
+  }
+  .cms-markdown-preview hr {
+    border: 0;
+    border-top: 1px solid #d0d5dd;
+  }
+  .cms-markdown-preview del {
+    color: #667085;
+  }
+  .cms-markdown-preview .contains-task-list {
+    padding-left: 0;
+    list-style: none;
+  }
+  .cms-markdown-preview .task-list-item {
+    list-style: none;
+  }
+  .cms-markdown-preview .task-list-item input {
+    margin-right: 7px;
+  }
+  body.cms-modal-open {
+    overflow: hidden;
+  }
+  .cms-image-field {
+    grid-column: 1 / -1;
+  }
+  .cms-image-help {
+    margin: 6px 0 0;
+    color: var(--cms-muted);
+    font-size: 12px;
+  }
+  .cms-field-help {
+    margin: 6px 0 0;
+    color: var(--cms-muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .cms-image-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .cms-image-actions button,
+  .cms-selected-media button {
+    border: 1px solid var(--cms-border);
+    border-radius: 8px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .cms-image-actions .cms-image-library-button {
+    border-color: var(--cms-blue);
+    color: var(--cms-blue);
+    font-weight: 700;
+  }
+  .cms-selected-media {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    overflow: hidden;
+    border: 1px solid var(--cms-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--cms-blue) 5%, var(--cms-panel));
+    padding: 8px;
+  }
+  .cms-selected-media img {
+    width: 84px;
+    height: 58px;
+    border-radius: 7px;
+    object-fit: cover;
+    background: #e9edf2;
+  }
+  .cms-selected-media strong,
+  .cms-selected-media span {
+    display: block;
+    min-width: 0;
+  }
+  .cms-selected-media strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .cms-selected-media span {
+    margin-top: 3px;
+    overflow: hidden;
+    color: var(--cms-muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-image-upload-panel {
+    margin-top: 10px;
+    border: 1px solid var(--cms-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--cms-blue) 4%, var(--cms-panel));
+    padding: 13px;
+  }
+  .cms-image-upload-panel > p {
+    margin: 2px 0 10px;
+    color: var(--cms-muted);
+    font-size: 12px;
+  }
+  .cms-image-metadata {
+    display: grid;
+    gap: 8px;
+  }
+  .cms-image-file-label {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .cms-image-file {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .cms-image-upload-status {
+    min-height: 18px;
+    margin: 8px 0 0 !important;
+  }
+  .cms-image-upload-status[data-kind='error'] {
+    color: #b42318;
+  }
+  .cms-image-upload-status[data-kind='success'] {
+    color: #18794e;
+  }
+  .cms-media-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .cms-media-picker.hidden {
+    display: none;
+  }
+  .cms-media-picker-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: #101828b8;
+    cursor: default;
+  }
+  .cms-media-picker-panel {
+    position: relative;
+    width: min(980px, 100%);
+    max-height: min(820px, calc(100vh - 48px));
+    overflow: auto;
+    border: 1px solid var(--cms-border);
+    border-radius: 18px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    box-shadow: 0 28px 80px #10182855;
+    padding: 20px;
+  }
+  .cms-media-picker-header,
+  .cms-media-picker-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .cms-media-picker-header p {
+    margin: 0 0 3px;
+    color: var(--cms-blue);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .cms-media-picker-header h2 {
+    margin: 0;
+    font-size: 24px;
+  }
+  .cms-media-picker-close {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--cms-border);
+    border-radius: 50%;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .cms-media-picker-tools {
+    margin-top: 18px;
+  }
+  .cms-media-picker-tools label {
+    flex: 1;
+  }
+  .cms-media-picker-tools input {
+    width: 100%;
+    border: 1px solid var(--cms-border);
+    border-radius: 9px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    padding: 10px 12px;
+  }
+  .cms-media-picker-tools button {
+    border: 1px solid var(--cms-border);
+    border-radius: 9px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  .cms-media-picker-status {
+    margin: 14px 0;
+    color: var(--cms-muted);
+    font-size: 13px;
+  }
+  .cms-media-picker-status[data-kind='error'] {
+    color: #b42318;
+  }
+  .cms-media-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .cms-media-picker-card {
+    overflow: hidden;
+    border: 1px solid var(--cms-border);
+    border-radius: 12px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .cms-media-picker-card:hover,
+  .cms-media-picker-card:focus-visible,
+  .cms-media-picker-card[data-selected='true'] {
+    border-color: var(--cms-blue);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--cms-blue) 18%, transparent);
+  }
+  .cms-media-picker-card img {
+    display: block;
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    background: #e9edf2;
+  }
+  .cms-media-picker-card > span {
+    display: block;
+    padding: 10px 10px 4px;
+  }
+  .cms-media-picker-card strong,
+  .cms-media-picker-card small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-media-picker-card small {
+    margin-top: 4px;
+    color: var(--cms-muted);
+  }
+  .cms-media-picker-card > b {
+    display: block;
+    padding: 4px 10px 10px;
+    color: var(--cms-blue);
+    font-size: 12px;
+  }
   .cms-content .hidden {
     display: none !important;
   }
@@ -1540,6 +2306,25 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     }
     .cms-cards {
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+    .cms-media-picker {
+      padding: 10px;
+    }
+    .cms-media-picker-panel {
+      max-height: calc(100vh - 20px);
+      padding: 15px;
+    }
+    .cms-media-picker-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cms-selected-media {
+      grid-template-columns: 64px minmax(0, 1fr);
+    }
+    .cms-selected-media img {
+      width: 64px;
+    }
+    .cms-selected-media button {
+      grid-column: 1 / -1;
     }
   }
 </style>

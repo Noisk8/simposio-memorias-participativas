@@ -20,6 +20,11 @@ export const editorialIdentityFields = {
   id: contentIdSchema,
 };
 
+export const optionalContentReference = z
+  .union([z.literal(''), contentIdSchema])
+  .optional()
+  .default('');
+
 export const editorialMetadataFields = {
   owner_id: z.uuid().optional(),
   workflow_state: z
