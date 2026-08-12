@@ -235,6 +235,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   // @ts-nocheck
   import DOMPurify from 'dompurify';
   import { marked } from 'marked';
+  import { hasPublishedVersion, saveActionLabel } from '../../../shared/content/editor-action';
 
   const schemas = {
     entradas: [
@@ -1128,6 +1129,10 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   }
   function renderWorkflow(record) {
     const versionNode = document.getElementById('version-info');
+    const saveButton = document.getElementById('save-draft-button');
+    saveButton.textContent = saveActionLabel(
+      current ? { data: current.data, workflow: record || current.workflow } : null
+    );
     if (!current || !record) {
       versionNode.classList.add('hidden');
       document.getElementById('publish-button').classList.add('hidden');
@@ -1229,6 +1234,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     document
       .getElementById('save-draft-button')
       .classList.toggle('hidden', !can(item ? 'update' : 'create'));
+    document.getElementById('save-draft-button').textContent = saveActionLabel(item);
     document.getElementById('publish-button').classList.add('hidden');
     renderWorkflow(item?.workflow || null);
     if (item) {
@@ -1396,7 +1402,13 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         ? 'Cambios sin guardar'
         : 'Guardado';
       renderWorkflow(current.workflow);
-      if (!autosave) setStatus('Borrador guardado en Supabase.');
+      if (!autosave) {
+        setStatus(
+          hasPublishedVersion(current)
+            ? 'Cambios guardados en Supabase.'
+            : 'Borrador guardado en Supabase.'
+        );
+      }
       return true;
     } catch (error) {
       setStatus(error.message, true);
