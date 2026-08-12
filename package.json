@@ -9,7 +9,7 @@
     "sync": "node scripts/sync-collections.mjs",
     "dev": "astro dev",
     "dev:netlify": "netlify dev",
-    "build": "node scripts/sync-collections.mjs --check && node scripts/migrate-content-uuids.mjs --check && node scripts/lint-content-relations.mjs && astro build && npx pagefind --site dist",
+    "build": "node scripts/sync-collections.mjs --check && node scripts/migrate-content-uuids.mjs --check && node scripts/lint-content-relations.mjs && astro sync --force && astro build && npx pagefind --site dist",
     "preview": "astro preview",
     "astro": "astro",
     "check": "node scripts/lint-taxonomies.mjs && node scripts/lint-content-relations.mjs && node scripts/migrate-content-uuids.mjs --check && astro check",
