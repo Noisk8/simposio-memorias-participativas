@@ -16,7 +16,7 @@ test('entradas: el listado muestra artículos y el detalle navega', async ({ pag
   await expect(firstLink).toBeVisible();
   await firstLink.click();
   await expect(page).toHaveURL(/\/entradas\/.+/);
-  await expect(page.locator('main h1')).toBeVisible();
+  await expect(page.locator('main > section').first().locator('h1')).toBeVisible();
 });
 
 test('museo-memorias: el archivo lista memorias y el detalle navega', async ({ page }) => {
