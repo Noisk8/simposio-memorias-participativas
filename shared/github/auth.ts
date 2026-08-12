@@ -23,11 +23,34 @@ export function normalizeGitHubPrivateKey(value: unknown): string {
   return normalized.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
 }
 
+export function githubPrivateKeyFromEnvironment(
+  pemValue: unknown,
+  base64Value: unknown
+): string {
+  const encoded = String(base64Value || '')
+    .trim()
+    .replace(/^(["'])|(["'])$/g, '');
+  if (!encoded) return normalizeGitHubPrivateKey(pemValue);
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length % 4 !== 0) {
+    throw new ConfigurationError('GITHUB_APP_PRIVATE_KEY_BASE64 no contiene Base64 válido.');
+  }
+  try {
+    const decoded = normalizeGitHubPrivateKey(Buffer.from(encoded, 'base64').toString('utf8'));
+    if (!/^-----BEGIN (?:RSA )?PRIVATE KEY-----/.test(decoded)) throw new Error('PEM inválido');
+    return decoded;
+  } catch {
+    throw new ConfigurationError('GITHUB_APP_PRIVATE_KEY_BASE64 no contiene Base64 válido.');
+  }
+}
+
 function appEnvironment() {
   const values = {
     appId: String(process.env.GITHUB_APP_ID || '').trim(),
     installationId: String(process.env.GITHUB_APP_INSTALLATION_ID || '').trim(),
-    privateKey: normalizeGitHubPrivateKey(process.env.GITHUB_APP_PRIVATE_KEY),
+    privateKey: githubPrivateKeyFromEnvironment(
+      process.env.GITHUB_APP_PRIVATE_KEY,
+      process.env.GITHUB_APP_PRIVATE_KEY_BASE64
+    ),
   };
   const configured = Object.values(values).filter(Boolean).length;
   if (configured > 0 && configured < 3) {

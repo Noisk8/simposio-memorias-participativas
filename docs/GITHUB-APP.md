@@ -29,11 +29,12 @@ No hacen falta permisos de Issues, Members, Administration, Secrets ni Workflows
    GITHUB_APP_ID
    GITHUB_APP_INSTALLATION_ID
    GITHUB_APP_PRIVATE_KEY
+   GITHUB_APP_PRIVATE_KEY_BASE64 (alternativa recomendada en Netlify)
    GITHUB_REPO
    GITHUB_BRANCH
    ```
 
-   `GITHUB_APP_PRIVATE_KEY` puede ser el PEM multilínea completo. También se aceptan saltos de línea representados por `\n`.
+   `GITHUB_APP_PRIVATE_KEY` puede ser el PEM multilínea completo. También se aceptan saltos de línea representados por `\n`. En Netlify se recomienda `GITHUB_APP_PRIVATE_KEY_BASE64`: codifica el archivo PEM completo en Base64 y pega el resultado sin comillas; esta variable tiene prioridad si ambas existen.
 
 7. Despliega y abre una colección desde el panel con una sesión autorizada. El log estructurado debe indicar `github.auth.mode` con `mechanism: github_app`; nunca imprime credenciales. Aprueba un documento de prueba y solicita publicar: debe aparecer una rama `cms/<uuid>/<timestamp>` y un PR.
 8. Protege `main`: exige Pull Request, los checks de CI necesarios y al menos una revisión según la política editorial; bloquea force pushes. La fusión es manual desde GitHub.

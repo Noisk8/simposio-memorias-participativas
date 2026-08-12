@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { normalizeGitHubPrivateKey } from '../shared/github/auth.ts';
+import {
+  githubPrivateKeyFromEnvironment,
+  normalizeGitHubPrivateKey,
+} from '../shared/github/auth.ts';
 
 test('normaliza PEM multilinea, escapado, entre comillas o como asignación', () => {
   const pem = '-----BEGIN PRIVATE KEY-----\nABC123\n-----END PRIVATE KEY-----';
@@ -10,6 +13,13 @@ test('normaliza PEM multilinea, escapado, entre comillas o como asignación', ()
   assert.equal(normalizeGitHubPrivateKey(`"${pem}"`), pem);
   assert.equal(normalizeGitHubPrivateKey(`'${pem.replaceAll('\n', '\\n')}'`), pem);
   assert.equal(normalizeGitHubPrivateKey(`GITHUB_APP_PRIVATE_KEY="${pem}"`), pem);
+});
+
+test('acepta la private key en Base64 sin depender de saltos de línea', () => {
+  const pem = '-----BEGIN PRIVATE KEY-----\nABC123\n-----END PRIVATE KEY-----';
+  const encoded = Buffer.from(pem, 'utf8').toString('base64');
+  assert.equal(githubPrivateKeyFromEnvironment('', encoded), pem);
+  assert.equal(githubPrivateKeyFromEnvironment('PEM INCORRECTO', `"${encoded}"`), pem);
 });
 
 test('todas las llamadas GitHub del backend pasan por la capa compartida', () => {
