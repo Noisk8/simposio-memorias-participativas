@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { editorialIdentityFields } from './base.ts';
 
 export const categoriaSchema = z.object({
+  ...editorialIdentityFields,
   title: z.string(),
   slug: z.string().optional().default(''),
   description: z.string().optional().default(''),
@@ -26,6 +28,7 @@ const menuItemSchema = z.object({
 });
 
 export const menuSchema = z.object({
+  ...editorialIdentityFields,
   title: z.string(),
   slug: z.string(),
   items: z.array(menuItemSchema).optional().default([]),

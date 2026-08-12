@@ -4,6 +4,7 @@ export type ErrorCode =
   | 'VALIDATION_ERROR'
   | 'CONFLICT'
   | 'RATE_LIMIT_EXCEEDED'
+  | 'RATE_LIMIT_UNAVAILABLE'
   | 'GITHUB_ERROR'
   | 'STORAGE_ERROR'
   | 'BUILD_ERROR'
@@ -60,6 +61,16 @@ export class ConflictError extends AppError {
 export class RateLimitError extends AppError {
   constructor(retryAfterSeconds: number) {
     super('RATE_LIMIT_EXCEEDED', 'Se superó el límite permitido.', 429, { retryAfterSeconds });
+  }
+}
+
+export class RateLimitUnavailableError extends AppError {
+  constructor() {
+    super(
+      'RATE_LIMIT_UNAVAILABLE',
+      'No se pudo verificar temporalmente el límite de solicitudes.',
+      503
+    );
   }
 }
 

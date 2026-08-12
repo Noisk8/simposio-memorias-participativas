@@ -35,9 +35,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
           </a>
         </div>
         <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          La edición general de Entradas, Páginas, Taxonomías y Simposios todavía debe migrarse al
-          panel propio. El antiguo editor Decap fue desactivado para eliminar el segundo sistema de
-          login.
+          El panel propio administra entradas, memorias, páginas, simposios y taxonomías. El CRUD de
+          menús y colecciones genéricas está planeado.
         </div>
 
         <section id="nueva" class="border-t border-gray-200 pt-8">
@@ -187,7 +186,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     };
 
     try {
-      var response = await fetch('/.netlify/functions/create-coleccion', {
+      var response = await fetch('/.netlify/functions/manage-collections', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

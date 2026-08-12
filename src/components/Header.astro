@@ -7,45 +7,45 @@ import DynamicMenu from './DynamicMenu.astro';
   <div class="flex items-stretch">
     <div class="flex-1 max-w-7xl mx-auto px-4 md:px-8 py-3">
       <div class="header-brand-grid">
-      <!-- Logo UGR -->
-      <a
-        href="https://www.ugr.es"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex-shrink-0 hover:opacity-90 transition-opacity"
-      >
-        <img
-          src="/images/logologo.png"
-          alt="Universidad de Granada"
-          loading="eager"
-          decoding="async"
-          class="!h-8 md:!h-10 lg:!h-12 w-auto !max-w-[100px] md:!max-w-[130px] lg:!max-w-[160px]"
-        />
-      </a>
-
-      <a href="/" class="header-title-link">
-        <h1
-          class="header-title text-base md:text-lg lg:text-xl font-bold text-ugr-green leading-tight font-[family-name:var(--font-heading)] tracking-tight"
+        <!-- Logo UGR -->
+        <a
+          href="https://www.ugr.es"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex-shrink-0 hover:opacity-90 transition-opacity"
         >
-          Red Internacional de Memorias Participativas
-        </h1>
-      </a>
+          <img
+            src="/images/logologo.png"
+            alt="Universidad de Granada"
+            loading="eager"
+            decoding="async"
+            class="!h-8 md:!h-10 lg:!h-12 w-auto !max-w-[100px] md:!max-w-[130px] lg:!max-w-[160px]"
+          />
+        </a>
 
-      <!-- Logo EUROM -->
-      <a
-        href="https://eurom.ub.edu"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex-shrink-0 hover:opacity-90 transition-opacity"
-      >
-        <img
-          src="/images/logo-eurom-real.jpg"
-          alt="EUROM - European Observatory on Memories"
-          loading="eager"
-          decoding="async"
-          class="!h-8 md:!h-10 lg:!h-12 w-auto !max-w-[100px] md:!max-w-[130px] lg:!max-w-[160px]"
-        />
-      </a>
+        <a href="/" class="header-title-link">
+          <h1
+            class="header-title text-base md:text-lg lg:text-xl font-bold text-ugr-green leading-tight font-[family-name:var(--font-heading)] tracking-tight"
+          >
+            Red Internacional de Memorias Participativas
+          </h1>
+        </a>
+
+        <!-- Logo EUROM -->
+        <a
+          href="https://eurom.ub.edu"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex-shrink-0 hover:opacity-90 transition-opacity"
+        >
+          <img
+            src="/images/logo-eurom-real.jpg"
+            alt="EUROM - European Observatory on Memories"
+            loading="eager"
+            decoding="async"
+            class="!h-8 md:!h-10 lg:!h-12 w-auto !max-w-[100px] md:!max-w-[130px] lg:!max-w-[160px]"
+          />
+        </a>
       </div>
     </div>
   </div>
@@ -89,7 +89,9 @@ import DynamicMenu from './DynamicMenu.astro';
       </nav>
 
       <!-- Usuario -->
-      <div class="flex items-center gap-2 flex-shrink-0 order-2 md:order-none md:ml-auto md:justify-end">
+      <div
+        class="flex items-center gap-2 flex-shrink-0 order-2 md:order-none md:ml-auto md:justify-end"
+      >
         <!-- Estado: autenticado — dropdown hover -->
         <div id="user-info" class="hidden relative group">
           <!-- Trigger: avatar + nombre -->
@@ -273,8 +275,8 @@ import DynamicMenu from './DynamicMenu.astro';
     if (!(target instanceof HTMLElement)) return false;
     return Boolean(
       target.isContentEditable ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
-        target.closest('[contenteditable="true"]')
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+      target.closest('[contenteditable="true"]')
     );
   }
 

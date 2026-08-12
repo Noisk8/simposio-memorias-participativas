@@ -1,17 +1,19 @@
 import { errorResponse, getCorsHeaders } from '../security';
-import { requirePermission } from '../../shared/auth/require-permission.ts';
+import { authorizeRequest } from '../../shared/security/rate-limit.ts';
 import { getGitHubConfiguration } from '../../shared/github/config.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { AppError, GitHubError } from '../../shared/observability/errors.ts';
 
-export const handler = async (event: any) => {
+export const handler = async (event: any, context?: any) => {
   let requestId = getRequestId(event);
   let headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
   try {
     if (event.httpMethod !== 'GET')
       throw new AppError('METHOD_NOT_ALLOWED', 'Método no permitido.', 405);
-    const auth = await requirePermission(event, 'admin.access');
+    const auth = await authorizeRequest(event, 'admin.access', 'read', {
+      netlifyContext: context,
+    });
     requestId = auth.requestId;
     headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
     const config = getGitHubConfiguration();

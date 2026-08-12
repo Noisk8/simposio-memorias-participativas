@@ -1,4 +1,5 @@
 ---
+id: 'a0e595fa-7a10-4ce1-976b-e5327b6c6c4d'
 draft: false
 simposio: '2026'
 number: 6

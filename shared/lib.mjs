@@ -35,7 +35,10 @@ export function parseFrontmatter(content) {
         data[currentKey] = true;
       } else if (val === 'false') {
         data[currentKey] = false;
-      } else if ((val.startsWith('[') && val.endsWith(']')) || (val.startsWith('{') && val.endsWith('}'))) {
+      } else if (
+        (val.startsWith('[') && val.endsWith(']')) ||
+        (val.startsWith('{') && val.endsWith('}'))
+      ) {
         try {
           data[currentKey] = JSON.parse(val);
         } catch {
@@ -57,27 +60,4 @@ export function isValidPublicImagePath(value) {
   return /^\/images\/[a-z0-9][a-z0-9_./-]*\.(?:avif|gif|jpe?g|png|webp)$/i.test(
     String(value ?? '').trim()
   );
-}
-
-export function createRateLimiter({ max = 20, windowMs = 60000 } = {}) {
-  const buckets = new Map();
-
-  function prune(now) {
-    if (buckets.size < 10000) return;
-    for (const [key, bucket] of buckets) {
-      if (bucket.resetAt <= now) buckets.delete(key);
-    }
-  }
-
-  return function check(key, now = Date.now()) {
-    prune(now);
-    const bucket = buckets.get(key);
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + windowMs });
-      return { allowed: true, retryAfterMs: 0 };
-    }
-    bucket.count += 1;
-    if (bucket.count <= max) return { allowed: true, retryAfterMs: 0 };
-    return { allowed: false, retryAfterMs: bucket.resetAt - now };
-  };
 }

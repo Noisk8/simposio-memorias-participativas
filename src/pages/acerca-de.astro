@@ -11,7 +11,8 @@ const organizadores = (organizacion?.data.organizadores || []).map((value) => {
   const [nombre, institucion] = value.split(' | ');
   return { nombre, institucion };
 });
-const institucionesImage = organizacion?.data.instituciones_image || '/images/organizacion-logos.jpg';
+const institucionesImage =
+  organizacion?.data.instituciones_image || '/images/organizacion-logos.jpg';
 ---
 
 <Layout
@@ -165,8 +166,12 @@ const institucionesImage = organizacion?.data.instituciones_image || '/images/or
   <section id="organizacion" class="py-16 bg-white">
     <div class="max-w-6xl mx-auto px-4">
       <div class="max-w-4xl mx-auto text-center mb-12">
-        <p class="text-sm uppercase tracking-[0.18em] font-bold text-ugr-green mb-3">Organización</p>
-        <h2 class="text-3xl md:text-4xl font-bold text-ugr-green-dark font-[family-name:var(--font-heading)] mb-4">
+        <p class="text-sm uppercase tracking-[0.18em] font-bold text-ugr-green mb-3">
+          Organización
+        </p>
+        <h2
+          class="text-3xl md:text-4xl font-bold text-ugr-green-dark font-[family-name:var(--font-heading)] mb-4"
+        >
           Equipo e instituciones
         </h2>
         <p class="text-lg text-ugr-text leading-relaxed">
@@ -177,33 +182,38 @@ const institucionesImage = organizacion?.data.instituciones_image || '/images/or
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {organizacion?.data && organizadores.length > 0 &&
-          organizadores.map((org) => (
-            <article class="card-shadow bg-ugr-cream rounded-xl p-5 border-l-4 border-ugr-green hover:border-ugr-green-light transition-all duration-300">
-              <h3 class="text-lg font-bold text-ugr-green-dark mb-1 font-[family-name:var(--font-heading)]">
-                {org.nombre}
-              </h3>
-              <p class="text-sm text-ugr-text-light">{org.institucion}</p>
-            </article>
-          ))}
+        {
+          organizacion?.data &&
+            organizadores.length > 0 &&
+            organizadores.map((org) => (
+              <article class="card-shadow bg-ugr-cream rounded-xl p-5 border-l-4 border-ugr-green hover:border-ugr-green-light transition-all duration-300">
+                <h3 class="text-lg font-bold text-ugr-green-dark mb-1 font-[family-name:var(--font-heading)]">
+                  {org.nombre}
+                </h3>
+                <p class="text-sm text-ugr-text-light">{org.institucion}</p>
+              </article>
+            ))
+        }
       </div>
 
-      {organizacion?.data.instituciones_image && (
-        <div class="mt-12 text-center">
-          <h3 class="text-2xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
-            Instituciones organizadoras
-          </h3>
-          <div class="card-shadow rounded-xl overflow-hidden inline-block bg-white p-4">
-            <img
-              src={institucionesImage}
-              alt="Instituciones organizadoras"
-              class="w-full max-w-4xl mx-auto"
-              loading="lazy"
-              decoding="async"
-            />
+      {
+        organizacion?.data.instituciones_image && (
+          <div class="mt-12 text-center">
+            <h3 class="text-2xl font-bold mb-6 text-ugr-green-dark font-[family-name:var(--font-heading)]">
+              Instituciones organizadoras
+            </h3>
+            <div class="card-shadow rounded-xl overflow-hidden inline-block bg-white p-4">
+              <img
+                src={institucionesImage}
+                alt="Instituciones organizadoras"
+                class="w-full max-w-4xl mx-auto"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
     </div>
   </section>
 

@@ -1,86 +1,62 @@
 # Fase 1: fundamentos de seguridad y dominio
 
-## Resultado
+> Registro histórico. Esta fase ya fue seguida por `202608080002_editorial_workflow.sql`, `202608110001_canonical_content_uuid.sql` y `202608110002_distributed_rate_limits.sql`. No debe leerse de forma aislada como descripción del estado actual. Véanse [ARQUITECTURA-CMS.md](./ARQUITECTURA-CMS.md), [roles-cms.md](./roles-cms.md) y [FLUJO-EDITORIAL.md](./FLUJO-EDITORIAL.md).
 
-Las cuatro funciones administrativas existentes verifican Supabase Auth y permisos granulares mediante `requirePermission`. Se añadieron errores estructurados, request ID, logs JSON con redacción, auditoría esperada, seis roles normalizados y pruebas de autorización.
+## Resultado de la fase
 
-Esta fase no implementa todavía workflow editorial, UUID, Storage, rate limiting distribuido ni publicación por pull request, tal como exige el alcance del diagnóstico.
+`202608080001_phase1_rbac.sql` introdujo:
 
-## Archivos principales
+- autenticación con Supabase Auth;
+- autorización granular mediante `requirePermission`;
+- roles y permisos normalizados;
+- auditoría, request IDs y errores estructurados;
+- RLS y revocación del acceso directo del cliente;
+- RPC server-side para asignar roles;
+- modelos Zod canónicos compartidos.
 
-- `shared/auth/`: verificación de sesión y `requirePermission`.
-- `shared/observability/`: request ID, errores, logger y auditoría.
-- `shared/supabase/`: cliente administrativo exclusivo de backend.
-- `shared/content-model/`: esquemas Zod canónicos.
-- `netlify/functions/`: migración de las cuatro funciones administrativas.
-- `supabase/migrations/202608080001_phase1_rbac.sql`: migración versionada.
-- `tests/security.test.mjs`: pruebas unitarias de sesión, RBAC y errores.
+La migración renombra esquemas previos compatibles como `user_roles_legacy` y `audit_log_legacy`, migra datos y conserva esas tablas para verificación.
 
-## Migración SQL
+## Cambio posterior obligatorio
 
-Aplica `supabase/migrations/202608080001_phase1_rbac.sql` antes de desplegar las Functions nuevas. La migración:
+`202608080002_editorial_workflow.sql` cambió supuestos de la fase inicial:
 
-1. renombra las tablas antiguas a `user_roles_legacy` y `audit_log_legacy`;
-2. crea y siembra RBAC granular;
-3. migra asignaciones y auditoría existentes;
-4. actualiza el trigger de usuarios nuevos;
-5. crea la RPC atómica `cms_set_user_roles`;
-6. activa RLS y revoca acceso directo del cliente.
+- impone un solo rol efectivo por usuario;
+- deja sin rol las altas directas salvo correos predeclarados como administradores;
+- añade metadata y eventos editoriales;
+- incorpora `resource_ref` para paths GitHub;
+- define retención operativa invocable desde servidor.
 
-## Variables
+La migración posterior `202608110001_canonical_content_uuid.sql` alinea la clave primaria de `cms_content_records` con el UUID v4 versionado en cada Markdown y conserva las referencias de workflow.
 
-No hay secretos nuevos. Se añade `ALLOWED_ORIGINS` como lista opcional de previews u orígenes administrativos adicionales. `SITE_URL` continúa siendo el origen principal.
+Por ello las tres migraciones deben aplicarse en orden. La primera fase decía que workflow, UUID de recursos y otras capacidades no estaban implementados; esa afirmación solo era válida en el momento histórico de la fase.
 
-## Despliegue
+## Componentes actuales derivados de esta fase
 
-1. Crea un backup de Supabase.
-2. Aplica la migración SQL.
-3. Verifica las asignaciones con una consulta que una `user_roles` y `roles`.
-4. Configura las variables documentadas en `.env.example`.
-5. Despliega Functions y sitio en el mismo deploy.
-6. Prueba los casos 401, 403 y 200 y confirma `x-request-id`/`audit_log`.
-7. Mantén las tablas `*_legacy` durante al menos un ciclo estable.
+- `shared/auth/`: verificación de sesión y permisos.
+- `shared/observability/`: request ID, errores, logs y auditoría.
+- `shared/supabase/`: cliente `service_role` exclusivo del backend.
+- `shared/content-model/`: validación compartida por Astro y Functions.
+- `netlify/functions/`: límite de confianza administrativo.
+- `tests/security.test.mjs` y pruebas relacionadas.
 
-## Reversión
+## Reversión histórica
 
-Primero revierte el deploy de código en Netlify. Después, dentro de una transacción y solo si las tablas legacy existen:
+Una reversión de base de datos es manual y requiere backup:
 
-1. elimina el trigger `on_auth_user_created`;
-2. elimina o renombra `user_roles` y `audit_log` nuevos;
-3. renombra `user_roles_legacy` y `audit_log_legacy` a sus nombres originales;
-4. restaura la función/trigger legacy desde el commit anterior;
-5. elimina `cms_set_user_roles`, `role_permissions`, `permissions` y `roles` cuando ya no tengan referencias;
-6. valida login, roles y auditoría antes de cerrar la reversión.
+1. revierte primero el deploy de código;
+2. exporta datos RBAC, workflow y auditoría producidos después de la migración;
+3. confirma que existen las tablas `*_legacy`;
+4. restaura triggers y funciones desde el commit anterior correspondiente;
+5. reconcilia usuarios, roles y auditoría antes de retirar tablas nuevas.
 
-No borres las tablas nuevas ni legacy sin exportarlas. La reversión del esquema es manual porque puede haber auditoría nueva que deba preservarse.
+No ejecutes esta reversión como procedimiento rutinario ni elimines tablas sin validar dependencias de la segunda migración.
 
-## Pruebas
+## Estado actual de riesgos
 
-`tests/security.test.mjs` cubre extracción del bearer token, sesiones ausentes y usuarios deshabilitados, derivación de permisos, rechazo de metadatos manipulados, 403 y contrato estructurado de errores. La entrega solo se considera lista si pasan `test`, `lint`, `check`, `format:check` y `build`.
+- El rate limit por instancia descrito originalmente es **legacy**; la migración `202608110002_distributed_rate_limits.sql` lo sustituyó por buckets atómicos en PostgreSQL.
+- GitHub App y publicación por ramas/PR están **Planeados**.
+- Supabase Storage y metadata de medios están **Planeados**.
+- Workflow existe, pero su obligatoriedad de punta a punta está **Planeada**.
+- GitHub y auditoría Supabase no forman una transacción distribuida.
 
-Comandos ejecutados para esta entrega:
-
-```bash
-npm run test
-npm run lint
-npm run check
-npm run format:check
-npm run build
-```
-
-El build puede necesitar abrir un puerto local temporal para procesar fuentes de Astro; en entornos sandbox debe ejecutarse con ese permiso habilitado.
-
-## Panel editorial propio
-
-`/admin/contenidos` permite listar, buscar, crear, editar y eliminar entradas, memorias,
-páginas, simposios, categorías y etiquetas. También conserva borradores e historial de cambios.
-`/admin/medios` permite consultar, subir y eliminar imágenes. Las dos interfaces verifican el JWT
-de Supabase y los permisos RBAC en funciones de servidor antes de acceder a GitHub; el token de
-GitHub nunca se entrega al navegador.
-
-## Riesgos pendientes
-
-- Decap, Netlify Identity y Git Gateway fueron retirados en el cambio posterior de identidad única.
-- El rate limiting actual es por instancia.
-- Las escrituras GitHub aún no usan ramas/PR ni GitHub App.
-- La auditoría y la escritura GitHub no forman una transacción distribuida; una fase posterior deberá diseñar compensación e idempotencia.
+El CMS basado en Decap CMS, Netlify Identity y Git Gateway pertenece al sistema **legacy** retirado.

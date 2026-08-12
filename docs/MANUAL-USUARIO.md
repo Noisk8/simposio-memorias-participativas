@@ -1,62 +1,99 @@
 # Manual del panel administrativo
 
+El panel propio está disponible en `/admin/` y usa exclusivamente Supabase Auth. Las acciones se autorizan nuevamente en Netlify Functions mediante los permisos almacenados en Supabase.
+
 ## Acceso
 
-El panel utiliza Supabase Auth como único sistema de identidad.
-
 1. Abre `/admin/`.
-2. Si no existe una sesión válida, el sitio redirige a `/admin/login`.
-3. Introduce el correo y la contraseña de tu cuenta de Supabase.
-4. Al cerrar sesión se eliminan las credenciales locales de Supabase.
+2. Si no hay sesión, el navegador redirige a `/admin/login`.
+3. Introduce el correo y la contraseña de la cuenta creada por administración.
+4. Al cerrar sesión, el cliente elimina la sesión local de Supabase.
 
-No se utilizan Netlify Identity, Git Gateway ni un login separado de Decap.
+El CMS anterior basado en Decap CMS, Netlify Identity y Git Gateway es **legacy** y no forma parte del acceso operativo.
 
-## Secciones disponibles
+## Gestión de contenidos
 
-### Crear memoria
+Ruta: `/admin/contenidos`.
+
+El editor permite listar, buscar, crear, abrir, modificar y eliminar:
+
+- entradas;
+- memorias;
+- páginas;
+- simposios;
+- categorías;
+- etiquetas.
+
+Cada documento tiene un `id` UUID v4. La Function lo genera al crear y conserva la identidad existente al editar; no se copia ni se modifica manualmente desde el formulario.
+
+Para entradas, memorias y páginas muestra vistas de borradores y botones para guardar borrador o publicar. La vista previa interpreta un subconjunto de Markdown y permite seleccionar relaciones con simposios y taxonomías. Los archivos existentes muestran su historial de commits de GitHub.
+
+La casilla `draft` determina la visibilidad pública de entradas, memorias y páginas. Al publicar, la Function guarda `draft: false`, normaliza `publish_date`, registra estado `published` y hace commit en GitHub. La nueva versión se verá cuando termine el siguiente deploy de Netlify.
+
+El navegador conserva temporalmente un borrador local en `localStorage` mientras se escribe. Ese respaldo no sustituye el guardado en el servidor y no se sincroniza entre dispositivos.
+
+### Workflow
+
+El panel permite enviar un documento guardado a revisión y aprobar uno que esté `in_review`. Supabase conserva estado, propiedad y eventos.
+
+Limitación actual: el botón Publicar usa el guardado directo y no exige que el documento haya pasado antes por `approved`. Solicitar cambios y archivar existen en la Function, pero aún no tienen controles en el panel. La obligatoriedad completa del workflow está **Planeada**.
+
+## Crear memoria rápidamente
 
 Ruta: `/admin/crear-memoria`.
 
-Permite crear una memoria mediante una Netlify Function. La función verifica el JWT de Supabase y el permiso `memoria.create` antes de escribir.
+El formulario usa el endpoint canónico `manage-content?collection=memorias`. Verifica `memoria.create`, valida el modelo y crea un borrador Markdown en GitHub. `/admin/crear-proyecto` se mantiene solo como redirección; la Function homónima fue retirada.
 
-### Usuarios y roles
+## Biblioteca de imágenes
+
+Ruta: `/admin/medios`.
+
+Estado actual:
+
+- lista imágenes de `public/images/` en GitHub;
+- acepta JPG/JPEG, PNG, WebP, GIF y AVIF de hasta 4 MB;
+- valida que la firma binaria coincida con la extensión;
+- reutiliza un archivo idéntico y rechaza una colisión con contenido diferente;
+- impide eliminar una imagen cuando GitHub Code Search encuentra referencias en `src/content`.
+
+Los campos de imagen del editor también pueden subir archivos a esta biblioteca. Supabase Storage y la metadata de medios en Supabase están **Planeados**.
+
+## Usuarios y roles
 
 Ruta: `/admin/gestion-usuarios`.
 
-Permite listar usuarios, crear cuentas y asignar los roles `superadmin`, `admin`, `editor`, `reviewer`, `author` y `read_only`. Las operaciones requieren `users.read` o `users.manage`.
+Con `users.read` se listan cuentas. Con `users.manage` se puede:
 
-### Colecciones
+- crear una cuenta en Supabase Auth;
+- asignar exactamente un rol efectivo;
+- reemplazar el rol de una cuenta existente.
+
+Los roles disponibles son `superadmin`, `admin`, `editor`, `reviewer`, `author` y `read_only`. Si no se proporciona contraseña, el backend genera una temporal. Con Resend configurado intenta enviarla por correo; sin esa configuración, el panel la muestra para compartirla mediante un canal seguro.
+
+## Gestión de colecciones
 
 Ruta: `/admin/gestion-colecciones`.
 
-Permite crear la estructura inicial de una colección mediante una función protegida con `settings.manage`.
+Con `settings.manage`, `manage-collections` crea en GitHub una definición basada en `genericContentSchema` y un `.gitkeep` para conservar el directorio vacío. No crea Markdown editorial. La nueva colección requiere revisión técnica y un nuevo build.
 
-## Funcionalidad temporalmente no disponible
+El CRUD automático para colecciones creadas por esta pantalla está **Planeado**: `manage-content` mantiene una allowlist fija y no acepta la nueva colección hasta implementar su modelo y soporte explícito.
 
-El editor Decap fue retirado del flujo activo para que Supabase sea la única identidad. Hasta que se complete la API editorial, el panel todavía no incluye formularios generales para editar Entradas, Páginas, Simposios, Taxonomías y Menús existentes.
+## Menús
 
-Estos contenidos siguen en `src/content/` y pueden editarse técnicamente mediante Markdown, pero no deben exponerse nuevamente mediante Git Gateway.
+`src/content/menus` es una Content Collection usada por el sitio público. Su edición desde el panel está **Planeada**; actualmente se modifica en el repositorio y se valida durante el build.
 
 ## Desarrollo local
 
-Configura las variables de `.env` y ejecuta:
-
 ```bash
+cp .env.example .env
 npm run dev:netlify
 ```
 
-Después abre:
+Abre `http://localhost:8888/admin/`. Ejecutar solo Astro no habilita las Functions.
 
-```text
-http://localhost:8888/admin/
-```
+## Seguridad para personas editoras
 
-Ejecutar únicamente Astro no habilita `/.netlify/functions/*`.
-
-## Seguridad
-
-- El navegador solo utiliza `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY`.
-- `SUPABASE_SERVICE_ROLE_KEY` permanece exclusivamente en Netlify Functions.
-- Los roles enviados por el navegador se ignoran.
-- La autorización real se consulta en Supabase en cada petición.
-- Los errores administrativos incluyen un `requestId` para diagnóstico.
+- No compartas tokens ni la contraseña temporal en canales públicos.
+- No copies valores de `SUPABASE_SERVICE_ROLE_KEY` o `GITHUB_TOKEN` al navegador.
+- Un control oculto en la interfaz no concede ni revoca permisos; la decisión final se toma en servidor.
+- Incluye el `requestId` al reportar un error del panel.

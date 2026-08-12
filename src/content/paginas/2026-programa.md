@@ -1,4 +1,5 @@
 ---
+id: '36780047-366b-463b-9240-454fabbc007a'
 simposio: '2026'
 slug: 'programa'
 parent: ''

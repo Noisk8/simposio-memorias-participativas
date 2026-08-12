@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizePublishedContent, todayIsoDate, isFutureIsoDate } from '../shared/content/publication.ts';
+import {
+  normalizePublishedContent,
+  todayIsoDate,
+  isFutureIsoDate,
+} from '../shared/content/publication.ts';
 
 test('normalizePublishedContent: fija publish_date en hoy al publicar sin fecha', () => {
   const now = new Date('2026-08-09T12:00:00.000Z');

@@ -1,7 +1,13 @@
 import { z } from 'zod';
-import { dateField, editorialMetadataFields, nonEmptyStringList } from './base.ts';
+import {
+  dateField,
+  editorialIdentityFields,
+  editorialMetadataFields,
+  nonEmptyStringList,
+} from './base.ts';
 
 export const paginaSchema = z.object({
+  ...editorialIdentityFields,
   draft: z.boolean().optional().default(false),
   publish_date: dateField,
   ...editorialMetadataFields,

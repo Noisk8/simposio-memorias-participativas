@@ -1,5 +1,5 @@
-import { checkRateLimit, errorResponse, getCorsHeaders, getAdminClient } from '../security';
-import { requirePermission } from '../../shared/auth/require-permission.ts';
+import { errorResponse, getCorsHeaders, getAdminClient } from '../security';
+import { authorizeRequest } from '../../shared/security/rate-limit.ts';
 import { recordAudit } from '../../shared/observability/audit.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import {
@@ -10,7 +10,6 @@ import {
   AppError,
   ConflictError,
   InternalError,
-  RateLimitError,
   ValidationError,
 } from '../../shared/observability/errors.ts';
 
@@ -27,7 +26,7 @@ function nestedRoleKey(row: any): string | null {
   return typeof role?.key === 'string' ? role.key : null;
 }
 
-export const handler = async (event: any) => {
+export const handler = async (event: any, context?: any) => {
   let requestId = getRequestId(event);
   let headers = getCorsHeaders(event, 'GET, POST, OPTIONS', requestId);
 
@@ -39,15 +38,11 @@ export const handler = async (event: any) => {
     }
 
     const permission = event.httpMethod === 'GET' ? 'users.read' : 'users.manage';
-    const auth = await requirePermission(event, permission);
+    const auth = await authorizeRequest(event, permission, 'user-management', {
+      netlifyContext: context,
+    });
     requestId = auth.requestId;
     headers = getCorsHeaders(event, 'GET, POST, OPTIONS', requestId);
-
-    const limit = checkRateLimit(
-      event.httpMethod === 'GET' ? 'read' : 'write',
-      `users:${auth.user.id}`
-    );
-    if (!limit.allowed) throw new RateLimitError(Math.ceil(limit.retryAfterMs / 1000));
 
     const client = getAdminClient();
     if (!client) throw new InternalError('Supabase no está configurado en este entorno.');

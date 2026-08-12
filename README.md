@@ -1,42 +1,62 @@
 # I Simposio sobre Memorias Participativas
 
-Sitio web del **I Simposio sobre Memorias Participativas** de la Universidad de Granada, construido con [Astro](https://astro.build) y desplegado en [Netlify](https://www.netlify.com/). El panel administrativo usa Supabase Auth y RBAC granular como única autoridad de identidad, y el contenido editorial se guarda como Markdown versionado en GitHub.
+Sitio público y CMS editorial propio del I Simposio sobre Memorias Participativas. Astro construye el sitio estático desde Markdown publicado y Netlify aloja tanto el frontend como las Functions administrativas.
 
-## Tecnologías
+## Estado actual
 
-- **Framework:** Astro 7.
-- **Interfaz:** React 19 y Tailwind CSS 4.
-- **CMS propio:** Supabase Auth + Netlify Functions.
-- **Contenido:** Markdown mediante Astro Content Collections.
-- **Funciones serverless:** Netlify Functions.
-- **Búsqueda:** Pagefind.
-- **Hosting:** Netlify.
+| Área                | Implementación actual                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| Frontend            | Astro 7, integración React 19, Tailwind CSS 4 y Pagefind                 |
+| CMS                 | Panel editorial propio en `/admin/`                                      |
+| Autenticación       | Supabase Auth                                                            |
+| Autorización        | RBAC almacenado en PostgreSQL de Supabase; un rol efectivo por usuario   |
+| Backend             | Netlify Functions                                                        |
+| Contenido publicado | Markdown en `src/content/`, versionado en GitHub                         |
+| Workflow            | Estado, propiedad y eventos en Supabase; integración parcial en el panel |
+| Auditoría           | `audit_log` en Supabase y logs JSON con `requestId`                      |
+| Medios              | Imágenes en `public/images/`, gestionadas mediante GitHub Contents API   |
+| Deploy              | Netlify, a partir de la rama configurada del repositorio                 |
 
-## Estado actual del proyecto
+La integración de React está configurada, aunque las pantallas actuales están implementadas principalmente como componentes Astro con scripts de cliente. No hay componentes `.tsx` o `.jsx` en el repositorio.
 
-Hoy la aplicación cubre este flujo completo:
+Supabase Storage y la metadata de medios en Supabase están **Planeados**; no forman parte del flujo actual. También están **Planeados** el uso de una GitHub App y la publicación mediante ramas o pull requests. Hoy las Functions usan `GITHUB_TOKEN` y escriben directamente en `GITHUB_BRANCH`.
 
-- Sitio público rápido con Astro estático, rutas generadas en build y búsqueda con Pagefind.
-- Panel editorial propio en `/admin/` con acceso por Supabase.
-- Gestión real de `entradas`, `paginas`, `memorias`, `simposios`, `categorias`, `etiquetas`, `medios` y `usuarios`.
-- Publicación y borradores con estado editorial (`draft`, `in_review`, `changes_requested`, `approved`, `published`, `archived`).
-- Persistencia del contenido en archivos Markdown dentro de `src/content/` y en GitHub.
-- Auditoría y validación en backend antes de guardar, publicar o eliminar.
-- Rutas públicas separadas por tipo de contenido para mantener claridad y rendimiento.
+## Arquitectura
 
-## Arquitectura de contenido
+```text
+Usuario del CMS
+      │ inicia sesión
+      ▼
+Supabase Auth ──► JWT
+                    │ Authorization: Bearer
+                    ▼
+              Netlify Function
+                    │
+                    ├─ valida el JWT con Supabase Auth
+                    ├─ resuelve el usuario y RBAC en Supabase
+                    ├─ valida método, origen, path y payload
+                    ├─ ejecuta la operación editorial
+                    └─ registra auditoría en Supabase y logs JSON
+                         │
+                         ├─► Supabase: roles, workflow y auditoría
+                         └─► GitHub: Markdown e imágenes versionados
+                                      │
+                                      ▼
+                               Deploy de Netlify
+                                      │
+                                      ▼
+                         Astro + Pagefind → sitio público
+```
 
-El proyecto sigue una arquitectura editorial inspirada en WordPress:
+El navegador nunca decide la autorización. Las Functions obtienen el usuario real mediante `auth.getUser(token)` y consultan `user_roles`, `roles`, `role_permissions` y `permissions`. Los paths editables están restringidos a colecciones conocidas bajo `src/content/`; no se aceptan paths GitHub arbitrarios.
 
-- **Entradas:** noticias, artículos y novedades generales.
-- **Memorias del Museo:** piezas, experiencias y registros del [Museo de Memorias Vivas](https://simposio-memorias-participativas.netlify.app/museo-memorias/). En WordPress equivalen a un tipo de contenido personalizado.
-- **Páginas informativas:** páginas estructurales como El Simposio, Organización, Programa y Contacto.
-- **Ediciones de simposio:** información general de cada edición, año, lugar, tema, cartel y programa.
-- **Categorías:** taxonomía jerárquica para clasificar temáticamente entradas y memorias.
-- **Etiquetas:** taxonomía plana para palabras clave.
-- **Borradores:** colecciones filtradas mediante `draft: true`; no aparecen en el sitio público.
+Los modelos editoriales actuales requieren un `id` UUID v4. En creaciones lo genera el servidor y en ediciones conserva el del documento existente; un ID enviado por el navegador no puede sustituir la identidad ya persistida.
 
-Las colecciones principales se encuentran en:
+Consulta [Arquitectura del CMS](./docs/ARQUITECTURA-CMS.md) para el detalle, incluidos los límites actuales.
+
+## Contenido y rutas
+
+Las Content Collections activas son:
 
 ```text
 src/content/
@@ -49,228 +69,100 @@ src/content/
 └── menus/
 ```
 
-La página pública `/museo-memorias/` funciona como archivo de las memorias. Las rutas públicas de cada memoria se mantienen en `/museo-memorias/:number`.
+`manage-content` soporta las seis primeras. `menus` se construye como contenido público, pero su edición desde el CMS está **Planeada**.
 
-Rutas públicas clave:
+Rutas públicas principales:
 
-- `/` página principal.
-- `/entradas/` listado de entradas publicadas.
-- `/entradas/:slug` detalle de cada entrada.
-- `/museo-memorias/` archivo del museo.
-- `/museo-memorias/:number` detalle de cada memoria.
-- `/ediciones/:slug/` página de una edición.
-- `/:pagina` páginas informativas publicadas.
-- `/categorias/` y `/etiquetas/` archivos taxonómicos.
-- `/404` página personalizada de enlace roto.
+- `/entradas/` y `/entradas/:slug`.
+- `/museo-memorias/` y `/museo-memorias/:number`.
+- `/ediciones/:slug/` y sus páginas y entradas relacionadas.
+- `/:pagina` para páginas informativas.
+- `/categorias/`, `/etiquetas/` y `/buscar`.
 
-## Flujo real de la aplicación
+En memorias, el campo existente se llama `number` en el modelo y el frontmatter. Sigue siendo el número público usado por `/museo-memorias/:number`, pero no es la identidad técnica; cambiarlo a `numero` rompería el contrato actual y queda fuera de esta migración de identidad.
 
-Este esquema resume cómo funciona hoy el sistema de extremo a extremo:
+Astro excluye del sitio público las entradas, memorias y páginas con `draft: true`. Un commit del CMS no cambia el sitio desplegado hasta que Netlify complete un nuevo build.
 
-```text
-┌────────────────────────────────────────────┐
-│ Sitio público Astro                        │
-│ Generación estática + Pagefind             │
-│ Rutas públicas solo para contenido publicado│
-└──────────────────────┬─────────────────────┘
-                       │
-                Contenido validado
-                       │
-┌──────────────────────▼─────────────────────┐
-│ Repositorio GitHub                         │
-│ Markdown + frontmatter                     │
-│ Historial, commits y revisiones            │
-└──────────────────────▲─────────────────────┘
-                       │
-             Escritura desde servidor
-                       │
-┌──────────────────────┴─────────────────────┐
-│ API editorial en Netlify Functions         │
-│ Valida esquema, permisos y auditoría       │
-│ Escribe en GitHub y publica contenido      │
-└──────────────────────▲─────────────────────┘
-                       │
-              Formularios del panel
-                       │
-┌──────────────────────┴─────────────────────┐
-│ Panel CMS propio                           │
-│ Entradas, páginas, memorias, medios, roles │
-│ Estado editorial: draft, review, published │
-└──────────────────────▲─────────────────────┘
-                       │
-                 Sesión segura
-                       │
-┌──────────────────────┴─────────────────────┐
-│ Supabase                                   │
-│ Auth + RBAC + permisos + auditoría         │
-│ Fuente de verdad de identidad              │
-└────────────────────────────────────────────┘
-```
+Actualmente los borradores también se guardan como Markdown en GitHub con `draft: true`; Supabase conserva su metadata y estado, no el cuerpo. Mantener en GitHub únicamente el contenido publicado requerirá una migración posterior y se considera **Planeado**.
 
-### Qué pasa cuando se publica
+## Panel administrativo
 
-1. El usuario inicia sesión en el panel con Supabase Auth.
-2. El panel envía el formulario a una Netlify Function protegida.
-3. La función valida el JWT, los permisos efectivos y el esquema del contenido.
-4. Si la acción es `publicar`, el sistema normaliza el contenido para que quede visible.
-5. La función escribe el Markdown en GitHub y registra la auditoría.
-6. Astro toma ese contenido en el siguiente build y genera la página pública.
-7. Pagefind indexa el sitio estático para mantener la búsqueda.
+- `/admin/`: dashboard.
+- `/admin/contenidos`: listado, búsqueda, creación, edición, borradores, publicación, eliminación, previsualización e historial Git de las colecciones soportadas.
+- `/admin/crear-memoria`: formulario rápido para memorias.
+- `/admin/medios`: biblioteca de imágenes almacenadas en `public/images/` en GitHub.
+- `/admin/gestion-usuarios`: alta de cuentas y asignación de un rol efectivo.
+- `/admin/gestion-colecciones`: crea una colección genérica en GitHub; el formulario editorial para esa colección queda **Planeado**.
 
-### Qué significa para el cliente
+`/admin/crear-proyecto` se conserva únicamente como redirección de navegación. La Function legacy `create-proyecto` fue retirada al no tener consumidores; el único endpoint de escritura para memorias es `manage-content?collection=memorias`.
 
-- El contenido editable vive como Markdown versionado en GitHub.
-- La seguridad no depende del navegador, sino del backend y de Supabase.
-- Lo publicado no aparece “porque sí”: pasa por validación, permisos y guardado persistente.
-- El sitio público sigue siendo rápido porque Astro genera páginas estáticas.
+La lógica de dominio vive en `shared/cms/`: `content-service` es la única implementación que crea, actualiza o elimina Markdown editorial; los handlers de Functions adaptan HTTP, validan la sesión/RBAC y delegan. `manage-collections` administra definiciones de colección y crea solo un `.gitkeep`, nunca contenido de ejemplo. `create-coleccion` es un wrapper temporal obsoleto para clientes externos y el panel ya no lo usa.
 
-### Panel administrativo actual
+### Workflow real
 
-El panel administrativo ya incluye:
+Supabase almacena los estados `draft`, `in_review`, `changes_requested`, `approved`, `published` y `archived`, además de propiedad y eventos. El panel permite enviar a revisión y aprobar; la Function también implementa solicitar cambios, publicar y archivar.
 
-- `/admin/contenidos` para crear, editar, filtrar y publicar contenido.
-- `/admin/gestion-usuarios` para crear cuentas, asignar roles y enviar accesos.
-- `/admin/medios` para gestionar imágenes.
-- `/admin/crear-memoria` como acceso rápido a la creación de memorias.
-- Un dashboard inicial en `/admin/` con accesos rápidos a las tareas frecuentes.
+La publicación directa del editor todavía guarda el Markdown con `draft: false` y estado `published` sin exigir una transición previa desde `approved`. Cerrar esa brecha y exponer todas las transiciones en la interfaz está **Planeado**. Véase [Flujo editorial](./docs/FLUJO-EDITORIAL.md).
 
 ## Desarrollo local
 
-### Sitio Astro
+Requisitos: Node.js 22.12 o superior y las variables de `.env.example`.
 
-Para trabajar en páginas, estilos y contenido sin funciones Netlify:
-
-```bash
-npm run dev
-```
-
-### Backend local con Supabase y Netlify Functions
-
-Para ejecutar Astro junto con las Netlify Functions —incluidos los endpoints que validan usuarios y roles contra Supabase— copia `.env.example` a `.env` y completa las variables. La clave `SUPABASE_SERVICE_ROLE_KEY` solo debe existir en `.env` o en Netlify; nunca se expone al navegador.
+Para el CMS y las Functions:
 
 ```bash
 cp .env.example .env
-# Edita .env y añade las credenciales de tu proyecto Supabase
+npm install
 npm run dev:netlify
 ```
 
-Abre la aplicación en:
+Abre `http://localhost:8888`. Ejecutar solo Astro no habilita `/.netlify/functions/*`.
 
-```text
-http://localhost:8888
-```
-
-El backend local queda disponible bajo `/.netlify/functions/*`. La URL pública y la anon key se inyectan también en `/admin/supabase-config.js`, mientras que la service role key solo la usa el backend.
-
-### Otros comandos
+Para trabajar únicamente en el sitio público, sigue `AGENTS.md` y ejecuta Astro en segundo plano:
 
 ```bash
-npm run sync           # Verifica carpetas y Content Collections sin reescribir fuentes
-npm run build          # Genera el sitio y el índice de Pagefind
-npm run test           # Ejecuta pruebas unitarias y de autorización
-npm run preview        # Previsualiza el build de producción
-npm run check          # Ejecuta lint de taxonomías y astro check
-npm run lint           # Ejecuta ESLint
-npm run lint:fix       # Corrige problemas de ESLint cuando es posible
-npm run format         # Formatea el proyecto
-npm run format:check  # Comprueba el formato
+astro dev --background
 ```
 
-## Estructura del proyecto
+Gestión del proceso: `astro dev status`, `astro dev logs` y `astro dev stop`.
 
-```text
-simposio-memorias/
-├── public/
-│   └── images/                 # Imágenes públicas existentes
-├── src/
-│   ├── assets/                 # Fuentes y recursos procesados por Astro
-│   ├── components/             # Componentes reutilizables Astro/React
-│   ├── content/                # Colecciones Markdown
-│   │   ├── categorias/
-│   │   ├── entradas/
-│   │   ├── etiquetas/
-│   │   ├── memorias/
-│   │   ├── menus/
-│   │   ├── paginas/
-│   │   └── simposios/
-│   ├── layouts/                # Layouts generales del sitio
-│   ├── lib/                    # Taxonomías, fechas y utilidades
-│   ├── pages/                  # Rutas públicas y administrativas
-│   │   ├── admin/              # Gestión adicional del CMS
-│   │   ├── categorias/
-│   │   ├── entradas/
-│   │   ├── etiquetas/
-│   │   ├── ediciones/
-│   │   ├── museo-memorias/
-│   │   └── simposios.astro
-│   └── styles/                 # Estilos globales y Tailwind
-├── netlify/
-│   └── functions/              # Funciones serverless
-├── scripts/
-│   ├── lint-taxonomies.mjs     # Valida categorías y etiquetas
-│   └── sync-collections.mjs    # Sincroniza carpetas y configuraciones
-├── docs/
-│   ├── MANUAL-USUARIO.md       # Manual de gestión de contenidos
-│   └── ...                     # Documentación técnica adicional
-├── astro.config.mjs
-├── netlify.toml
-├── package.json
-└── tsconfig.json
+## Variables de entorno
+
+- Públicas: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`.
+- Solo servidor: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_TOKEN`.
+- Rate limiting: `RATE_LIMIT_HMAC_KEY` es opcional; si falta se deriva la HMAC de la service role sin exponerla.
+- Integración GitHub: `GITHUB_REPO`, `GITHUB_BRANCH`.
+- Orígenes: `SITE_URL`, `ALLOWED_ORIGINS`.
+- Correo opcional: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
+
+Nunca expongas `SUPABASE_SERVICE_ROLE_KEY` ni `GITHUB_TOKEN` con prefijo `PUBLIC_`.
+
+## Comandos
+
+```bash
+npm run dev:netlify     # Astro y Functions mediante Netlify Dev
+npm run build           # valida colecciones, construye Astro e indexa Pagefind
+npm test                # pruebas Node
+npm run test:api        # contrato HTTP de Functions con Netlify Dev
+npm run test:e2e        # build y pruebas Playwright
+npm run lint            # ESLint
+npm run check           # taxonomías y astro check
+npm run check:content-uuids # valida UUID editoriales únicos
+npm run format:check    # Prettier sin modificar archivos
 ```
-
-## Panel de administración
-
-El panel está disponible en:
-
-```text
-/admin/
-```
-
-Si no hay sesión, redirige a `/admin/login`. Tanto el encabezado como todas las páginas administrativas usan la misma sesión de Supabase.
-
-El panel gestiona entradas, memorias, páginas, ediciones, categorías, etiquetas, medios, usuarios y roles. Los contenidos editoriales cuentan con propiedad, borradores, revisión, aprobación y publicación.
-
-La página administrativa adicional para crear una memoria es:
-
-```text
-/admin/crear-memoria
-```
-
-Las funciones administrativas no confían en roles enviados por el navegador: validan el JWT de Supabase y consultan permisos efectivos en PostgreSQL. Antes de desplegarlas aplica la migración indicada en [`docs/FASE-1-RBAC.md`](./docs/FASE-1-RBAC.md).
-
-La ruta anterior `/admin/crear-proyecto` redirige a la nueva para mantener compatibilidad.
 
 ## Documentación
 
-- **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md):** guía práctica para acceder al panel y gestionar entradas, memorias, páginas, taxonomías, imágenes, roles y borradores.
-- **[Guía de despliegue](./docs/despliegue.md):** configuración y publicación en Netlify.
-- **[Documentación técnica](./docs/):** colecciones, roles, creación de contenido y configuración del proyecto.
-- **[Seguridad del CMS](./docs/SEGURIDAD.md):** autenticación, funciones administrativas, variables y checklist de seguridad.
-- **[Fase 1: RBAC y seguridad](./docs/FASE-1-RBAC.md):** migración, despliegue, pruebas y reversión.
+- [Arquitectura del CMS](./docs/ARQUITECTURA-CMS.md): fuente de verdad técnica.
+- [Manual del panel](./docs/MANUAL-USUARIO.md): tareas editoriales y límites actuales.
+- [Despliegue](./docs/despliegue.md): Supabase, GitHub y Netlify.
+- [Seguridad](./docs/SEGURIDAD.md): JWT, RBAC, validación, auditoría y riesgos.
+- [Roles y permisos](./docs/roles-cms.md).
+- [Flujo editorial](./docs/FLUJO-EDITORIAL.md).
+- [Supabase](./docs/supabase.md).
 
-Si una persona solo necesita gestionar contenidos, debe comenzar por el **[Manual de usuario del CMS](./docs/MANUAL-USUARIO.md)**.
+`INSTRUCCIONES.md` y `GUIA-DESPLIEGUE.md` no forman parte del repositorio; esta sección y `docs/despliegue.md` son las referencias canónicas para evitar guías duplicadas.
 
-## Personalización
+## Calidad y CI
 
-Los colores principales se definen como variables CSS en `src/styles/global.css`:
-
-```css
---ugr-green: #2f680c;
---ugr-green-light: #70a87a;
---ugr-green-dark: #1e4a08;
---ugr-cream: #f5f0e8;
-```
-
-## Calidad y validación
-
-Antes de publicar cambios técnicos, se recomienda ejecutar:
-
-```bash
-npm run lint
-npm run test
-npm run check
-npm run format:check
-npm run build
-```
-
-El proyecto incluye ESLint, `astro check`, Prettier, validación de taxonomías y Pagefind.
+El workflow `.github/workflows/ci.yml` ejecuta auditoría de dependencias, escaneo de secretos, lint, comprobaciones de Astro y taxonomías, pruebas Node, contrato de API, build y smoke tests de Playwright. La protección de rama y las reglas requeridas se configuran manualmente en GitHub.

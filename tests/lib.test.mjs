@@ -1,11 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  slugify,
-  parseFrontmatter,
-  isValidPublicImagePath,
-  createRateLimiter,
-} from '../shared/lib.mjs';
+import { slugify, parseFrontmatter, isValidPublicImagePath } from '../shared/lib.mjs';
 
 test('slugify: normaliza acentos, mayúsculas y caracteres especiales', () => {
   assert.equal(slugify('Hola Mundo'), 'hola-mundo');
@@ -62,31 +57,4 @@ test('isValidPublicImagePath: acepta rutas válidas y rechaza las demás', () =>
   assert.equal(isValidPublicImagePath('https://ejemplo.com/img.jpg'), false);
   assert.equal(isValidPublicImagePath('/images/../escape.jpg'), false);
   assert.equal(isValidPublicImagePath(''), false);
-});
-
-test('createRateLimiter: permite hasta max y bloquea después', () => {
-  const check = createRateLimiter({ max: 3, windowMs: 1000 });
-  const key = 'usuario-1';
-
-  assert.equal(check(key, 0).allowed, true);
-  assert.equal(check(key, 10).allowed, true);
-  assert.equal(check(key, 20).allowed, true);
-  const blocked = check(key, 30);
-  assert.equal(blocked.allowed, false);
-  assert.equal(blocked.retryAfterMs, 1000 - 30);
-});
-
-test('createRateLimiter: la ventana se resetea', () => {
-  const check = createRateLimiter({ max: 1, windowMs: 100 });
-  assert.equal(check('a', 0).allowed, true);
-  assert.equal(check('a', 10).allowed, false);
-  assert.equal(check('a', 150).allowed, true);
-});
-
-test('createRateLimiter: claves independientes', () => {
-  const check = createRateLimiter({ max: 1, windowMs: 100 });
-  assert.equal(check('user-a', 0).allowed, true);
-  assert.equal(check('user-b', 0).allowed, true);
-  assert.equal(check('user-a', 5).allowed, false);
-  assert.equal(check('user-b', 5).allowed, false);
 });

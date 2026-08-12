@@ -1,14 +1,9 @@
-import { checkRateLimit, errorResponse, getCorsHeaders, isSafeContentPath } from '../security';
-import { requirePermission } from '../../shared/auth/require-permission.ts';
+import { errorResponse, getCorsHeaders, isSafeContentPath } from '../security';
+import { authorizeRequest } from '../../shared/security/rate-limit.ts';
 import { recordAudit } from '../../shared/observability/audit.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { getGitHubConfiguration } from '../../shared/github/config.ts';
-import {
-  AppError,
-  GitHubError,
-  RateLimitError,
-  ValidationError,
-} from '../../shared/observability/errors.ts';
+import { AppError, GitHubError, ValidationError } from '../../shared/observability/errors.ts';
 
 const READ_PERMISSIONS: Record<string, string> = {
   entradas: 'entrada.read',
@@ -19,7 +14,7 @@ const READ_PERMISSIONS: Record<string, string> = {
   etiquetas: 'taxonomy.read',
 };
 
-export const handler = async (event: any) => {
+export const handler = async (event: any, context?: any) => {
   let requestId = getRequestId(event);
   let headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
 
@@ -37,12 +32,11 @@ export const handler = async (event: any) => {
     const permission = READ_PERMISSIONS[collection];
     if (!permission) throw new ValidationError('La colección solicitada no está permitida.');
 
-    const auth = await requirePermission(event, permission);
+    const auth = await authorizeRequest(event, permission, 'read', {
+      netlifyContext: context,
+    });
     requestId = auth.requestId;
     headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
-
-    const limit = checkRateLimit('read', `revisions:${auth.user.id}`);
-    if (!limit.allowed) throw new RateLimitError(Math.ceil(limit.retryAfterMs / 1000));
 
     const { token, owner: repoOwner, repo: repoName, branch } = getGitHubConfiguration();
 

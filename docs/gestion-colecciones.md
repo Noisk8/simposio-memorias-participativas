@@ -1,30 +1,36 @@
-# Gestionar colecciones desde el panel propio
+# Gestionar colecciones desde el panel
 
-La ruta `/admin/gestion-colecciones` forma parte del panel autenticado exclusivamente con Supabase.
+`/admin/gestion-colecciones` permite crear una estructura genérica en GitHub. Requiere sesión Supabase y `settings.manage`.
 
-## Flujo
+## Qué hace
 
-1. La persona inicia sesión en `/admin/login`.
-2. El navegador envía el access token de Supabase a `create-coleccion`.
-3. La función valida el JWT y exige `settings.manage`.
-4. La función incorpora la colección genérica a `src/content.config.ts` y crea un Markdown de ejemplo.
-5. La operación queda registrada en auditoría.
+1. El navegador envía el JWT a `manage-collections`.
+2. La Function valida sesión, permiso, CORS, rate limit y payload.
+3. Comprueba que nombre y carpeta correspondan a `src/content/<nombre>`.
+4. Modifica `src/content.config.ts` para usar `genericContentSchema`.
+5. Crea `src/content/<nombre>/.gitkeep`; no crea contenido editorial ficticio.
+6. Registra la acción en auditoría.
 
-No se escribe ni se genera configuración de Decap o Git Gateway.
-
-## Datos solicitados
-
-- Nombre interno: identificador TypeScript en minúsculas, por ejemplo `ponentes`.
-- Etiqueta visible: nombre comprensible para administración.
-- Carpeta: debe coincidir con `src/content/<nombre>`.
-
-El esquema inicial usa `genericContentSchema`, definido en `shared/content-model/base.ts`.
+No se genera configuración del CMS legacy ni se modifica la autorización.
 
 ## Requisitos
 
-- Sesión válida de Supabase.
-- Permiso efectivo `settings.manage`.
-- Variables `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_TOKEN` y `GITHUB_REPO` configuradas en Functions.
+- `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
+- `GITHUB_TOKEN`, `GITHUB_REPO` y, opcionalmente, `GITHUB_BRANCH`.
+- Un identificador TypeScript en minúsculas con guion bajo permitido.
+- Carpeta exacta `src/content/<nombre>`.
+
+## Limitaciones
+
+- La operación realiza dos commits/escrituras GitHub sin transacción entre ellos: configuración y marcador de directorio.
+- El esquema genérico incluye el `id` UUID v4 obligatorio, además de `simposio`, `title`, `date`, `image` y `description`.
+- No crea rutas públicas.
+- No añade la colección a la allowlist de `manage-content` ni genera formularios del panel.
+- La colección requiere revisión de código, pruebas y un build exitoso.
+
+El CRUD automático para colecciones nuevas está **Planeado**.
+
+`create-coleccion` se conserva temporalmente como wrapper para clientes externos, añade cabeceras `Deprecation`, `Warning` y `Link`, y ejecuta exactamente la misma autorización, validación, rate limit y auditoría que `manage-collections`. El panel ya no lo consume.
 
 ## Desarrollo local
 
@@ -33,7 +39,3 @@ npm run dev:netlify
 ```
 
 Abre `http://localhost:8888/admin/gestion-colecciones`.
-
-## Limitación actual
-
-La página crea la estructura de una colección, pero todavía no genera un formulario editorial completo para sus documentos. Esa capacidad pertenece a la siguiente fase de la API editorial.

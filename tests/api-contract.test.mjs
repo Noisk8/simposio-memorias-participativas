@@ -43,14 +43,16 @@ test('OPTIONS: preflight CORS responde 204 con cabeceras', async (t) => {
   assert.equal(response.status, 204);
   assert.ok(response.headers.get('access-control-allow-origin'));
   assert.ok(response.headers.get('access-control-allow-methods')?.includes('GET'));
+  assert.ok(response.headers.get('access-control-allow-methods')?.includes('PUT'));
+  assert.ok(response.headers.get('access-control-allow-methods')?.includes('PATCH'));
 });
 
 test('método no permitido: 405 con contrato de error estructurado', async (t) => {
   if (!serverAvailable) return t.skip('servidor no disponible');
   const cases = [
-    ['manage-content?collection=memorias', 'PUT'],
     ['deploy-status', 'POST'],
     ['create-coleccion', 'GET'],
+    ['manage-collections', 'GET'],
     ['manage-workflow', 'DELETE'],
     ['get-revision-history', 'POST'],
   ];
@@ -66,10 +68,13 @@ test('sin bearer token: 401 AUTHENTICATION_REQUIRED en todas las funciones', asy
   if (!serverAvailable) return t.skip('servidor no disponible');
   const cases = [
     ['manage-content?collection=memorias', 'GET'],
+    ['manage-content?collection=memorias', 'PUT'],
+    ['manage-content?collection=memorias', 'PATCH'],
     ['manage-users', 'GET'],
     ['manage-media', 'GET'],
     ['deploy-status', 'GET'],
     ['create-coleccion', 'POST'],
+    ['manage-collections', 'POST'],
   ];
   for (const [path, method] of cases) {
     const response = await api(path, { method });

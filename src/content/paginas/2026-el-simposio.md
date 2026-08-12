@@ -1,4 +1,5 @@
 ---
+id: '948d5182-b492-45f0-be04-f752c9361b9c'
 simposio: '2026'
 slug: 'el-simposio'
 parent: ''

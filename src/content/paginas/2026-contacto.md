@@ -1,4 +1,5 @@
 ---
+id: '2a1473a9-5ec4-49b4-8936-b20527485456'
 simposio: '2026'
 slug: 'contacto'
 parent: ''

@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { dateField } from './base.ts';
+import { dateField, editorialIdentityFields } from './base.ts';
 
 export const simposioSchema = z.object({
+  ...editorialIdentityFields,
   title: z.string(),
   slug: z.string(),
   edition: z.number(),

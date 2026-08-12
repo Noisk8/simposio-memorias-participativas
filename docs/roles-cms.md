@@ -1,32 +1,36 @@
 # Roles y permisos del CMS
 
-Supabase es la fuente de verdad de los paneles propios. El modelo se normaliza en `roles`, `permissions`, `role_permissions` y `user_roles`; una persona puede tener más de un rol y sus permisos efectivos son la unión de todos ellos.
+Supabase PostgreSQL es la fuente de verdad de autorización. El modelo usa `roles`, `permissions`, `role_permissions` y `user_roles`. Tras aplicar las migraciones actuales, cada persona tiene como máximo un rol efectivo; sus permisos son los asociados a ese rol.
 
-## Roles iniciales
+## Roles sembrados
 
-- `superadmin`: control total, incluidos roles y configuración.
-- `admin`: administración de usuarios, contenido y configuración.
-- `editor`: edición, aprobación y publicación.
-- `reviewer`: lectura, revisión y aprobación.
-- `author`: creación, edición y envío a revisión.
-- `read_only`: consultas administrativas sin escritura.
+- `superadmin`: todos los permisos.
+- `admin`: todos los permisos sembrados actualmente.
+- `editor`: CRUD editorial amplio, revisión, publicación, taxonomías, menús y carga/metadata de medios; no recibe `*.delete` ni `media.delete` en la matriz actual.
+- `reviewer`: lectura editorial y aprobación de entradas, memorias y páginas.
+- `author`: lectura, creación, edición de contenido propio, envío a revisión y carga de medios.
+- `read_only`: lectura administrativa sin mutaciones.
 
-La matriz completa se siembra en `supabase/migrations/202608080001_phase1_rbac.sql`. Los roles antiguos se migran de forma conservadora: `admin` permanece `admin`, `editor` permanece `editor` y una asignación vacía pasa a `read_only`.
+La matriz exacta y canónica está en `supabase/migrations/202608080001_phase1_rbac.sql`. Algunas claves sembradas, como `menu.manage` o `media.update`, aún no tienen una interfaz o endpoint completo; disponer del permiso no implica que la capacidad esté implementada.
 
 ## Asignación
 
-La página `/admin/gestion-usuarios` consulta y modifica roles mediante `manage-users`. La función exige `users.read` para listar y `users.manage` para crear usuarios o asignar roles. Nunca acepta un rol del cliente como prueba de autorización.
+`/admin/gestion-usuarios` usa `manage-users`:
 
-Desde esa misma pantalla el admin también puede crear cuentas nuevas. Si la contraseña se deja vacía, el backend genera una temporal segura, crea la cuenta en Supabase, asigna el rol inicial y, cuando `RESEND_API_KEY` y `RESEND_FROM_EMAIL` están configuradas, envía el correo de acceso.
+- GET exige `users.read`;
+- crear una cuenta o cambiar su rol exige `users.manage`;
+- la Function acepta exactamente un rol de la allowlist;
+- `cms_set_user_roles` reemplaza la asignación de forma atómica;
+- la RPC impide retirar los propios permisos administrativos y dejar el sistema sin administradores.
 
-La RPC `cms_set_user_roles` hace el reemplazo de forma atómica, valida las claves y evita que una persona retire sus propios permisos administrativos o elimine al último administrador.
-
-Los cambios aplican en la petición siguiente porque los permisos se consultan en Supabase en cada llamada.
+Los cambios se aplican en la siguiente petición porque las Functions consultan Supabase cada vez. Un rol incluido en el JWT, metadata o body no se acepta como autorización.
 
 ## Usuarios nuevos
 
-El trigger asigna `admin` a emails predeclarados en `public.admin_emails` y `author` al resto. En producción debe deshabilitarse el registro público y crearse cuentas desde el panel autorizado o por invitación.
+Después de `202608080002_editorial_workflow.sql`, el trigger solo asigna `admin` cuando el correo ya existe en `public.admin_emails`. Cualquier alta directa diferente queda sin rol hasta aprobación administrativa. La creación desde el panel asigna explícitamente el rol seleccionado mediante la RPC.
 
-## Identidad única
+El registro público debe permanecer desactivado en producción.
 
-Los roles de Netlify Identity fueron retirados del flujo activo. Todos los accesos administrativos usan Supabase Auth y este RBAC.
+## Nota legacy
+
+La primera migración podía conservar varias filas de rol migradas y asignaba `author` por defecto. La segunda migración conserva solo el rol de mayor jerarquía, crea un índice único por usuario y sustituye el trigger. Los roles históricos de Netlify Identity no se consultan.

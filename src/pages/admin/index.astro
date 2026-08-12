@@ -160,7 +160,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     ],
     [
       'Añadir una memoria',
-      'Abre Memorias y pulsa “Nueva memoria”. El número, título y lugar son obligatorios. También puedes registrar autoría, colectivo, clasificación, imagen, descripción breve y texto completo. El número determina la identificación de la memoria y forma parte de su archivo.',
+      'Abre Memorias y pulsa “Nueva memoria”. El número, título y lugar son obligatorios. También puedes registrar autoría, colectivo, clasificación, imagen, descripción breve y texto completo. El número es una referencia pública y forma parte de la URL; la identidad técnica es un UUID generado por el servidor.',
     ],
     [
       'Crear y organizar páginas',
@@ -172,7 +172,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     ],
     [
       'Categorías jerárquicas',
-      'Las categorías clasifican entradas y memorias. Crea un título y, si lo necesitas, selecciona una categoría superior para formar una jerarquía. El slug se utiliza como identificador interno; si lo dejas vacío se genera a partir del título.',
+      'Las categorías clasifican entradas y memorias. Crea un título y, si lo necesitas, selecciona una categoría superior para formar una jerarquía. El slug forma parte de la referencia legible; la identidad técnica es un UUID generado por el servidor.',
     ],
     [
       'Etiquetas',

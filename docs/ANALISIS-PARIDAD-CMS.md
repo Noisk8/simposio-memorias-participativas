@@ -1,79 +1,54 @@
 # Análisis de paridad del CMS
 
-Este documento toma como fuente de verdad el antiguo `public/admin/config.yml`, las extensiones de
-`public/admin/index.html`, los modelos de contenido y las capturas del panel. Supabase sustituye
-Netlify Identity y Git Gateway, pero no debe reducir las capacidades editoriales.
+> Documento de transición. Las referencias a Decap CMS, Netlify Identity, Git Gateway y `public/admin/config.yml` describen exclusivamente el sistema **legacy** retirado. Para la arquitectura operativa consulta [ARQUITECTURA-CMS.md](./ARQUITECTURA-CMS.md).
 
-## Arquitectura visual observada
+El objetivo de paridad es conservar capacidades editoriales útiles sin reintroducir proveedores de identidad o backends anteriores. La fuente de verdad del estado es el código actual, no las capturas ni la configuración histórica.
 
-- Barra superior fija con marca, accesos a Inicio, Entradas, Memorias y Páginas, selector de tema y
-  menú de usuario.
-- Navegación lateral persistente, búsqueda global y secciones separadas para contenido,
-  borradores, taxonomías y administración.
-- Área central con cabecera de colección, descripción y acción contextual para crear.
-- Controles de orden, agrupación y alternancia lista/cuadrícula.
-- Tarjetas con título e imagen destacada.
-- Panel flotante y colapsable de borradores recientes, contador, acceso a todos y limpieza de
-  accesos rápidos.
-- Tema claro/oscuro persistido en `localStorage` y diseño adaptable a pantallas pequeñas.
+## Matriz verificada
 
-## Colecciones y comportamiento
+| Capacidad                                   | Estado                 | Evidencia o límite                                      |
+| ------------------------------------------- | ---------------------- | ------------------------------------------------------- |
+| Login único                                 | Implementado           | Supabase Auth en `SupabaseAuth.astro`                   |
+| RBAC server-side                            | Implementado           | `requirePermission` y tablas Supabase                   |
+| CRUD de entradas, memorias y páginas        | Implementado           | `manage-content` y `/admin/contenidos`                  |
+| CRUD de simposios y taxonomías              | Implementado           | misma API y panel                                       |
+| Edición de menús                            | **Planeado**           | hay esquema/colección, pero no está en `manage-content` |
+| Borradores                                  | Implementado           | `draft`, filtro en panel y respaldo local               |
+| Vista previa                                | Implementado           | previsualización reactiva de un subconjunto de Markdown |
+| Relaciones                                  | Implementado           | selectores para simposios, categorías y etiquetas       |
+| Historial                                   | Implementado           | commits GitHub por path permitido                       |
+| Medios                                      | Implementado en GitHub | `public/images/`; no usa Supabase Storage               |
+| Gestión de usuarios                         | Implementado           | Supabase Auth Admin + un rol efectivo                   |
+| Workflow persistido                         | Implementado           | registros y eventos en Supabase                         |
+| Workflow obligatorio                        | **Planeado**           | publicación directa omite aprobación previa             |
+| Solicitar cambios/archivar en UI            | **Planeado**           | transiciones disponibles solo en Function               |
+| Programación desde el panel                 | **Planeado**           | al publicar, una fecha futura se normaliza a hoy        |
+| Colecciones extensibles con CRUD automático | **Planeado**           | solo se crea definición genérica y ejemplo              |
+| GitHub App y publicación por PR             | **Planeado**           | se usa token y escritura directa                        |
+| Supabase Storage y metadata de medios       | **Planeado**           | binarios y listado permanecen en GitHub                 |
 
-| Colección  | Crear | Borrador | Orden                        | Agrupación/filtro   | Relaciones                      |
-| ---------- | ----- | -------- | ---------------------------- | ------------------- | ------------------------------- |
-| Entradas   | Sí    | Sí       | fecha, título, autor         | autor, mes          | simposio, categorías, etiquetas |
-| Memorias   | Sí    | Sí       | número, título, lugar, autor | lugar, colectivo    | simposio, categorías, etiquetas |
-| Páginas    | Sí    | Sí       | orden, título, simposio      | simposio, plantilla | simposio, página padre          |
-| Simposios  | Sí    | No       | año, edición, título         | estado              | —                               |
-| Categorías | Sí    | No       | título                       | categorías raíz     | categoría padre                 |
-| Etiquetas  | Sí    | No       | título                       | —                   | —                               |
-| Menús      | Sí    | No       | título                       | —                   | elementos jerárquicos           |
+## Reglas de datos conservadas
 
-Las colecciones de borradores no son archivos diferentes: son vistas filtradas por `draft: true`
-sobre entradas, memorias y páginas. Las vistas normales filtran `draft: false`.
+- Los borradores son Markdown con `draft: true`, no una colección separada.
+- Entradas sin fecha reciben la fecha actual al guardar.
+- Categorías y etiquetas se limpian y deduplican en los modelos compartidos.
+- Las escrituras usan SHA para detectar conflictos.
+- El historial enlaza commits de GitHub.
+- Los paths se generan o validan en servidor contra una allowlist.
+- La propiedad se resuelve con el usuario verificado y `cms_content_records`.
 
-## Flujo editorial
+## Sustitución tecnológica legacy
 
-- «Guardar borrador» fuerza `draft: true`; «Publicar» fuerza `draft: false`.
-- Una entrada sin fecha recibe automáticamente la fecha local actual.
-- Categorías y etiquetas vacías o duplicadas se eliminan antes de guardar.
-- `publish_date` permite programación y debe conservarse en el documento.
-- El guardado usa la versión SHA del archivo para detectar ediciones concurrentes.
-- El historial muestra commits del archivo y enlaza a la revisión en GitHub.
-- Las acciones pasan por permisos RBAC de Supabase; el cliente no puede confiar en roles incluidos
-  en metadatos manipulables.
+| Componente legacy               | Sustitución activa                                  |
+| ------------------------------- | --------------------------------------------------- |
+| Netlify Identity                | Supabase Auth                                       |
+| Roles en metadata del proveedor | RBAC normalizado en Supabase PostgreSQL             |
+| Git Gateway desde el navegador  | Netlify Functions con credencial GitHub server-side |
+| Colecciones de Decap CMS        | modelos Zod y `manage-content`                      |
+| Biblioteca de Decap CMS         | `manage-media` sobre `public/images/` de GitHub     |
+| Hooks del editor anterior       | validación y normalización en Functions             |
+| Preview templates anteriores    | previsualizador propio del panel                    |
 
-## Edición y medios
+## Criterio de cierre
 
-- Markdown con previsualización simultánea.
-- Vista previa específica para entradas: hero, fecha/autor, imagen, taxonomías, extracto y cuerpo.
-- Vista previa específica para memorias: número, lugar, autoría, colectivo, imagen, taxonomías,
-  resumen y cuerpo.
-- Biblioteca de imágenes, subida desde campos de imagen, copia de ruta y eliminación autorizada.
-- Selectores relacionales buscables para simposio, categorías, etiquetas y jerarquías.
-
-## Administración complementaria
-
-- Gestión de usuarios y asignación de roles.
-- Gestión y creación de colecciones.
-- Historial de revisiones.
-- Tour/bienvenida, mensajes de resultado y control de sesión.
-- Acciones destructivas con confirmación y registro de auditoría.
-
-## Matriz de sustitución tecnológica
-
-| CMS anterior                 | Implementación nueva                                          |
-| ---------------------------- | ------------------------------------------------------------- |
-| Netlify Identity             | Supabase Auth (`signInWithPassword`, sesión renovable)        |
-| Roles en metadatos           | RBAC normalizado en PostgreSQL                                |
-| Git Gateway en navegador     | Functions autenticadas con credencial GitHub solo en servidor |
-| Decap collections            | API `manage-content` con modelos Zod canónicos                |
-| Decap media                  | API `manage-media`                                            |
-| Hooks `preSave`/`prePublish` | Validación, permisos y normalización en servidor              |
-| Preview templates            | Previsualizador propio reactivo                               |
-
-## Criterio de aceptación
-
-La migración solo tiene paridad cuando cada elemento anterior puede ejecutarse desde el nuevo
-panel, conserva sus reglas de datos y permisos, y se presenta dentro del shell visual descrito.
-Que exista un endpoint CRUD no es suficiente por sí solo.
+La migración funcional solo estará completa cuando todas las filas **Planeado** necesarias para operación editorial se implementen y prueben. La existencia de una tabla o de una transición en backend no equivale por sí sola a una experiencia completa ni a una política obligatoria.

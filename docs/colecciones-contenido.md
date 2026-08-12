@@ -1,227 +1,81 @@
 # Colecciones de contenido en Astro
 
-Este proyecto usa las **content collections** de Astro para organizar contenido Markdown con frontmatter tipado. A continuación se explica cómo crear nuevas colecciones y cómo mostrarlas en el sitio.
+Astro construye el sitio público desde Markdown bajo `src/content/`. `src/content.config.ts` conecta cada carpeta con un esquema Zod canónico de `shared/content-model/`.
 
----
+## Colecciones actuales
 
-## ¿Qué son las colecciones de contenido?
+| Colección    | Modelo            | CMS `manage-content` | Publicación                   |
+| ------------ | ----------------- | -------------------- | ----------------------------- |
+| `entradas`   | `entradaSchema`   | Sí                   | `/entradas/:slug`             |
+| `memorias`   | `memoriaSchema`   | Sí                   | `/museo-memorias/:number`     |
+| `paginas`    | `paginaSchema`    | Sí                   | `/:pagina` y rutas de edición |
+| `simposios`  | `simposioSchema`  | Sí                   | `/ediciones/:slug`            |
+| `categorias` | `categoriaSchema` | Sí                   | archivos taxonómicos          |
+| `etiquetas`  | `etiquetaSchema`  | Sí                   | archivos taxonómicos          |
+| `menus`      | `menuSchema`      | No                   | navegación dinámica           |
 
-Las colecciones son grupos de archivos de contenido (por defecto Markdown) ubicados en `src/content/`. Cada colección tiene:
+La API administrativa usa una allowlist fija y no acepta un nombre de colección arbitrario enviado por el navegador.
 
-- Una carpeta propia dentro de `src/content/`.
-- Un esquema canónico de Zod en `shared/content-model/`, enlazado desde `src/content.config.ts`.
-- Acceso tipado desde cualquier página de Astro mediante `getCollection()`.
+## Publicación
 
----
+Entradas, memorias y páginas comparten `draft` y `publish_date`. Las rutas principales usan `filterPublished`, que excluye borradores y fechas futuras. Algunas rutas genéricas de colección solo comprueban `draft`; revisa la ruta concreta antes de asumir programación uniforme.
 
-## Colección actual: `memorias`
+Limitación del panel: `manage-content` cambia una `publish_date` futura a la fecha actual cuando se publica. Por tanto, la programación desde el CMS está **Planeada**, aunque el helper público entienda fechas futuras en contenido creado directamente en el repositorio.
 
-### Definición canónica
-
-```ts
-// shared/content-model/memoria.ts
-export const memoriaSchema = z.object({/* campos tipados */});
-
-// src/content.config.ts
-const memorias = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/memorias' }),
-  schema: memoriaSchema,
-});
-```
-
-### Estructura de un archivo de la colección
-
-Ubicación: `src/content/memorias/1-arte-sacro-social.md`
+## Ejemplo de memoria
 
 ```md
 ---
-number: 1
-title: 'Exposición de Arte Sacro-Social «San Miguel Harto»'
+id: '00000000-0000-4000-8000-000000000031'
+draft: true
+simposio: '2026'
+number: 31
+title: 'Título de la memoria'
 place: 'Granada, España'
 author: ''
-collective: 'Asociación de Vecinxs del Cerro de San Miguel'
-image: '/images/proyecto-1.jpg'
-description: 'Lo sagrado y lo social se hibridan para crear una experiencia artística comunitaria.'
+collective: ''
+categories: []
+tags: []
+image: '/images/proyecto-31.jpg'
+description: 'Descripción breve'
 ---
 
-En el barrio de cuevas del Cerro de San Miguel...
+Contenido en Markdown.
 ```
 
-- El frontmatter debe cumplir el esquema canónico enlazado por `content.config.ts`.
-- El cuerpo del Markdown es el contenido principal y se puede renderizar con `render()` o `render(entry)`.
+Todos los modelos actuales exigen `id` como UUID v4. El CMS genera ese identificador para documentos nuevos y preserva el existente en actualizaciones. El ejemplo usa un valor ilustrativo; no lo reutilices. El CMS añade además `owner_id` y `workflow_state` al guardar. No copies un ID de usuario desde el cliente: la Function lo obtiene de la sesión verificada.
 
----
+El número público de una memoria se conserva en el campo histórico `number` y forma la URL `/museo-memorias/:number`. Es independiente de `id`; esta migración no lo renombra ni modifica sus valores.
 
-## Crear una nueva colección
+En Astro, este valor se consulta como `entry.data.id`. No debe confundirse con `entry.id`, que lo calcula el loader a partir del archivo y puede depender de su nombre o ruta.
 
-Sigue estos pasos para agregar una colección nueva, por ejemplo `publicaciones`:
+## Añadir una colección
 
-### 1. Crear la carpeta de contenido
+Crear una colección es un cambio de código, aunque `/admin/gestion-colecciones` pueda generar el esqueleto. Una integración completa requiere:
 
-```bash
-mkdir src/content/publicaciones
-```
+1. definir o reutilizar un esquema en `shared/content-model/`;
+2. registrar la colección en `src/content.config.ts`;
+3. crear rutas públicas que usen `getCollection()` y `render()`;
+4. decidir reglas de borrador, fecha y taxonomías;
+5. añadir permisos y una entrada explícita a la allowlist del backend si será editable;
+6. añadir campos y relaciones al panel;
+7. probar build, autorización y publicación.
 
-### 2. Definir el modelo canónico y enlazar la colección
+No construyas paths GitHub a partir de una carpeta libre enviada por el navegador.
 
-```ts
-// shared/content-model/publicacion.ts
-export const publicacionSchema = z.object({
-  title: z.string(),
-  author: z.string(),
-  date: z.date(),
-  tags: z.array(z.string()).optional().default([]),
-  featured: z.boolean().optional().default(false),
-});
-
-// src/content.config.ts
-const publicaciones = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/publicaciones' }),
-  schema: publicacionSchema,
-});
-
-export const collections = { memorias, publicaciones };
-```
-
-### 3. Crear archivos de contenido
-
-Ejemplo: `src/content/publicaciones/introduccion-memorias.md`
-
-```md
----
-title: 'Introducción a las memorias participativas'
-author: 'Nombre del autor'
-date: 2026-07-02
-tags: ['memoria', 'participación']
-featured: true
----
-
-Texto del artículo en Markdown.
-```
-
-### 4. Sincronizar tipos
-
-Después de modificar `content.config.ts`, ejecuta:
+## Comprobaciones
 
 ```bash
 npx astro sync
+npm run check:content-uuids
+npm run check
+npm test
+npm run build
 ```
 
-Esto regenera los tipos de `.astro/types.d.ts` para que `getCollection` reconozca la nueva colección; no reescribe el modelo canónico.
-
----
-
-## Mostrar colecciones en una página
-
-### Listado de ítems
-
-Crea una página en `src/pages/publicaciones.astro`:
-
-```astro
----
-import { getCollection } from 'astro:content';
-import Layout from '../layouts/Layout.astro';
-
-const publicaciones = await getCollection('publicaciones');
----
-
-<Layout title="Publicaciones">
-  <section class="py-16 bg-white">
-    <div class="max-w-4xl mx-auto px-4">
-      <h1 class="text-3xl font-bold mb-8">Publicaciones</h1>
-
-      <ul class="space-y-6">
-        {
-          publicaciones.map((entry) => (
-            <li class="border-b pb-4">
-              <a href={`/publicaciones/${entry.id}/`} class="text-xl font-semibold hover:underline">
-                {entry.data.title}
-              </a>
-              <p class="text-sm text-gray-600">
-                {entry.data.author} — {entry.data.date.toLocaleDateString('es-ES')}
-              </p>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-  </section>
-</Layout>
-```
-
-### Mostrar el contenido de un ítem individual
-
-Crea una ruta dinámica: `src/pages/publicaciones/[id].astro`
-
-```astro
----
-import { getCollection, render } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
-
-export async function getStaticPaths() {
-  const publicaciones = await getCollection('publicaciones');
-
-  return publicaciones.map((entry) => ({
-    params: { id: entry.id },
-    props: { entry },
-  }));
-}
-
-const { entry } = Astro.props;
-const { Content } = await render(entry);
----
-
-<Layout title={entry.data.title}>
-  <article class="py-16 max-w-3xl mx-auto px-4">
-    <h1 class="text-4xl font-bold mb-4">{entry.data.title}</h1>
-    <p class="text-gray-600 mb-8">{entry.data.author}</p>
-    <div class="prose">
-      <Content />
-    </div>
-  </article>
-</Layout>
-```
-
-Astro generará automáticamente una página por cada archivo de la colección.
-
----
-
-## Aplicar estilos del proyecto a los listados
-
-El proyecto usa Tailwind CSS. Para mantener la coherencia visual, se recomienda reutilizar las clases y componentes existentes:
-
-- Colores: `bg-ugr-cream`, `text-ugr-green-dark`, `text-ugr-text`.
-- Tipografía: `font-[family-name:var(--font-heading)]`.
-- Botones: `btn-green`.
-- Tarjetas: `card-shadow`.
-
-Ejemplo de tarjeta para la colección `memorias`:
-
-```astro
-<div class="card-shadow bg-white rounded-xl overflow-hidden">
-  <img src={entry.data.image} alt={entry.data.title} class="w-full h-48 object-cover" />
-  <div class="p-6">
-    <h3 class="text-xl font-bold text-ugr-green-dark">{entry.data.title}</h3>
-    <p class="text-ugr-text-light mt-2">{entry.data.place}</p>
-    <p class="text-ugr-text mt-4">{entry.data.description}</p>
-  </div>
-</div>
-```
-
----
-
-## Buenas prácticas
-
-1. **Mantener los nombres de colección en minúsculas y sin espacios.** Astro usa el nombre de la carpeta como identificador.
-2. **Usar Zod para validar el frontmatter.** Esto evita errores en tiempo de compilación y proporciona autocompletado en el editor.
-3. **Ejecutar `npx astro sync` después de crear o modificar colecciones.** Esto actualiza los tipos generados.
-4. **Nombrar las rutas dinámicas con corchetes**, por ejemplo `[id].astro`, `[slug].astro` o `[...page].astro`.
-5. **Usar `render()` para mostrar el contenido Markdown.** No se debe usar directamente el campo `body`; `render()` devuelve el componente `<Content />`.
-
----
+`scripts/sync-collections.mjs --check` verifica carpetas y definiciones. `scripts/migrate-content-uuids.mjs --check` valida que cada documento tenga un UUID v4 único. Ambos se ejecutan durante el build sin reescribir fuentes.
 
 ## Referencias
 
-- [Content collections en Astro](https://docs.astro.build/en/guides/content-collections/)
-- [Definir colecciones con `defineCollection`](https://docs.astro.build/en/guides/content-collections/#defining-a-collection)
-- [Rutas dinámicas en Astro](https://docs.astro.build/en/guides/routing/)
+- [Content Collections de Astro](https://docs.astro.build/en/guides/content-collections/)
+- [Rutas de Astro](https://docs.astro.build/en/guides/routing/)

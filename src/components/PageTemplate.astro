@@ -16,7 +16,9 @@ interface Props {
 
 const { data, simposio, simposioTitle, crumbs = [] } = Astro.props;
 
-const heroImage = resolvePublicImageUrl(data.image || simposio?.data.image || '/images/hero-bg.jpg');
+const heroImage = resolvePublicImageUrl(
+  data.image || simposio?.data.image || '/images/hero-bg.jpg'
+);
 
 const organizadores = data.organizadores.map((o: string) => {
   const [nombre, institucion] = o.split(' | ');
@@ -97,10 +99,10 @@ const organizadores = data.organizadores.map((o: string) => {
               Instituciones organizadoras
             </h2>
             <div class="card-shadow rounded-xl overflow-hidden inline-block bg-white p-4">
-                <img
-                  src={resolvePublicImageUrl(data.instituciones_image)}
-                  alt="Instituciones organizadoras"
-                  class="w-full max-w-2xl mx-auto"
+              <img
+                src={resolvePublicImageUrl(data.instituciones_image)}
+                alt="Instituciones organizadoras"
+                class="w-full max-w-2xl mx-auto"
                 loading="lazy"
                 decoding="async"
               />

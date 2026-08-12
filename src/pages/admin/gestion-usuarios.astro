@@ -42,8 +42,8 @@ const roleLabels: Record<string, string> = {
               <p>Alta de usuarios</p>
               <h2>Crear y notificar acceso</h2>
               <span
-                >Si dejas la contraseña vacía, el sistema generará una temporal segura y la
-                enviará por correo.</span
+                >Si dejas la contraseña vacía, el sistema generará una temporal segura y la enviará
+                por correo.</span
               >
             </div>
           </header>
@@ -52,7 +52,13 @@ const roleLabels: Record<string, string> = {
             <div class="cms-create-grid">
               <label>
                 <span>Nombre completo</span>
-                <input id="create-user-name" type="text" maxlength="100" autocomplete="name" required />
+                <input
+                  id="create-user-name"
+                  type="text"
+                  maxlength="100"
+                  autocomplete="name"
+                  required
+                />
               </label>
               <label>
                 <span>Email</span>
@@ -61,11 +67,13 @@ const roleLabels: Record<string, string> = {
               <label>
                 <span>Rol inicial</span>
                 <select id="create-user-role">
-                  {roles.map((role) => (
-                    <option value={role} selected={role === 'author'}>
-                      {roleLabels[role]}
-                    </option>
-                  ))}
+                  {
+                    roles.map((role) => (
+                      <option value={role} selected={role === 'author'}>
+                        {roleLabels[role]}
+                      </option>
+                    ))
+                  }
                 </select>
               </label>
               <label>
@@ -90,7 +98,8 @@ const roleLabels: Record<string, string> = {
           </form>
 
           <div id="create-user-error" class="cms-users-alert hidden" role="alert"></div>
-          <div id="invite-credentials" class="cms-invite-credentials hidden" aria-live="polite"></div>
+          <div id="invite-credentials" class="cms-invite-credentials hidden" aria-live="polite">
+          </div>
         </section>
 
         <section class="cms-users-stats" aria-label="Resumen de usuarios">
@@ -382,7 +391,8 @@ const roleLabels: Record<string, string> = {
     title.textContent = 'Cuenta creada correctamente';
 
     const summary = document.createElement('p');
-    summary.textContent = user.email + ' · ' + (roleLabels[currentRole] || currentRole || 'Sin rol');
+    summary.textContent =
+      user.email + ' · ' + (roleLabels[currentRole] || currentRole || 'Sin rol');
 
     const passwordLabel = document.createElement('span');
     passwordLabel.textContent = 'Contraseña temporal';

@@ -5,8 +5,11 @@
 --
 --   supabase/migrations/
 --
--- La primera migración consolidada es:
+-- Las migraciones actuales son:
 --   202608080001_phase1_rbac.sql
+--   202608080002_editorial_workflow.sql
+--   202608110001_canonical_content_uuid.sql
+--   202608110002_distributed_rate_limits.sql
 --
 -- No vuelvas a definir aquí tablas sueltas: hacerlo separaría el entorno local
 -- del historial aplicado en Supabase.

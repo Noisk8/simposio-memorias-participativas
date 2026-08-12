@@ -1,4 +1,3 @@
-import { createRateLimiter } from '../shared/lib.mjs';
 import {
   AppError,
   InternalError,
@@ -8,8 +7,6 @@ import {
 import { logEvent } from '../shared/observability/logger.ts';
 
 const DEFAULT_SITE_ORIGIN = 'https://simposio-memorias-participativas.netlify.app';
-const writeLimiter = createRateLimiter({ max: 20, windowMs: 60000 });
-const readLimiter = createRateLimiter({ max: 60, windowMs: 60000 });
 
 function configuredOrigins(): string[] {
   const explicit = String(process.env.ALLOWED_ORIGINS || '')
@@ -47,31 +44,6 @@ export function isSafeContentPath(filePath: unknown): filePath is string {
       filePath
     )
   );
-}
-
-export function getClientIp(event: any): string {
-  return (
-    event.headers?.['x-nf-client-connection-ip'] ||
-    event.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
-    event.headers?.['x-real-ip'] ||
-    'unknown'
-  );
-}
-
-export function checkRateLimit(
-  kind: 'read' | 'write',
-  key: string
-): { allowed: boolean; retryAfterMs: number } {
-  return (kind === 'write' ? writeLimiter : readLimiter)(key);
-}
-
-export function rateLimitHeaders(
-  result: { retryAfterMs: number },
-  headers: Record<string, string>
-): Record<string, string> {
-  return result.retryAfterMs > 0
-    ? { ...headers, 'Retry-After': String(Math.ceil(result.retryAfterMs / 1000)) }
-    : headers;
 }
 
 export function errorResponse(error: unknown, headers: Record<string, string>, requestId: string) {

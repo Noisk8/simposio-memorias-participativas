@@ -363,7 +363,10 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     return '';
   }
   function isPublishedContent(data, fallbackState = '') {
-    return String(fallbackState || data.workflow_state || '').toLowerCase() === 'published' || data.draft === false;
+    return (
+      String(fallbackState || data.workflow_state || '').toLowerCase() === 'published' ||
+      data.draft === false
+    );
   }
   function resolvePreviewUrl(value) {
     const raw = String(value || '').trim();
@@ -410,8 +413,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       if (supabase?.hint) detailBits.push(supabase.hint);
       throw new Error(
         data.error?.message +
-          (fields ? ' ' + fields.map((f) => f.path + ': ' + f.message).join('; ') : '')
-          + (detailBits.length ? ' (' + detailBits.join(' · ') + ')' : '')
+          (fields ? ' ' + fields.map((f) => f.path + ': ' + f.message).join('; ') : '') +
+          (detailBits.length ? ' (' + detailBits.join(' · ') + ')' : '')
       );
     }
     return data;
@@ -926,15 +929,18 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     const currentState = String(current?.data.workflow_state || 'draft');
     setStatus('Guardando…');
     try {
-      const result = await api('/.netlify/functions/manage-content?collection=' + collection.value, {
-        method: 'POST',
-        body: JSON.stringify({
-          path: current?.path,
-          sha: current?.sha,
-          data: payloadData,
-          body: document.getElementById('body').value,
-        }),
-      });
+      const result = await api(
+        '/.netlify/functions/manage-content?collection=' + collection.value,
+        {
+          method: current ? 'PUT' : 'POST',
+          body: JSON.stringify({
+            path: current?.path,
+            sha: current?.sha,
+            data: payloadData,
+            body: document.getElementById('body').value,
+          }),
+        }
+      );
       checkDeployment();
       dirty = false;
       localStorage.removeItem(draftStorageKey());

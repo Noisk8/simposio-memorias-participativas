@@ -1,30 +1,24 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import http from 'node:http';
 import { logEvent } from '../shared/observability/logger.ts';
 
-let server;
 let received;
 const previousWebhook = process.env.ALERT_WEBHOOK_URL;
+const previousFetch = globalThis.fetch;
 
-before(async () => {
+before(() => {
   received = [];
-  server = http.createServer((req, res) => {
-    let body = '';
-    req.on('data', (chunk) => (body += chunk));
-    req.on('end', () => {
-      received.push(JSON.parse(body));
-      res.writeHead(200).end();
-    });
-  });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  process.env.ALERT_WEBHOOK_URL = `http://127.0.0.1:${server.address().port}/hook`;
+  globalThis.fetch = async (_url, init) => {
+    received.push(JSON.parse(String(init?.body || '{}')));
+    return { ok: true, status: 200 };
+  };
+  process.env.ALERT_WEBHOOK_URL = 'https://alerts.invalid/hook';
 });
 
-after(async () => {
+after(() => {
   if (previousWebhook === undefined) delete process.env.ALERT_WEBHOOK_URL;
   else process.env.ALERT_WEBHOOK_URL = previousWebhook;
-  await new Promise((resolve) => server.close(resolve));
+  globalThis.fetch = previousFetch;
 });
 
 async function waitForAlerts(count) {

@@ -58,7 +58,9 @@ export function generateTemporaryPassword(length = 16): string {
 }
 
 export function buildAccountInviteEmail(input: AccountInviteInput) {
-  const loginUrl = input.loginUrl || `${envValue('SITE_URL') || envValue('URL') || DEFAULT_SITE_ORIGIN}${DEFAULT_LOGIN_PATH}`;
+  const loginUrl =
+    input.loginUrl ||
+    `${envValue('SITE_URL') || envValue('URL') || DEFAULT_SITE_ORIGIN}${DEFAULT_LOGIN_PATH}`;
   const name = input.name?.trim() || input.email;
   const roleLabel = ROLE_LABELS[input.role] || input.role;
   const safeName = escapeHtml(name);

@@ -1,4 +1,5 @@
 ---
+id: '180566cf-d753-4a34-9abc-905a386698c6'
 draft: false
 simposio: '2026'
 title: 1er Simposio

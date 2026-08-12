@@ -1,9 +1,15 @@
 import { z } from 'zod';
-import { editorialMetadataFields, legacyPublicationFields, nonEmptyStringList } from './base.ts';
+import {
+  editorialIdentityFields,
+  editorialMetadataFields,
+  legacyPublicationFields,
+  nonEmptyStringList,
+} from './base.ts';
 
 const PUBLIC_IMAGE_PATTERN = /^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp|avif|gif)$/i;
 
 export const memoriaSchema = z.object({
+  ...editorialIdentityFields,
   ...legacyPublicationFields,
   ...editorialMetadataFields,
   simposio: z.string().default('2026'),

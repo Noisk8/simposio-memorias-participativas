@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import {
   dateField,
+  editorialIdentityFields,
   editorialMetadataFields,
   legacyPublicationFields,
   nonEmptyStringList,
 } from './base.ts';
 
 export const entradaSchema = z.object({
+  ...editorialIdentityFields,
   ...legacyPublicationFields,
   ...editorialMetadataFields,
   simposio: z.string().default('2026'),

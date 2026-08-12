@@ -1,20 +1,53 @@
-# Supabase Auth y RBAC del CMS
+# Supabase en el CMS
 
-Los paneles propios usan Supabase Auth. Las Netlify Functions verifican la sesión y resuelven permisos desde PostgreSQL con credenciales exclusivas de backend.
+Supabase proporciona Auth y PostgreSQL para RBAC, workflow, auditoría y metadata editorial. Los binarios de medios no usan Supabase Storage actualmente.
 
-## Aplicar la migración
+## Migraciones
 
-1. Realiza un backup de la base de datos.
-2. Abre Supabase SQL Editor.
-3. Ejecuta `supabase/migrations/202608080001_phase1_rbac.sql` completo.
-4. Comprueba que existen los seis roles y que los usuarios anteriores conservan `admin` o `editor`.
-5. Conserva `user_roles_legacy` y `audit_log_legacy` hasta finalizar la verificación en producción.
+Aplica en orden:
 
-El archivo `supabase/schema.sql` apunta al historial versionado y ya no contiene un esquema paralelo.
+```text
+supabase/migrations/202608080001_phase1_rbac.sql
+supabase/migrations/202608080002_editorial_workflow.sql
+supabase/migrations/202608110001_canonical_content_uuid.sql
+supabase/migrations/202608110002_distributed_rate_limits.sql
+```
+
+La primera migración:
+
+- conserva tablas antiguas como `user_roles_legacy` y `audit_log_legacy` cuando corresponde;
+- crea roles, permisos, relaciones, asignaciones y auditoría;
+- siembra seis roles y la matriz de permisos;
+- crea `cms_set_user_roles` y restringe su uso a `service_role`;
+- habilita RLS y revoca acceso directo del cliente.
+
+La segunda:
+
+- reduce cada cuenta a un único rol efectivo y crea un índice único;
+- añade `resource_ref` a auditoría;
+- crea `cms_content_records`, `cms_workflow_events` y `cms_operation_keys`;
+- reemplaza el trigger de altas para que solo los correos predeclarados reciban `admin` automáticamente;
+- crea `cms_prune_operational_data` para una invocación server-side explícita.
+
+La tercera:
+
+- hace que `cms_content_records.id` coincida con el UUID v4 del frontmatter;
+- conserva los eventos de workflow mediante una FK con `on update cascade`;
+- amplía la restricción de colección para registrar `menus`;
+- alinea o crea registros para los 40 documentos versionados migrados.
+
+La cuarta:
+
+- crea `cms_rate_limits`, con una fila por sujeto HMAC y acción;
+- crea la RPC atómica `cms_consume_rate_limit` restringida a `service_role`;
+- incorpora expiración, índice y poda acotada/completa;
+- amplía `cms_prune_operational_data` para limpiar buckets vencidos.
+
+`supabase/schema.sql` es solo un índice hacia las migraciones y no debe convertirse en un esquema paralelo.
 
 ## Administrador inicial
 
-Antes de crear una cuenta inicial en una instalación nueva:
+Antes de crear la primera cuenta de una instalación nueva:
 
 ```sql
 insert into public.admin_emails (email)
@@ -22,21 +55,19 @@ values ('tu-email@ejemplo.com')
 on conflict do nothing;
 ```
 
-Después crea la cuenta mediante un mecanismo administrativo de Supabase. El registro público debe permanecer desactivado.
+Después crea la cuenta mediante un mecanismo administrativo de Supabase. El trigger le asignará `admin`. Las demás altas directas quedan sin rol; el flujo normal es crear cuentas desde `/admin/gestion-usuarios`.
 
 ## Alta desde el panel
 
-La página `/admin/gestion-usuarios` puede crear cuentas nuevas, asignarles un rol inicial y enviar un correo con las credenciales temporales.
-
-Para activar el envío automático configura estas variables en Netlify o en tu entorno local:
+`manage-users` usa `auth.admin.createUser`, confirma el email, asigna un rol mediante `cms_set_user_roles` e intenta enviar las credenciales temporales con Resend si está configurado.
 
 ```text
 RESEND_API_KEY=...
-RESEND_FROM_EMAIL=panel@tu-dominio.com
-SITE_URL=https://tu-dominio.com
+RESEND_FROM_EMAIL=panel@example.org
+SITE_URL=https://tu-dominio.example
 ```
 
-Si las variables de correo no están presentes, la cuenta se crea igual y el panel muestra la contraseña temporal para compartirla manualmente.
+Sin Resend, la cuenta se crea y el panel muestra la contraseña temporal. La entrega segura y el cambio posterior de contraseña requieren procedimiento operativo.
 
 ## Variables
 
@@ -49,17 +80,19 @@ SITE_URL=https://sitio.example
 ALLOWED_ORIGINS=https://preview-autorizado.example
 ```
 
-La service role solo se configura en Netlify Functions y en el `.env` local ignorado por Git.
+`SUPABASE_SERVICE_ROLE_KEY` solo pertenece al entorno de Functions. La URL y anon key públicas se inyectan al login mediante `/admin/supabase-config.js`.
+
+## Storage
+
+Supabase Storage está **Planeado**. La implementación actual de `manage-media` escribe en `public/images/` de GitHub y no persiste metadata de medios en PostgreSQL.
 
 ## Verificación
 
-Ejecuta una petición a `manage-users` con:
+- sin token: `401`;
+- token inválido, expirado o usuario deshabilitado: `401`;
+- token válido sin permiso: `403`;
+- permiso válido: respuesta exitosa con `x-request-id`;
+- el bundle del navegador no contiene la service role;
+- las tablas protegidas no son accesibles directamente por `anon` o `authenticated`.
 
-- sin token: debe responder `401`;
-- token válido sin `users.read`: debe responder `403`;
-- usuario con permiso: debe responder `200` e incluir `x-request-id`;
-- usuario deshabilitado: debe responder `401`.
-
-Cada intento debe dejar una fila de autorización en `audit_log`.
-
-Para detalles de despliegue y rollback consulta [Fase 1: RBAC y seguridad](./FASE-1-RBAC.md).
+La auditoría se intenta persistir para autenticación/autorización y operaciones. Revisa también los logs `audit.persist.failed`, porque una falla de auditoría posterior a un commit GitHub no revierte ese commit.
