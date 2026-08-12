@@ -3,16 +3,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import SupabaseAuth from '../../components/SupabaseAuth.astro';
 ---
 
-<AdminLayout title="Biblioteca de imágenes - Admin">
+<AdminLayout title="Biblioteca de medios - Admin">
   <section class="cms-media-page">
     <div class="cms-media-wrap">
       <header class="cms-media-hero">
         <div>
           <p>Administración</p>
-          <h1>Biblioteca de imágenes</h1>
+          <h1>Biblioteca de medios</h1>
           <div>
-            Administra los recursos visuales del CMS, sube imágenes optimizadas y copia sus rutas
-            para usarlas en entradas, memorias y páginas.
+            Administra imágenes JPEG, PNG y WebP o documentos PDF en Supabase Storage y copia sus
+            URLs estables para usarlas en el contenido.
           </div>
         </div>
         <a href="/admin/">← Volver al panel</a>
@@ -45,7 +45,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
                 <polyline points="21 15 16 10 5 21"></polyline>
               </svg>
             </span>
-            <div><strong id="media-count">0</strong><span>Imágenes cargadas</span></div>
+            <div><strong id="media-count">0</strong><span>Archivos cargados</span></div>
           </article>
           <article>
             <span class="cms-media-stat-icon cms-media-stat-green">
@@ -106,7 +106,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
               </svg>
             </span>
-            <div><strong>4 MB</strong><span>Máximo por archivo</span></div>
+            <div><strong id="media-max-size">2 MiB</strong><span>Máximo por archivo</span></div>
           </article>
         </section>
 
@@ -114,8 +114,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
           <div class="cms-media-upload-copy">
             <span aria-hidden="true">↑</span>
             <div>
-              <h2>Subir nueva imagen</h2>
-              <p>JPG, PNG, WebP, GIF o AVIF. Tamaño máximo: 4 MB.</p>
+              <h2>Subir nuevo medio</h2>
+              <p>Únicamente imágenes JPEG, PNG o WebP y documentos PDF. Máximo: 2 MiB.</p>
             </div>
           </div>
 
@@ -124,25 +124,46 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
               <input
                 id="file"
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
                 required
               />
               <span id="file-name">Seleccionar archivo</span>
             </label>
-            <button id="upload-button" type="submit">Subir imagen</button>
+            <button id="upload-button" type="submit">Subir medio</button>
           </div>
+
+          <fieldset id="image-metadata" class="cms-media-metadata hidden">
+            <legend>Metadata editorial obligatoria de la imagen</legend>
+            <label class="cms-media-decorative">
+              <input id="decorative" type="checkbox" />
+              <span>La imagen es decorativa</span>
+            </label>
+            <label>
+              <span>Texto alternativo</span>
+              <textarea id="alt-text" maxlength="500" rows="2"></textarea>
+              <small>Describe el contenido o marca explícitamente la imagen como decorativa.</small>
+            </label>
+            <label>
+              <span>Crédito</span>
+              <input id="credit" type="text" maxlength="500" />
+            </label>
+            <label>
+              <span>Licencia</span>
+              <input id="license" type="text" maxlength="255" placeholder="Ej. CC BY-SA 4.0" />
+            </label>
+          </fieldset>
         </form>
 
         <section class="cms-media-library">
           <header class="cms-media-library-header">
             <div>
               <p>Recursos disponibles</p>
-              <h2>Galería del sitio</h2>
-              <span id="media-summary">Carga la biblioteca para ver las imágenes.</span>
+              <h2>Biblioteca del sitio</h2>
+              <span id="media-summary">Carga la biblioteca para ver los medios.</span>
             </div>
             <div class="cms-media-tools">
               <label>
-                <span class="sr-only">Buscar imágenes</span>
+                <span class="sr-only">Buscar medios</span>
                 <input id="media-search" type="search" placeholder="Buscar por nombre o formato…" />
               </label>
               <button id="refresh-media" type="button">↻ Actualizar</button>
@@ -153,7 +174,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 
           <div id="media-empty" class="cms-media-empty hidden">
             <span>⌕</span>
-            <strong>No encontramos imágenes</strong>
+            <strong>No encontramos medios</strong>
             <p>Prueba con otro nombre, extensión o limpia la búsqueda.</p>
           </div>
         </section>
@@ -175,7 +196,12 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   const refreshMedia = document.getElementById('refresh-media');
   const mediaEmpty = document.getElementById('media-empty');
   const mediaSummary = document.getElementById('media-summary');
-  const maxImageBytes = 4 * 1024 * 1024;
+  const imageMetadata = document.getElementById('image-metadata');
+  const decorativeInput = document.getElementById('decorative');
+  const altTextInput = document.getElementById('alt-text');
+  const creditInput = document.getElementById('credit');
+  const licenseInput = document.getElementById('license');
+  let maxMediaBytes = 2 * 1024 * 1024;
   let allImages = [];
 
   async function api(url, options = {}) {
@@ -257,11 +283,17 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 
     const preview = document.createElement('div');
     preview.className = 'cms-media-preview';
-    const img = document.createElement('img');
-    img.src = image.downloadUrl || image.path;
-    img.alt = '';
-    img.loading = 'lazy';
-    preview.appendChild(img);
+    if (image.kind === 'image') {
+      const img = document.createElement('img');
+      img.src = image.previewUrl || image.publicUrl || image.path;
+      img.alt = image.altText || '';
+      img.loading = 'lazy';
+      preview.appendChild(img);
+    } else {
+      const type = document.createElement('strong');
+      type.textContent = 'PDF';
+      preview.appendChild(type);
+    }
 
     const body = document.createElement('div');
     body.className = 'cms-media-card-body';
@@ -280,11 +312,11 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     const copyButton = document.createElement('button');
     copyButton.type = 'button';
     copyButton.className = 'cms-media-copy';
-    copyButton.textContent = 'Copiar ruta';
+    copyButton.textContent = 'Copiar URL';
     copyButton.addEventListener('click', async function () {
       try {
         await navigator.clipboard.writeText(image.path);
-        setStatus('Ruta copiada: ' + image.path, 'success');
+        setStatus('URL copiada: ' + image.path, 'success');
       } catch (error) {
         setStatus('No se pudo copiar la ruta: ' + error.message, 'error');
       }
@@ -299,13 +331,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       deleteButton.disabled = true;
       setStatus('Eliminando ' + image.name + '…', 'loading');
       try {
-        await api(
-          '/.netlify/functions/manage-media?name=' +
-            encodeURIComponent(image.name) +
-            '&sha=' +
-            image.sha,
-          { method: 'DELETE' }
-        );
+        await api('/.netlify/functions/manage-media?id=' + encodeURIComponent(image.id), {
+          method: 'DELETE',
+        });
         await loadImages();
       } catch (error) {
         deleteButton.disabled = false;
@@ -321,14 +349,18 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 
   async function loadImages() {
     refreshMedia.disabled = true;
-    setStatus('Cargando biblioteca de imágenes…', 'loading');
+    setStatus('Cargando biblioteca de medios…', 'loading');
     try {
       const data = await api('/.netlify/functions/manage-media');
-      allImages = data.images || [];
+      allImages = data.media || [];
+      if (data.policy?.maxBytes) {
+        maxMediaBytes = Number(data.policy.maxBytes);
+        document.getElementById('media-max-size').textContent = formatBytes(maxMediaBytes);
+      }
       updateStats(allImages);
       renderImages();
       setStatus(
-        allImages.length + (allImages.length === 1 ? ' imagen cargada.' : ' imágenes cargadas.'),
+        allImages.length + (allImages.length === 1 ? ' medio cargado.' : ' medios cargados.'),
         'success'
       );
     } catch (error) {
@@ -342,8 +374,17 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     event.preventDefault();
     const file = fileInput.files[0];
     if (!file) return;
-    if (file.size > maxImageBytes) {
-      setStatus('La imagen debe pesar máximo 4 MB.', 'error');
+    if (file.size > maxMediaBytes) {
+      setStatus('El archivo debe pesar máximo ' + formatBytes(maxMediaBytes) + '.', 'error');
+      return;
+    }
+    const isImage = file.type.startsWith('image/');
+    if (isImage && !decorativeInput.checked && !altTextInput.value.trim()) {
+      setStatus('Escribe el texto alternativo o marca la imagen como decorativa.', 'error');
+      return;
+    }
+    if (isImage && (!creditInput.value.trim() || !licenseInput.value.trim())) {
+      setStatus('El crédito y la licencia son obligatorios para imágenes.', 'error');
       return;
     }
 
@@ -355,7 +396,19 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         const content = String(reader.result).split(',')[1];
         await api('/.netlify/functions/manage-media', {
           method: 'POST',
-          body: JSON.stringify({ name: file.name, content }),
+          body: JSON.stringify({
+            name: file.name,
+            mimeType: file.type,
+            content,
+            ...(isImage
+              ? {
+                  altText: altTextInput.value.trim(),
+                  credit: creditInput.value.trim(),
+                  license: licenseInput.value.trim(),
+                  decorative: decorativeInput.checked,
+                }
+              : {}),
+          }),
         });
         uploadForm.reset();
         fileName.textContent = 'Seleccionar archivo';
@@ -368,7 +421,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     };
     reader.onerror = function () {
       uploadButton.disabled = false;
-      setStatus('No se pudo leer la imagen seleccionada.', 'error');
+      setStatus('No se pudo leer el archivo seleccionado.', 'error');
     };
     reader.readAsDataURL(file);
   });
@@ -378,6 +431,17 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     fileName.textContent = file
       ? file.name + ' · ' + formatBytes(file.size)
       : 'Seleccionar archivo';
+    const isImage = Boolean(file?.type.startsWith('image/'));
+    imageMetadata.classList.toggle('hidden', !isImage);
+    altTextInput.required = isImage && !decorativeInput.checked;
+    creditInput.required = isImage;
+    licenseInput.required = isImage;
+  });
+
+  decorativeInput.addEventListener('change', function () {
+    altTextInput.disabled = decorativeInput.checked;
+    altTextInput.required = !decorativeInput.checked;
+    if (decorativeInput.checked) altTextInput.value = '';
   });
 
   refreshMedia.addEventListener('click', loadImages);
@@ -575,6 +639,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   }
   .cms-media-upload {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 18px;
@@ -634,6 +699,53 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     height: 1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
+  }
+  .cms-media-metadata {
+    display: grid;
+    flex: 1 0 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 2px 0 0;
+    border: 1px solid var(--cms-border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .cms-media-metadata legend {
+    padding: 0 6px;
+    color: var(--cms-text);
+    font-size: 13px;
+    font-weight: 750;
+  }
+  .cms-media-metadata label:not(.cms-media-decorative) {
+    display: grid;
+    gap: 5px;
+    color: var(--cms-text);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .cms-media-metadata input[type='text'],
+  .cms-media-metadata textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--cms-border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    font: inherit;
+    font-weight: 400;
+  }
+  .cms-media-metadata small {
+    color: var(--cms-muted);
+    font-weight: 400;
+  }
+  .cms-media-decorative {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: 7px;
+    color: var(--cms-text);
+    font-size: 13px;
   }
   .cms-media-file-picker span {
     overflow: hidden;
@@ -708,6 +820,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     box-shadow: 0 8px 18px #1018280d;
   }
   .cms-media-preview {
+    display: grid;
+    place-items: center;
     aspect-ratio: 4 / 3;
     background:
       linear-gradient(45deg, color-mix(in srgb, var(--cms-bg) 82%, #fff) 25%, transparent 25%) 0 0 /
@@ -715,6 +829,10 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--cms-bg) 82%, #fff) 75%) 0 0 /
         18px 18px,
       var(--cms-bg);
+  }
+  .cms-media-preview > strong {
+    color: var(--cms-muted);
+    letter-spacing: 0.12em;
   }
   .cms-media-preview img {
     width: 100%;

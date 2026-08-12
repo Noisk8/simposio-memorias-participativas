@@ -7,7 +7,7 @@ title: 'Radio Almaina, 15 Años de Radio Libre en Granada'
 place: 'Granada, España'
 author: ''
 collective: 'Radio Almaina'
-image: '/images/proyecto-10.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/3ebc0048da9dd05804b568d1fc3618c23bcb90fc068b5af255308ed3bc83e3cb-proyecto-10.jpg'
 description: 'Radio Almaina es la radio libre que, desde hace 15 años, le toma el pulso a Granada.'
 tags:
   - museo-memorias

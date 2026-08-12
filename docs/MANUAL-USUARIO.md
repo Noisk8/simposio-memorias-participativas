@@ -50,13 +50,14 @@ Ruta: `/admin/medios`.
 
 Estado actual:
 
-- lista imágenes de `public/images/` en GitHub;
-- acepta JPG/JPEG, PNG, WebP, GIF y AVIF de hasta 4 MB;
-- valida que la firma binaria coincida con la extensión;
+- lista medios registrados en `cms_media` y almacenados en Supabase Storage;
+- acepta únicamente JPEG, PNG, WebP y PDF, con un máximo de 2 MiB;
+- valida MIME, extensión, contenido real, peso y dimensiones antes de almacenar;
+- exige crédito, licencia y texto alternativo, o que la imagen se marque explícitamente como decorativa;
 - reutiliza un archivo idéntico y rechaza una colisión con contenido diferente;
 - impide eliminar una imagen cuando GitHub Code Search encuentra referencias en `src/content`.
 
-Los campos de imagen del editor también pueden subir archivos a esta biblioteca. Supabase Storage y la metadata de medios en Supabase están **Planeados**.
+Los campos de imagen del editor también pueden subir archivos a esta biblioteca. El campo guarda la URL pública estable devuelta por Storage; las rutas `/images/…` existentes siguen funcionando durante la migración.
 
 ## Usuarios y roles
 
@@ -77,10 +78,6 @@ Ruta: `/admin/gestion-colecciones`.
 Con `settings.manage`, `manage-collections` crea en GitHub una definición basada en `genericContentSchema` y un `.gitkeep` para conservar el directorio vacío. No crea Markdown editorial. La nueva colección requiere revisión técnica y un nuevo build.
 
 El CRUD automático para colecciones creadas por esta pantalla está **Planeado**: `manage-content` mantiene una allowlist fija y no acepta la nueva colección hasta implementar su modelo y soporte explícito.
-
-## Menús
-
-`src/content/menus` es una Content Collection usada por el sitio público. Su edición desde el panel está **Planeada**; actualmente se modifica en el repositorio y se valida durante el build.
 
 ## Desarrollo local
 

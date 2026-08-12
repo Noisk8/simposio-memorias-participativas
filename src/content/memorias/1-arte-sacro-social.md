@@ -7,7 +7,7 @@ title: 'Exposición de Arte Sacro-Social «San Miguel Harto»'
 place: 'Granada, España'
 author: ''
 collective: 'Asociación de Vecinxs del Cerro de San Miguel'
-image: '/images/proyecto-1.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/310778aa0b65294b7eceb6e0e3e602052e16957532d5d315831f703ea9723578-proyecto-1.jpg'
 description: 'Lo sagrado y lo social se hibridan para crear una experiencia artística comunitaria en el barrio de cuevas de San Miguel Alto.'
 tags:
   - museo-memorias

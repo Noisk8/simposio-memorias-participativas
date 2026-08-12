@@ -10,6 +10,10 @@
 --   202608080002_editorial_workflow.sql
 --   202608110001_canonical_content_uuid.sql
 --   202608110002_distributed_rate_limits.sql
+--   202608110003_remove_menus.sql
+--   202608110004_cms_media_storage.sql
+--   202608110005_professional_media_validation.sql
+--   202608110006_media_types_and_2mib_limit.sql
 --
 -- No vuelvas a definir aquí tablas sueltas: hacerlo separaría el entorno local
 -- del historial aplicado en Supabase.

@@ -36,6 +36,10 @@ La GitHub App está **Planeada**; las Functions actuales esperan `GITHUB_TOKEN`.
    202608080002_editorial_workflow.sql
    202608110001_canonical_content_uuid.sql
    202608110002_distributed_rate_limits.sql
+   202608110003_remove_menus.sql
+   202608110004_cms_media_storage.sql
+   202608110005_professional_media_validation.sql
+   202608110006_media_types_and_2mib_limit.sql
    ```
 
 3. Predeclara el primer administrador en `public.admin_emails` antes de crear su cuenta.
@@ -43,6 +47,7 @@ La GitHub App está **Planeada**; las Functions actuales esperan `GITHUB_TOKEN`.
 5. Limita Site URL y Redirect URLs a producción, previews autorizados y localhost cuando corresponda.
 6. Configura MFA para cuentas administrativas como política operativa si el plan de Supabase lo permite.
 7. Conserva las tablas `*_legacy` hasta validar la migración.
+8. Ejecuta `npm run migrate:media -- --dry-run`; luego sube y reescribe con `--upload --rewrite-content`. Despliega y verifica las URLs antes de retirar manualmente cualquier original.
 
 Los modelos de contenido exigen un `id` UUID v4 por Markdown y el corpus actual ya está migrado. Verifica antes del deploy:
 
@@ -76,6 +81,11 @@ GITHUB_BRANCH=main
 
 # Opcional; si falta, el backend deriva la HMAC de SUPABASE_SERVICE_ROLE_KEY.
 RATE_LIMIT_HMAC_KEY=...
+
+# Opcionales; defaults mostrados.
+CMS_IMAGE_MAX_WIDTH=8000
+CMS_IMAGE_MAX_HEIGHT=8000
+CMS_IMAGE_MAX_PIXELS=40000000
 ```
 
 Opcionales para correo:
@@ -141,7 +151,7 @@ Verifica manualmente:
 - respuestas `429` con `Retry-After` y `x-request-id`, y fallback `503` en mutaciones si falla la RPC;
 - CRUD de una colección con un rol autorizado;
 - rechazo de paths no permitidos y conflictos SHA;
-- subida de una imagen válida y rechazo de firma inválida;
+- subida de un medio válido a Storage, registro `cms_media` y rechazo de firma inválida;
 - estado del commit mostrado por `deploy-status`;
 - nuevo build de Netlify después de un commit del CMS;
 - ausencia de scripts o configuración operativa del CMS legacy.

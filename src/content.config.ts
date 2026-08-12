@@ -6,7 +6,6 @@ import {
   etiquetaSchema,
   genericContentSchema,
   memoriaSchema,
-  menuSchema,
   paginaSchema,
   simposioSchema,
 } from '../shared/content-model/index.ts';
@@ -45,9 +44,4 @@ const entradas = defineCollection({
   schema: entradaSchema,
 });
 
-const menus = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/menus' }),
-  schema: menuSchema,
-});
-
-export const collections = { simposios, categorias, etiquetas, paginas, memorias, entradas, menus };
+export const collections = { simposios, categorias, etiquetas, paginas, memorias, entradas };

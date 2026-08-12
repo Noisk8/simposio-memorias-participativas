@@ -7,7 +7,7 @@ is_home: false
 template: 'organizacion'
 title: 'Organización'
 description: 'Equipo organizador e instituciones del I Simposio sobre Memorias Participativas.'
-image: '/images/hero-bg.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/2ab893208ffe48edaf9346635acb5de251ceb502e03449637d9669c31132cc72-hero-bg.jpg'
 order: 2
 organizadores:
   - 'Andrea García González | Universidad de Granada (UGR), Marie Sklodowska-Curie fellow'
@@ -39,7 +39,7 @@ organizadores:
   - 'Iñaki Sagardoi | Universidad Pública de Navarra'
   - 'Dario Ranocchiari | UGR'
   - 'Kitti Baracsi | Centro em Rede de Investigação em Antropologia, Lisboa'
-instituciones_image: '/images/organizacion-logos.jpg'
+instituciones_image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/362ea17319228568ea83eee7d5f42927a616d18072fdc90b54757b2dbeb0db1e-organizacion-logos.jpg'
 ---
 
 El I Simposio sobre Memorias Participativas es una iniciativa conjunta de la Universidad de Granada, EUROM y un amplio equipo de investigadoras, gestores culturales y activistas de memoria.

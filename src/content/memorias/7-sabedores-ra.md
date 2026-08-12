@@ -7,7 +7,7 @@ title: 'Sabedores RA'
 place: 'Región Caribe, Colombia'
 author: ''
 collective: 'La Piragua Transmedia - Universidad del Magdalena'
-image: '/images/proyecto-7.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/3329ec5ff1f939be3329ea1a68ecb7888f9e87897e445acc1d1fce6914307786-proyecto-7.jpg'
 description: 'Experiencia de realidad aumentada que conecta saberes ancestrales con tecnologías digitales.'
 tags:
   - museo-memorias

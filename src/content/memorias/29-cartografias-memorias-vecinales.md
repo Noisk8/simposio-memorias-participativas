@@ -7,7 +7,7 @@ title: 'Cartografías de Memorias de las luchas vecinales de Entrevías, El Pozo
 place: 'Madrid, Estado español'
 author: 'Sara Martín Terceño'
 collective: 'Celebración de los 50 años de España en Libertad y La Liminal'
-image: '/images/proyecto-29.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/d3f4229c26e19e78ff675d6146d5d70135b76ebfc2e1ed884ab87b0948c946dc-proyecto-29.jpg'
 description: 'Durante el tardofranquismo y la transición, muchos barrios obreros de España se convirtieron en espacios esenciales de organización colectiva y aprendizaje ciudadano.'
 tags:
   - museo-memorias

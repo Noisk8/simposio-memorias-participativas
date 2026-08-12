@@ -7,7 +7,7 @@ title: 'Palimpsestos Paralelos: Barrios en Transformación a Través de la Mirad
 place: 'Granada, España y Lisboa, Portugal'
 author: ''
 collective: 'Periferias Dibujadas'
-image: '/images/proyecto-13.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/4fd64881c0e751767e86edb1a7982c5563ebef7c8288fa8009f51b62db06799e-proyecto-13.jpg'
 description: '¿Cómo podemos trabajar la memoria y la imaginación de los barrios a través de la mirada de niñes?'
 tags:
   - museo-memorias

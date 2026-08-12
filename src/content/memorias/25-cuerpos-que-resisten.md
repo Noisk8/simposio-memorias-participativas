@@ -7,7 +7,7 @@ title: 'Cuerpos que Resisten'
 place: 'Granada, Estado español'
 author: 'Ana Victoria Mador Vargas'
 collective: ''
-image: '/images/proyecto-25.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/c626924f9d69df22b560615357faf205a85cdc4d8583660baf4dc03694f995aa-proyecto-25.jpg'
 description: 'La obra Cuerpos que resisten forma parte del proyecto en proceso de creación Lo que tú no quieres ver.'
 tags:
   - museo-memorias

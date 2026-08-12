@@ -28,7 +28,7 @@ Netlify Function
 | `manage-content`       | DELETE                                      | `*.delete`                                     |
 | `manage-workflow`      | GET                                         | `admin.access`                                 |
 | `manage-workflow`      | POST                                        | permiso de transición derivado de la colección |
-| `manage-media`         | GET/POST/DELETE                             | `media.read`, `media.upload`, `media.delete`   |
+| `manage-media`         | GET/POST/PATCH/DELETE                       | `media.read`, `media.upload/update/delete`     |
 | `manage-users`         | GET/POST                                    | `users.read`, `users.manage`                   |
 | `manage-collections`   | POST                                        | `settings.manage`                              |
 | `create-coleccion`     | wrapper obsoleto                            | delega en `manage-collections`                 |
@@ -47,7 +47,9 @@ Netlify Function
 - El UUID editorial se genera en servidor al crear y se preserva desde el documento/registro existente al editar; no se confía en un reemplazo enviado por el cliente.
 - Los modelos Zod compartidos validan frontmatter y el cuerpo se limita a 200.000 caracteres.
 - Las actualizaciones y eliminaciones usan el SHA de GitHub para detectar conflictos.
-- `manage-media` normaliza nombres, limita tamaño y formatos y valida la firma binaria.
+- `manage-media` rechaza nombres peligrosos y genera una key UUID-slug independiente del original.
+- Solo admite JPEG, PNG, WebP y PDF, con máximo absoluto de 2 MiB. Para imágenes contrasta MIME, extensión, firma y decodificación `sharp`, y limita dimensiones y píxeles antes de Storage.
+- Las imágenes exigen crédito, licencia y texto alternativo o declaración decorativa explícita.
 - CORS acepta `SITE_URL`, `URL`, `ALLOWED_ORIGINS` y los orígenes locales definidos.
 
 ## Propiedad
@@ -118,7 +120,7 @@ El sujeto autenticado es el `user.id` obtenido de `auth.getUser`; el anónimo us
 ## Riesgos y trabajo planeado
 
 - Workflow obligatorio antes de publicar: **Planeado**. La publicación directa aún lo omite.
-- Supabase Storage y metadata de medios: **Planeado**. Los medios actuales están en GitHub.
+- Variantes `thumbnail`/`medium`/`large`: **Planeado** hasta que el modelo público consuma `srcset`/`picture`.
 - GitHub App, ramas por operación y pull requests: **Planeado**. Hoy se usa un token con escritura directa en la rama configurada.
 - Idempotencia efectiva: **Planeado**. Existe `cms_operation_keys`, pero las Functions no la consumen.
 - MFA para administración: configuración manual recomendada en Supabase; el repositorio no puede imponerla por sí solo.

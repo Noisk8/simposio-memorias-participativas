@@ -1,6 +1,6 @@
 # Supabase en el CMS
 
-Supabase proporciona Auth y PostgreSQL para RBAC, workflow, auditoría y metadata editorial. Los binarios de medios no usan Supabase Storage actualmente.
+Supabase proporciona Auth, PostgreSQL para RBAC/workflow/auditoría y Storage para los binarios de medios.
 
 ## Migraciones
 
@@ -11,6 +11,10 @@ supabase/migrations/202608080001_phase1_rbac.sql
 supabase/migrations/202608080002_editorial_workflow.sql
 supabase/migrations/202608110001_canonical_content_uuid.sql
 supabase/migrations/202608110002_distributed_rate_limits.sql
+supabase/migrations/202608110003_remove_menus.sql
+supabase/migrations/202608110004_cms_media_storage.sql
+supabase/migrations/202608110005_professional_media_validation.sql
+supabase/migrations/202608110006_media_types_and_2mib_limit.sql
 ```
 
 La primera migración:
@@ -33,8 +37,7 @@ La tercera:
 
 - hace que `cms_content_records.id` coincida con el UUID v4 del frontmatter;
 - conserva los eventos de workflow mediante una FK con `on update cascade`;
-- amplía la restricción de colección para registrar `menus`;
-- alinea o crea registros para los 40 documentos versionados migrados.
+- alinea o crea los registros canónicos del contenido versionado que existía al aplicarla.
 
 La cuarta:
 
@@ -42,6 +45,34 @@ La cuarta:
 - crea la RPC atómica `cms_consume_rate_limit` restringida a `service_role`;
 - incorpora expiración, índice y poda acotada/completa;
 - amplía `cms_prune_operational_data` para limpiar buckets vencidos.
+
+La quinta:
+
+- retira del dominio editorial la colección y los permisos RBAC de menús;
+- elimina cualquier registro operativo asociado a `src/content/menus/`;
+- vuelve a limitar `cms_content_records` a las seis colecciones administradas.
+
+La sexta:
+
+- crea el bucket público `cms-media`, con límite de 4 MB y MIME allowlist;
+- crea `cms_media`, índices de checksum y trigger de `updated_at`;
+- añade la comprobación RBAC server-side `cms_has_permission`;
+- permite lectura de metadata con `media.read` y bloquea por RLS toda escritura cliente en el bucket;
+- deja las mutaciones a `manage-media`, que usa `service_role` solo después de validar sesión y permiso.
+
+La séptima:
+
+- limita las imágenes nuevas del bucket a JPEG, PNG y WebP;
+- añade `is_decorative` e `image_format` a `cms_media`;
+- admite keys opacas UUID-slug sin invalidar los paths SHA-256 históricos;
+- impone coherencia MIME/formato/dimensiones y metadata editorial para cargas del CMS;
+- eleva el techo físico a 10 MiB para permitir un límite server-side configurable, cuyo default sigue siendo 4 MiB.
+
+La octava establece la política final de recepción:
+
+- máximo absoluto de 2 MiB en Functions, PostgreSQL y Storage;
+- únicamente `image/jpeg`, `image/png`, `image/webp` y `application/pdf`;
+- elimina audio y vídeo de los tipos y prefijos aceptados.
 
 `supabase/schema.sql` es solo un índice hacia las migraciones y no debe convertirse en un esquema paralelo.
 
@@ -84,7 +115,36 @@ ALLOWED_ORIGINS=https://preview-autorizado.example
 
 ## Storage
 
-Supabase Storage está **Planeado**. La implementación actual de `manage-media` escribe en `public/images/` de GitHub y no persiste metadata de medios en PostgreSQL.
+El bucket `cms-media` es público para que el sitio estático use URLs duraderas sin firmarlas. Una URL pública no autoriza listar ni mutar objetos. Los paths son inmutables:
+
+```text
+images/YYYY/MM/<uuid>-<slug-seguro>.<ext>
+documents/YYYY/MM/<uuid>-<slug-seguro>.<ext>
+```
+
+Los objetos importados conservan sus keys históricas `<sha256>-<nombre-seguro>`.
+
+La política se configura solo en Functions:
+
+```text
+CMS_IMAGE_MAX_WIDTH=8000
+CMS_IMAGE_MAX_HEIGHT=8000
+CMS_IMAGE_MAX_PIXELS=40000000
+```
+
+Todo archivo está limitado a 2 MiB. Solo se reciben JPEG, PNG, WebP y PDF. Las imágenes requieren `credit`, `license` y `alt_text`, salvo que `is_decorative` se marque explícitamente. El backend obtiene MIME, formato y dimensiones reales mediante `sharp` antes de subir.
+
+Migración controlada:
+
+```bash
+npm run migrate:media -- --dry-run
+npm run migrate:media -- --upload
+npm run migrate:media -- --rewrite-content
+# Equivalente en una sola ejecución de escritura:
+npm run migrate:media -- --upload --rewrite-content
+```
+
+`--dry-run` no necesita credenciales. Los otros modos requieren `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en el proceso o en `.env`/`.env.local`. El script es idempotente por SHA-256, comprueba firmas, metadata, objetos y referencias rotas antes de reescribir, y normaliza en Storage extensiones legacy cuyo contenido real tenga otro formato. No borra archivos de `public/`: solo considera elegible para borrado manual un original sin referencias legacy en `src/`.
 
 ## Verificación
 

@@ -7,7 +7,7 @@ title: 'Encuentro Intergeneracional de Memoria(s) en el parque de la Memoria de 
 place: 'Navarra, España'
 author: ''
 collective: 'Instituto Navarro de la Memoria'
-image: '/images/proyecto-20.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/8de785386cca1ddf78937650c2938c8c33ae905847652eb57806ee8eef99d439-proyecto-20.jpg'
 description: 'El Parque de la Memoria de Sartaguda se ha convertido en las últimas décadas en el lugar de memoria más emblemático de Navarra.'
 tags:
   - museo-memorias

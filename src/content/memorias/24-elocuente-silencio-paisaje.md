@@ -7,7 +7,7 @@ title: 'El elocuente silencio del paisaje'
 place: 'Burgos, Estado español'
 author: 'Antoni Coll Tort'
 collective: 'Coordinadora por la Recuperación de la Memoria Histórica de Burgos (CRMHB), Espacio Tangente y Foro Arte y Territorio. Comisariada por EUROM'
-image: '/images/proyecto-24.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/4ba58a8a78b1099eca3728ce800b3e5da0f7aa6dee0f003ae0b781a93360c18b-proyecto-24.jpg'
 description: 'Exposición fotográfica que explora los paisajes de memoria vinculados a la Guerra Civil y el franquismo en Burgos.'
 tags:
   - museo-memorias

@@ -10,7 +10,6 @@ export const CANONICAL_COLLECTIONS = [
   'simposios',
   'categorias',
   'etiquetas',
-  'menus',
 ];
 
 export const UUID_V4_PATTERN =

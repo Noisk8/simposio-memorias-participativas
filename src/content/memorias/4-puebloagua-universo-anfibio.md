@@ -7,7 +7,7 @@ title: 'PuebloAgua, Universo Anfibio'
 place: 'Nueva Venecia, Magdalena, Colombia'
 author: ''
 collective: 'La Piragua Transmedia - Universidad del Magdalena'
-image: '/images/proyecto-4.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/871ecf25ee4a663f915d267fa21410ed33f972dd795b926876a4895758a04eb0-proyecto-4.jpg'
 description: 'Obra transmedia: obra audiovisual y plataforma interactiva sobre comunidades acuáticas.'
 tags:
   - museo-memorias

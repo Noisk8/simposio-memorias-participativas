@@ -7,7 +7,7 @@ title: 'Proyecto Etno Vega (s)'
 place: 'Vegas del Genil, Granada, España'
 author: ''
 collective: 'Etno Vega (s)'
-image: '/images/proyecto-9.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/662c0dda350d6d68e708559834d13a4497ad197d2bbe7532fdf105589bbf3c89-proyecto-9.jpg'
 description: 'Etno-Vegas se conforma como colectivo y proyecto en el seno de las II Jornadas de Etnografía audiovisual.'
 tags:
   - museo-memorias

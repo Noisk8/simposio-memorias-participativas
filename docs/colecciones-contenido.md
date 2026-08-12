@@ -12,9 +12,9 @@ Astro construye el sitio público desde Markdown bajo `src/content/`. `src/conte
 | `simposios`  | `simposioSchema`  | Sí                   | `/ediciones/:slug`            |
 | `categorias` | `categoriaSchema` | Sí                   | archivos taxonómicos          |
 | `etiquetas`  | `etiquetaSchema`  | Sí                   | archivos taxonómicos          |
-| `menus`      | `menuSchema`      | No                   | navegación dinámica           |
 
 La API administrativa usa una allowlist fija y no acepta un nombre de colección arbitrario enviado por el navegador.
+La navegación principal es configuración estática de `src/components/Header.astro`, no una colección editorial.
 
 ## Publicación
 

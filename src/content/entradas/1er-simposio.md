@@ -8,7 +8,7 @@ categories:
   - general
 tags:
   - memoria
-image: /images/proyecto-12.jpg
+image: https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/5fa096a836119d3172fcc03b5b6d607b8c870be1b10570a365bcced17628db9a-proyecto-12.jpg
 description: 'primer simposio de memorias colectivas '
 ---
 

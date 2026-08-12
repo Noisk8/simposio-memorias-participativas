@@ -14,12 +14,12 @@ Sitio público y CMS editorial propio del I Simposio sobre Memorias Participativ
 | Contenido publicado | Markdown en `src/content/`, versionado en GitHub                         |
 | Workflow            | Estado, propiedad y eventos en Supabase; integración parcial en el panel |
 | Auditoría           | `audit_log` en Supabase y logs JSON con `requestId`                      |
-| Medios              | Imágenes en `public/images/`, gestionadas mediante GitHub Contents API   |
+| Medios              | Binarios en Supabase Storage y metadata en `cms_media`                   |
 | Deploy              | Netlify, a partir de la rama configurada del repositorio                 |
 
 La integración de React está configurada, aunque las pantallas actuales están implementadas principalmente como componentes Astro con scripts de cliente. No hay componentes `.tsx` o `.jsx` en el repositorio.
 
-Supabase Storage y la metadata de medios en Supabase están **Planeados**; no forman parte del flujo actual. También están **Planeados** el uso de una GitHub App y la publicación mediante ramas o pull requests. Hoy las Functions usan `GITHUB_TOKEN` y escriben directamente en `GITHUB_BRANCH`.
+El uso de una GitHub App y la publicación mediante ramas o pull requests están **Planeados**. Hoy las Functions de contenido usan `GITHUB_TOKEN` y escriben directamente en `GITHUB_BRANCH`; `manage-media` escribe exclusivamente en Supabase Storage.
 
 ## Arquitectura
 
@@ -65,11 +65,10 @@ src/content/
 ├── paginas/
 ├── simposios/
 ├── categorias/
-├── etiquetas/
-└── menus/
+└── etiquetas/
 ```
 
-`manage-content` soporta las seis primeras. `menus` se construye como contenido público, pero su edición desde el CMS está **Planeada**.
+`manage-content` soporta las seis colecciones. La navegación principal se define de forma estática en `src/components/Header.astro`; no es contenido editorial.
 
 Rutas públicas principales:
 
@@ -90,7 +89,7 @@ Actualmente los borradores también se guardan como Markdown en GitHub con `draf
 - `/admin/`: dashboard.
 - `/admin/contenidos`: listado, búsqueda, creación, edición, borradores, publicación, eliminación, previsualización e historial Git de las colecciones soportadas.
 - `/admin/crear-memoria`: formulario rápido para memorias.
-- `/admin/medios`: biblioteca de imágenes almacenadas en `public/images/` en GitHub.
+- `/admin/medios`: biblioteca de medios almacenados en Supabase Storage.
 - `/admin/gestion-usuarios`: alta de cuentas y asignación de un rol efectivo.
 - `/admin/gestion-colecciones`: crea una colección genérica en GitHub; el formulario editorial para esa colección queda **Planeado**.
 

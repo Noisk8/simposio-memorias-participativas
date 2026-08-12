@@ -7,7 +7,7 @@ title: 'Proyecto 6402+'
 place: 'Colombia'
 author: ''
 collective: 'Wikimedia Colombia - MAFAPO'
-image: '/images/proyecto-5.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/9d605f3ff092065545a4d4597a0bd46a6cafc7f3fd3887f5275827483085b0ae-proyecto-5.jpg'
 description: '6402+ es un memorial digital en construcción que dignifica a las víctimas de ejecuciones extrajudiciales en Colombia.'
 tags:
   - museo-memorias

@@ -15,6 +15,7 @@
     "check": "node scripts/lint-taxonomies.mjs && node scripts/migrate-content-uuids.mjs --check && astro check",
     "check:content-uuids": "node scripts/migrate-content-uuids.mjs --check",
     "check:taxonomies": "node scripts/lint-taxonomies.mjs",
+    "migrate:media": "node scripts/migrate-media-to-storage.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:api": "node scripts/test-api-contract.mjs",
     "test:e2e": "npm run build && playwright test",

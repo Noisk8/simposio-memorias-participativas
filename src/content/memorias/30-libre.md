@@ -7,7 +7,7 @@ title: 'LIBRE'
 place: 'Estado español'
 author: 'Fernando Sánchez Castillo'
 collective: 'Comisionado 50 años de España en Libertad'
-image: '/images/proyecto-30.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/51a94c7c56dd8ddab0537fe02ca08785f12ee9b219b37f38adee78d0aa979bb4-proyecto-30.jpg'
 description: 'Libre invita a reflexionar sobre el papel del arte como herramienta de diálogo y construcción colectiva: una propuesta que convierte la memoria en acción y el pasado en una oportunidad para imaginar futuros más libres y compartidos.'
 tags:
   - museo-memorias

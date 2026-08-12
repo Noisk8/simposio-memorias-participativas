@@ -10,26 +10,3 @@ export const categoriaSchema = z.object({
 });
 
 export const etiquetaSchema = categoriaSchema.omit({ parent: true });
-
-const menuItemSchema = z.object({
-  label: z.string(),
-  url: z.string(),
-  order: z.number().optional().default(0),
-  children: z
-    .array(
-      z.object({
-        label: z.string(),
-        url: z.string(),
-        order: z.number().optional().default(0),
-      })
-    )
-    .optional()
-    .default([]),
-});
-
-export const menuSchema = z.object({
-  ...editorialIdentityFields,
-  title: z.string(),
-  slug: z.string(),
-  items: z.array(menuItemSchema).optional().default([]),
-});

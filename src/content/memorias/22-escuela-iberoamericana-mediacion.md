@@ -7,7 +7,7 @@ title: 'Escuela Iberoamericana de Mediación en sitios y Museos de Memoria'
 place: 'Chile, Argentina, México y España'
 author: ''
 collective: 'Escuela Iberoamericana de Mediación en sitios y Museos de Memoria'
-image: '/images/proyecto-22.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/a716b0c8ea499f9cb696192eadd639f9a65371bd0102096e73fe2d838578e662-proyecto-22.png'
 description: 'La Escuela se propone como un espacio que busca aportar a la formación de mediadores, educadores y trabajadores con audiencias de museos y sitios de memoria.'
 tags:
   - museo-memorias

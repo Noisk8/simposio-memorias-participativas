@@ -11,7 +11,7 @@ Supabase PostgreSQL es la fuente de verdad de autorización. El modelo usa `role
 - `author`: lectura, creación, edición de contenido propio, envío a revisión y carga de medios.
 - `read_only`: lectura administrativa sin mutaciones.
 
-La matriz exacta y canónica está en `supabase/migrations/202608080001_phase1_rbac.sql`. Algunas claves sembradas, como `menu.manage` o `media.update`, aún no tienen una interfaz o endpoint completo; disponer del permiso no implica que la capacidad esté implementada.
+La matriz base está en `supabase/migrations/202608080001_phase1_rbac.sql`; las migraciones posteriores forman parte del estado canónico. `202608110003_remove_menus.sql` retira los permisos de menú, mientras que algunas claves restantes, como `media.update`, aún no tienen una interfaz o endpoint completo. Disponer del permiso no implica que la capacidad esté implementada.
 
 ## Asignación
 

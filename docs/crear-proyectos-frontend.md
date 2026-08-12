@@ -36,7 +36,7 @@ El token GitHub actual debe ser fine-grained, limitarse al repositorio y dispone
 
 ## Imágenes
 
-El formulario rápido solicita una ruta `/images/...`; no incluye un selector ni subida embebida. Para subir la imagen usa `/admin/medios` o el editor general. La biblioteca actual escribe en `public/images/` de GitHub. Supabase Storage está **Planeado**.
+El formulario rápido solicita una URL de imagen; no incluye un selector ni subida embebida. Para subirla usa `/admin/medios` o el editor general. La biblioteca guarda el binario en Supabase Storage y devuelve una URL pública estable. Las rutas `/images/…` continúan admitidas durante la migración.
 
 ## Desarrollo local
 

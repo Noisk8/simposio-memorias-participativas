@@ -7,7 +7,7 @@ title: 'Herstóricas: memorias desde lo colectivo'
 place: 'Madrid, Granada (España)'
 author: ''
 collective: 'Asociación Herstóricas. Historia, mujeres y género'
-image: '/images/proyecto-15.jpg'
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/848dbc5b62b8724eb977b334e7996928f6d54826cbc0d9572c022d0b11eb0196-proyecto-15.jpg'
 description: 'Herstóricas es un proyecto cultural y educativo que trabaja la historia de las mujeres desde perspectivas feministas y comunitarias.'
 tags:
   - museo-memorias

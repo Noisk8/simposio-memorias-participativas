@@ -1,5 +1,13 @@
 ---
-import DynamicMenu from './DynamicMenu.astro';
+const navigationItems = [
+  { label: 'Acerca de', url: '/acerca-de' },
+  { label: 'Simposios', url: '/simposios' },
+  { label: 'Museo de Memorias Vivas', url: '/museo-memorias' },
+  { label: 'Programa', url: '/programa' },
+];
+
+const pathname = Astro.url.pathname;
+const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 ---
 
 <header class="bg-white sticky top-0 z-50">
@@ -73,19 +81,40 @@ import DynamicMenu from './DynamicMenu.astro';
         </button>
 
         <!-- Navegación desktop -->
-        <DynamicMenu
-          slug="principal"
+        <ul
           class="hidden md:inline-flex md:flex-wrap md:items-center md:justify-start md:gap-1 lg:gap-2"
-          itemClass="nav-link"
-        />
+        >
+          {
+            navigationItems.map((item) => (
+              <li>
+                <a
+                  href={item.url}
+                  class="nav-link"
+                  aria-current={isActive(item.url) ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
 
         <!-- Navegación móvil -->
-        <DynamicMenu
-          slug="principal"
-          class="hidden md:hidden flex-col gap-1 mt-3 pb-2"
-          itemClass="nav-link-mobile"
-          mobile
-        />
+        <ul class="hidden md:hidden flex-col gap-1 mt-3 pb-2">
+          {
+            navigationItems.map((item) => (
+              <li>
+                <a
+                  href={item.url}
+                  class="nav-link-mobile"
+                  aria-current={isActive(item.url) ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
       </nav>
 
       <!-- Usuario -->

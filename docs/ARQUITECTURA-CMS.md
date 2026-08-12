@@ -4,18 +4,19 @@ Este documento es la fuente de verdad técnica del CMS. Describe lo que está im
 
 ## Componentes y autoridad
 
-| Componente          | Responsabilidad actual                                                       |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Astro               | Genera el sitio público estático desde Content Collections                   |
-| React               | Integración habilitada; actualmente no hay componentes `.tsx`/`.jsx`         |
-| Tailwind CSS        | Estilos del sitio y del panel                                                |
-| Pagefind            | Índice de búsqueda generado después del build de Astro                       |
-| Panel propio        | Interfaz administrativa bajo `/admin/`                                       |
-| Supabase Auth       | Identidad y sesiones del CMS                                                 |
-| Supabase PostgreSQL | RBAC, propiedad, workflow, rate limiting, idempotencia preparada y auditoría |
-| Netlify Functions   | Límite de confianza para validación, autorización y operaciones externas     |
-| GitHub              | Fuente versionada del Markdown publicado y de `public/images/`               |
-| Netlify             | Functions, build y hosting del sitio                                         |
+| Componente          | Responsabilidad actual                                                      |
+| ------------------- | --------------------------------------------------------------------------- |
+| Astro               | Genera el sitio público estático desde Content Collections                  |
+| React               | Integración habilitada; actualmente no hay componentes `.tsx`/`.jsx`        |
+| Tailwind CSS        | Estilos del sitio y del panel                                               |
+| Pagefind            | Índice de búsqueda generado después del build de Astro                      |
+| Panel propio        | Interfaz administrativa bajo `/admin/`                                      |
+| Supabase Auth       | Identidad y sesiones del CMS                                                |
+| Supabase PostgreSQL | RBAC, workflow, rate limiting, metadata de medios, idempotencia y auditoría |
+| Supabase Storage    | Binarios públicos del CMS; escritura exclusiva desde Functions              |
+| Netlify Functions   | Límite de confianza para validación, autorización y operaciones externas    |
+| GitHub              | Fuente versionada del Markdown; conserva medios legacy durante la migración |
+| Netlify             | Functions, build y hosting del sitio                                        |
 
 Supabase es la única autoridad de identidad y autorización editorial. GitHub es la fuente versionada que Astro consume durante el build. En la implementación actual también contiene borradores marcados con `draft: true`; Supabase guarda su estado y metadata, pero no el cuerpo Markdown.
 
@@ -40,7 +41,8 @@ Netlify Function
   └─ emite auditoría y logs con requestId
        │
        ├─► Supabase: RBAC, workflow, auditoría
-       └─► GitHub: commit de Markdown o imagen
+       ├─► Supabase Storage: binario de medios
+       └─► GitHub: commit de Markdown
                     │
                     ▼
              build/deploy de Netlify
@@ -57,7 +59,7 @@ El frontend puede usar los permisos devueltos por la API para mostrar u ocultar 
 | ---------------------- | -------------------------------------------------------------------------------------------------------- |
 | `manage-content`       | CRUD de seis colecciones, UUID canónico, validación, propiedad, publicación directa y registro editorial |
 | `manage-workflow`      | Consulta de registro/eventos y transiciones de workflow                                                  |
-| `manage-media`         | Lista, sube y elimina imágenes de `public/images/` mediante GitHub                                       |
+| `manage-media`         | Lista, sube, actualiza metadata y elimina medios en Supabase Storage                                     |
 | `manage-users`         | Lista/crea usuarios de Supabase Auth y reemplaza su rol efectivo                                         |
 | `get-revision-history` | Hasta 30 commits GitHub de un archivo permitido                                                          |
 | `deploy-status`        | Estado combinado del commit de la rama configurada en GitHub                                             |
@@ -74,7 +76,7 @@ Los handlers delegan en `shared/cms/content-service.ts`, `workflow-service.ts`, 
 
 - Markdown: `src/content/{coleccion}/*.md`.
 - Identidad: UUID v4 en el campo `id` del frontmatter, generado o preservado por servidor.
-- Imágenes: `public/images/*`.
+- Medios legacy: `public/images/*`, conservados temporalmente y sin nuevas escrituras del CMS.
 - Historial: commits consultados por path.
 - Escritura actual: GitHub Contents API con `GITHUB_TOKEN` sobre `GITHUB_BRANCH`.
 - Paths de contenido: allowlist de colecciones y patrón seguro en servidor.
@@ -85,6 +87,7 @@ Los handlers delegan en `shared/cms/content-service.ts`, `workflow-service.ts`, 
 - RBAC: `roles`, `permissions`, `role_permissions`, `user_roles`.
 - Workflow y metadata editorial: `cms_content_records`, `cms_workflow_events`; el ID del registro coincide con el UUID del Markdown y resuelve colección, path, estado y último `github_sha` conocido.
 - Auditoría: `audit_log`.
+- Medios: `cms_media` guarda ubicación, URL pública, checksum, dimensiones, metadata editorial y borrado lógico; el binario vive en el bucket público `cms-media`.
 - Operaciones: `cms_operation_keys` existe en esquema, pero el código de Functions todavía no lo usa para idempotencia.
 - Rate limiting: `cms_rate_limits` y `cms_consume_rate_limit`, con una fila por sujeto HMAC/acción, ventana atómica y expiración.
 
@@ -105,16 +108,22 @@ El inicio de sesión del navegador llama directamente a Supabase Auth y conserva
 
 ## Estado de medios
 
-La biblioteca actual no usa Supabase Storage. `manage-media` valida nombre, extensión, firma binaria y límite de 4 MB, y después escribe la imagen en `public/images/` de GitHub. Antes de borrar busca referencias en `src/content` mediante GitHub Code Search. No existe una tabla de metadata de medios en las migraciones actuales.
+`manage-media` acepta únicamente JPEG, PNG, WebP y PDF, con un máximo absoluto de 2 MiB. Para imágenes contrasta extensión, MIME declarado, firma y formato decodificado por `sharp`; fuerza la decodificación completa y limita ancho, alto y píxeles mediante configuración server-side. Cualquier otro tipo, imágenes animadas, nombres peligrosos y archivos corruptos se rechazan antes de consultar Storage.
 
-**Planeado:** migrar binarios a Supabase Storage y guardar metadata editorial de medios en Supabase. Esa migración deberá definir compatibilidad de URLs, políticas RLS y traslado de los archivos existentes.
+Las imágenes nuevas requieren crédito, licencia y una decisión explícita entre texto alternativo no vacío o `is_decorative=true`. El original se conserva en `original_filename`, pero nunca se usa como key: las cargas nuevas emplean `images|documents/YYYY/MM/<uuid>-<slug-seguro>.<ext>`. Los paths históricos por SHA-256 siguen siendo válidos. El SHA-256 permanece en `checksum_sha256` para deduplicación, integridad y trazabilidad.
+
+No se generan `thumbnail`, `medium` y `large` en esta fase: el Markdown y los componentes públicos consumen una única URL y todavía no tienen un modelo de variantes. Añadir derivados ahora multiplicaría objetos sin un consumidor ni una política clara de borrado. `sharp` queda centralizado para incorporarlos cuando el modelo público use `srcset`/`picture`.
+
+El bucket permite lectura pública para el sitio estático. Políticas RLS restrictivas bloquean `INSERT`, `UPDATE` y `DELETE` desde clientes incluso si hubiera otra política permisiva; la Function usa `service_role` únicamente server-side después de RBAC. La tabla permite lectura directa solo a usuarios con `media.read`, pero las mutaciones se hacen por la Function.
+
+Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Storage. `scripts/migrate-media-to-storage.mjs` detecta referencias Markdown, verifica archivos, deduplica por checksum, sube y registra idempotentemente, y opcionalmente reescribe Markdown. Nunca elimina originales: solo informa cuáles quedan sin referencias en `src/`.
 
 ## Límites conocidos
 
 - El workflow está persistido, pero publicar mediante `manage-content` no exige que el estado anterior sea `approved`.
 - Los modelos exigen UUID v4 y el corpus actual ya fue migrado. `migrate-content-uuids.mjs --check` bloquea check/build si falta un ID o está duplicado.
 - El panel solo expone `submit_review` y `approve`; `request_changes` y `archive` están solo en la Function, y la publicación del panel no usa la transición `publish`.
-- `menus` tiene esquema Astro y permiso RBAC, pero no forma parte de la allowlist de `manage-content`.
+- La navegación pública es estática en `src/components/Header.astro`; no forma parte del dominio editorial del CMS.
 - Las colecciones genéricas creadas por `manage-collections` no obtienen automáticamente CRUD en el panel.
 - La escritura GitHub y la auditoría Supabase no forman una transacción distribuida. Si la auditoría no persiste, queda el evento estructurado `audit.persist.failed`.
 - El CMS escribe directamente en la rama configurada. GitHub App, ramas por cambio y pull requests están **Planeados**.
@@ -126,12 +135,12 @@ La biblioteca actual no usa Supabase Storage. `manage-media` valida nombre, exte
 ```text
 Implementado                         Planeado
 ────────────                         ────────
-Supabase Auth                        Supabase Storage para binarios
-RBAC en Supabase                     Metadata de medios en Supabase
-Workflow persistido                  Workflow obligatorio de punta a punta
+Supabase Auth + Storage              Workflow obligatorio de punta a punta
+RBAC y metadata en Supabase          GitHub App y publicación por PR
+Workflow persistido                  Separar cuerpos no publicados de GitHub
 Auditoría Supabase + logs            Idempotencia usada por las Functions
-Functions con validación             GitHub App y publicación por PR
-Markdown versionado en GitHub        Separar cuerpos no publicados de GitHub
+Functions con validación
+Markdown versionado en GitHub
 Rate limit distribuido
 Panel propio
 ```

@@ -1,16 +1,22 @@
 import { errorResponse, getCorsHeaders } from '../security';
 import { authorizeRequest } from '../../shared/security/rate-limit.ts';
-import { deleteMedia, listMedia, uploadMedia } from '../../shared/cms/media-service.ts';
+import {
+  deleteMedia,
+  listMedia,
+  mediaUploadPolicy,
+  updateMediaMetadata,
+  uploadMedia,
+} from '../../shared/cms/media-service.ts';
 import { AppError, ValidationError } from '../../shared/observability/errors.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 
 export const handler = async (event: any, context?: any) => {
   let requestId = getRequestId(event);
-  let headers = getCorsHeaders(event, 'GET, POST, DELETE, OPTIONS', requestId);
+  let headers = getCorsHeaders(event, 'GET, POST, PATCH, DELETE, OPTIONS', requestId);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
 
   try {
-    if (!['GET', 'POST', 'DELETE'].includes(event.httpMethod)) {
+    if (!['GET', 'POST', 'PATCH', 'DELETE'].includes(event.httpMethod)) {
       throw new AppError('METHOD_NOT_ALLOWED', 'Método no permitido.', 405);
     }
     const permission =
@@ -18,7 +24,9 @@ export const handler = async (event: any, context?: any) => {
         ? 'media.read'
         : event.httpMethod === 'POST'
           ? 'media.upload'
-          : 'media.delete';
+          : event.httpMethod === 'PATCH'
+            ? 'media.update'
+            : 'media.delete';
     const auth = await authorizeRequest(
       event,
       permission,
@@ -26,11 +34,15 @@ export const handler = async (event: any, context?: any) => {
       { netlifyContext: context }
     );
     requestId = auth.requestId;
-    headers = getCorsHeaders(event, 'GET, POST, DELETE, OPTIONS', requestId);
+    headers = getCorsHeaders(event, 'GET, POST, PATCH, DELETE, OPTIONS', requestId);
 
     if (event.httpMethod === 'GET') {
-      const images = await listMedia();
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, images, requestId }) };
+      const media = await listMedia();
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ ok: true, media, policy: mediaUploadPolicy(), requestId }),
+      };
     }
     if (event.httpMethod === 'POST') {
       let payload: unknown;
@@ -43,13 +55,20 @@ export const handler = async (event: any, context?: any) => {
       return {
         statusCode: result.statusCode,
         headers,
-        body: JSON.stringify({ ok: true, image: result.image, requestId }),
+        body: JSON.stringify({ ok: true, media: result.media, image: result.media, requestId }),
       };
     }
-    await deleteMedia(
-      { name: event.queryStringParameters?.name, sha: event.queryStringParameters?.sha },
-      auth
-    );
+    if (event.httpMethod === 'PATCH') {
+      let payload: unknown;
+      try {
+        payload = JSON.parse(event.body || '{}');
+      } catch {
+        throw new ValidationError('Cuerpo JSON inválido.');
+      }
+      const media = await updateMediaMetadata(payload, auth);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, media, requestId }) };
+    }
+    await deleteMedia({ id: event.queryStringParameters?.id }, auth);
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true, requestId }) };
   } catch (error) {
     return errorResponse(error, headers, requestId);

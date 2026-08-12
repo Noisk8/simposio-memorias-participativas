@@ -202,7 +202,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       ['author', 'Autoría', 'text'],
       ['categories', 'Categorías', 'relations:categorias'],
       ['tags', 'Etiquetas', 'relations:etiquetas'],
-      ['image', 'Imagen (/images/…)', 'text'],
+      ['image', 'Imagen (URL de medios)', 'text'],
       ['description', 'Descripción', 'textarea'],
     ],
     memorias: [
@@ -215,7 +215,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       ['collective', 'Colectivo', 'text'],
       ['categories', 'Categorías', 'relations:categorias'],
       ['tags', 'Etiquetas', 'relations:etiquetas'],
-      ['image', 'Imagen (/images/…)', 'text'],
+      ['image', 'Imagen (URL de medios)', 'text'],
       ['description', 'Descripción', 'textarea'],
       ['publish_date', 'Fecha de publicación', 'date'],
     ],
@@ -709,14 +709,44 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
             : (value ?? '');
     wrapper.appendChild(input);
     if (['image', 'poster', 'instituciones_image'].includes(key)) {
+      const mediaMetadata = document.createElement('div');
+      mediaMetadata.className = 'mt-2 grid gap-2 rounded-lg border border-gray-200 p-3 text-xs';
+
+      const decorativeLabel = document.createElement('label');
+      decorativeLabel.className = 'flex items-center gap-2';
+      const decorative = document.createElement('input');
+      decorative.type = 'checkbox';
+      decorativeLabel.append(decorative, document.createTextNode(' Imagen decorativa'));
+
+      function metadataField(placeholder) {
+        const field = document.createElement('input');
+        field.type = 'text';
+        field.placeholder = placeholder;
+        field.className = 'w-full rounded-lg border border-gray-300 px-3 py-2';
+        return field;
+      }
+      const mediaAlt = metadataField('Texto alternativo de la imagen');
+      const mediaCredit = metadataField('Crédito (obligatorio)');
+      const mediaLicense = metadataField('Licencia (obligatoria, ej. CC BY-SA 4.0)');
+      decorative.onchange = () => {
+        mediaAlt.disabled = decorative.checked;
+        if (decorative.checked) mediaAlt.value = '';
+      };
+      mediaMetadata.append(decorativeLabel, mediaAlt, mediaCredit, mediaLicense);
+
       const picker = document.createElement('input');
       picker.type = 'file';
-      picker.accept = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
+      picker.accept = 'image/jpeg,image/png,image/webp';
       picker.className = 'mt-2 block w-full text-xs';
       picker.onchange = async () => {
         const file = picker.files?.[0];
         if (!file) return;
-        if (file.size > 4 * 1024 * 1024) return setStatus('La imagen supera 4 MB.', true);
+        if (!decorative.checked && !mediaAlt.value.trim()) {
+          return setStatus('Añade texto alternativo o marca la imagen como decorativa.', true);
+        }
+        if (!mediaCredit.value.trim() || !mediaLicense.value.trim()) {
+          return setStatus('El crédito y la licencia de la imagen son obligatorios.', true);
+        }
         setStatus('Subiendo imagen…');
         const localPreviewUrl = URL.createObjectURL(file);
         input.dataset.previewSrc = localPreviewUrl;
@@ -727,7 +757,15 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
             const content = String(reader.result).split(',')[1];
             const result = await api('/.netlify/functions/manage-media', {
               method: 'POST',
-              body: JSON.stringify({ name: file.name, content }),
+              body: JSON.stringify({
+                name: file.name,
+                mimeType: file.type,
+                content,
+                altText: mediaAlt.value.trim(),
+                credit: mediaCredit.value.trim(),
+                license: mediaLicense.value.trim(),
+                decorative: decorative.checked,
+              }),
             });
             input.value = result.image.path;
             input.dataset.previewSrc = result.image.previewUrl || localPreviewUrl;
@@ -739,7 +777,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         };
         reader.readAsDataURL(file);
       };
-      wrapper.appendChild(picker);
+      wrapper.append(mediaMetadata, picker);
     }
     return wrapper;
   }
