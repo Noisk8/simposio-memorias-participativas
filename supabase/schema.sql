@@ -14,6 +14,7 @@
 --   202608110004_cms_media_storage.sql
 --   202608110005_professional_media_validation.sql
 --   202608110006_media_types_and_2mib_limit.sql
+--   202608110007_approved_version_pr_publication.sql
 --
 -- No vuelvas a definir aquí tablas sueltas: hacerlo separaría el entorno local
 -- del historial aplicado en Supabase.

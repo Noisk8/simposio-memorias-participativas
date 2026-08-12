@@ -8,9 +8,9 @@ Esta es la guía canónica. No existen `GUIA-DESPLIEGUE.md` ni `INSTRUCCIONES.md
 - Proyecto Supabase.
 - Repositorio GitHub que contiene el sitio.
 - Sitio Netlify conectado al repositorio.
-- Token GitHub fine-grained limitado al repositorio con `Contents: Read and write`.
+- GitHub App instalada únicamente en el repositorio editorial.
 
-La GitHub App está **Planeada**; las Functions actuales esperan `GITHUB_TOKEN`.
+Consulta la creación, permisos mínimos y retirada del token legacy en `docs/GITHUB-APP.md`.
 
 ## Configuración versionada
 
@@ -40,6 +40,7 @@ La GitHub App está **Planeada**; las Functions actuales esperan `GITHUB_TOKEN`.
    202608110004_cms_media_storage.sql
    202608110005_professional_media_validation.sql
    202608110006_media_types_and_2mib_limit.sql
+   202608110007_approved_version_pr_publication.sql
    ```
 
 3. Predeclara el primer administrador en `public.admin_emails` antes de crear su cuenta.
@@ -75,7 +76,9 @@ PUBLIC_SUPABASE_ANON_KEY=...
 SITE_URL=https://tu-sitio.example
 ALLOWED_ORIGINS=https://preview-autorizado.example
 
-GITHUB_TOKEN=...
+GITHUB_APP_ID=...
+GITHUB_APP_INSTALLATION_ID=...
+GITHUB_APP_PRIVATE_KEY=...
 GITHUB_REPO=organizacion/repositorio
 GITHUB_BRANCH=main
 
@@ -95,17 +98,16 @@ RESEND_API_KEY=...
 RESEND_FROM_EMAIL=panel@tu-dominio.example
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_TOKEN` y `RESEND_API_KEY` son secretos server-side. No uses prefijo `PUBLIC_`.
+`SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_APP_PRIVATE_KEY` y `RESEND_API_KEY` son secretos server-side. No uses prefijo `PUBLIC_`.
 
 ## Pasos manuales: GitHub
 
-1. Limita el token al repositorio usado en `GITHUB_REPO`.
-2. Concede solo `Contents: Read and write` y los mínimos permisos de lectura necesarios.
-3. Configura `GITHUB_BRANCH` con una rama que el token pueda modificar.
-4. Mantén CI requerido y bloquea force-push cuando sea compatible con el flujo de escritura directa.
-5. Confirma que los commits activan el build de Netlify.
+1. Sigue `docs/GITHUB-APP.md` y limita la instalación a este repositorio.
+2. Configura `GITHUB_BRANCH` como rama base.
+3. Exige los checks de CI y revisión humana en los PR editoriales; bloquea force-push.
+4. Confirma que el merge activa el build de Netlify.
 
-Una regla que exija pull request para todo cambio en `main` puede bloquear el CMS actual, porque todavía escribe directamente en la rama. La publicación por rama/PR está **Planeada**.
+Los borradores siguen versionándose en la rama configurada y son filtrados por Astro. La operación protegida `approved → publish` nunca cambia allí `draft:false`: crea una rama y un PR. Si una regla impide guardar borradores, configura explícitamente la excepción mínima para la GitHub App o migra los borradores a una rama separada antes de activarla.
 
 El proveedor editorial anterior basado en Decap CMS, Netlify Identity y Git Gateway es **legacy**. No habilites esos servicios para el despliegue actual.
 

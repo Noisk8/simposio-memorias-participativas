@@ -3,6 +3,7 @@ import { authorizeRequest } from '../../shared/security/rate-limit.ts';
 import { recordAudit } from '../../shared/observability/audit.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { getGitHubConfiguration } from '../../shared/github/config.ts';
+import { githubRequest } from '../../shared/github/client.ts';
 import { AppError, GitHubError, ValidationError } from '../../shared/observability/errors.ts';
 
 const READ_PERMISSIONS: Record<string, string> = {
@@ -38,15 +39,10 @@ export const handler = async (event: any, context?: any) => {
     requestId = auth.requestId;
     headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
 
-    const { token, owner: repoOwner, repo: repoName, branch } = getGitHubConfiguration();
+    const { owner: repoOwner, repo: repoName, branch } = getGitHubConfiguration();
 
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${encodeURIComponent(filePath)}&sha=${encodeURIComponent(branch)}&per_page=30`;
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github.v3+json',
-        'User-Agent': 'Simposio-CMS',
-      },
+    const response = await githubRequest(`/repos/${repoOwner}/${repoName}/commits`, {
+      query: { path: filePath, sha: branch, per_page: 30 },
     });
 
     if (!response.ok) {

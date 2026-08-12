@@ -12,9 +12,6 @@ export function normalizeGitHubRepository(value: unknown): string {
 }
 
 export function getGitHubConfiguration() {
-  const token = String(process.env.GITHUB_TOKEN || '').trim();
-  if (!token) throw new ConfigurationError('GITHUB_TOKEN no está configurado.');
-
   const normalized = normalizeGitHubRepository(process.env.GITHUB_REPO);
   const [owner, repo, ...extra] = normalized.split('/');
   if (!owner || !repo || extra.length) {
@@ -23,7 +20,6 @@ export function getGitHubConfiguration() {
     );
   }
   return {
-    token,
     owner,
     repo,
     branch: String(process.env.GITHUB_BRANCH || 'main').trim() || 'main',

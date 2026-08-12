@@ -26,17 +26,17 @@ El editor permite listar, buscar, crear, abrir, modificar y eliminar:
 
 Cada documento tiene un `id` UUID v4. La Function lo genera al crear y conserva la identidad existente al editar; no se copia ni se modifica manualmente desde el formulario.
 
-Para entradas, memorias y páginas muestra vistas de borradores y botones para guardar borrador o publicar. La vista previa interpreta un subconjunto de Markdown y permite seleccionar relaciones con simposios y taxonomías. Los archivos existentes muestran su historial de commits de GitHub.
+Para entradas, memorias y páginas muestra vistas de borradores y botones para guardar, enviar a revisión, aprobar y preparar la publicación cuando los permisos y el estado lo permiten. La vista previa interpreta un subconjunto de Markdown y permite seleccionar relaciones con simposios y taxonomías. Los archivos existentes muestran su historial de commits de GitHub.
 
-La casilla `draft` determina la visibilidad pública de entradas, memorias y páginas. Al publicar, la Function guarda `draft: false`, normaliza `publish_date`, registra estado `published` y hace commit en GitHub. La nueva versión se verá cuando termine el siguiente deploy de Netlify.
+La casilla `draft` determina la visibilidad pública, pero el servidor controla su valor. Publicar no guarda directamente en `main`: abre un Pull Request que cambia el artefacto aprobado a público. La nueva versión se verá tras checks correctos, fusión manual y el siguiente deploy de Netlify.
 
 El navegador conserva temporalmente un borrador local en `localStorage` mientras se escribe. Ese respaldo no sustituye el guardado en el servidor y no se sincroniza entre dispositivos.
 
 ### Workflow
 
-El panel permite enviar un documento guardado a revisión y aprobar uno que esté `in_review`. Supabase conserva estado, propiedad y eventos.
+El panel permite enviar un documento guardado a revisión y aprobar uno que esté `in_review`. Supabase conserva estado, propiedad, eventos y las versiones actual/aprobada/publicada.
 
-Limitación actual: el botón Publicar usa el guardado directo y no exige que el documento haya pasado antes por `approved`. Solicitar cambios y archivar existen en la Function, pero aún no tienen controles en el panel. La obligatoriedad completa del workflow está **Planeada**.
+El botón **Crear Pull Request** solo aparece si la versión actual coincide exactamente con la aprobada. Si alguien modifica el contenido, el panel muestra que la aprobación fue invalidada y el estado vuelve a `changes_requested`. Solicitar cambios y archivar existen en la Function, pero aún no tienen controles en el panel.
 
 ## Crear memoria rápidamente
 
@@ -91,6 +91,6 @@ Abre `http://localhost:8888/admin/`. Ejecutar solo Astro no habilita las Functio
 ## Seguridad para personas editoras
 
 - No compartas tokens ni la contraseña temporal en canales públicos.
-- No copies valores de `SUPABASE_SERVICE_ROLE_KEY` o `GITHUB_TOKEN` al navegador.
+- No copies valores de `SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_APP_PRIVATE_KEY` o `GITHUB_TOKEN` al navegador.
 - Un control oculto en la interfaz no concede ni revoca permisos; la decisión final se toma en servidor.
 - Incluye el `requestId` al reportar un error del panel.

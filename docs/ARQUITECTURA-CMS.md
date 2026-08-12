@@ -55,16 +55,16 @@ El frontend puede usar los permisos devueltos por la API para mostrar u ocultar 
 
 ## Funciones activas
 
-| Function               | Responsabilidad                                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| `manage-content`       | CRUD de seis colecciones, UUID canónico, validación, propiedad, publicación directa y registro editorial |
-| `manage-workflow`      | Consulta de registro/eventos y transiciones de workflow                                                  |
-| `manage-media`         | Lista, sube, actualiza metadata y elimina medios en Supabase Storage                                     |
-| `manage-users`         | Lista/crea usuarios de Supabase Auth y reemplaza su rol efectivo                                         |
-| `get-revision-history` | Hasta 30 commits GitHub de un archivo permitido                                                          |
-| `deploy-status`        | Estado combinado del commit de la rama configurada en GitHub                                             |
-| `manage-collections`   | Modifica `src/content.config.ts` y crea el marcador `.gitkeep`; no escribe Markdown editorial            |
-| `create-coleccion`     | Wrapper temporal obsoleto que delega íntegramente en `manage-collections`                                |
+| Function               | Responsabilidad                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `manage-content`       | CRUD de seis colecciones, UUID canónico, validación, propiedad e invalidación de aprobaciones |
+| `manage-workflow`      | Versiones exactas, transiciones, creación/reconciliación de ramas y Pull Requests             |
+| `manage-media`         | Lista, sube, actualiza metadata y elimina medios en Supabase Storage                          |
+| `manage-users`         | Lista/crea usuarios de Supabase Auth y reemplaza su rol efectivo                              |
+| `get-revision-history` | Hasta 30 commits GitHub de un archivo permitido                                               |
+| `deploy-status`        | Estado combinado del commit de la rama configurada en GitHub                                  |
+| `manage-collections`   | Modifica `src/content.config.ts` y crea el marcador `.gitkeep`; no escribe Markdown editorial |
+| `create-coleccion`     | Wrapper temporal obsoleto que delega íntegramente en `manage-collections`                     |
 
 `create-proyecto` fue retirado: no tenía consumidores internos. La redirección de página `/admin/crear-proyecto` permanece por compatibilidad de navegación.
 
@@ -78,14 +78,15 @@ Los handlers delegan en `shared/cms/content-service.ts`, `workflow-service.ts`, 
 - Identidad: UUID v4 en el campo `id` del frontmatter, generado o preservado por servidor.
 - Medios legacy: `public/images/*`, conservados temporalmente y sin nuevas escrituras del CMS.
 - Historial: commits consultados por path.
-- Escritura actual: GitHub Contents API con `GITHUB_TOKEN` sobre `GITHUB_BRANCH`.
+- Autenticación: GitHub App server-side; `GITHUB_TOKEN` es solo fallback temporal obsoleto.
+- Los borradores se guardan en `GITHUB_BRANCH`; publicar nunca escribe el artefacto público directamente allí, sino en una rama `cms/<uuid>/<timestamp>` mediante PR.
 - Paths de contenido: allowlist de colecciones y patrón seguro en servidor.
 
 ### Supabase
 
 - Auth: usuarios y sesiones.
 - RBAC: `roles`, `permissions`, `role_permissions`, `user_roles`.
-- Workflow y metadata editorial: `cms_content_records`, `cms_workflow_events`; el ID del registro coincide con el UUID del Markdown y resuelve colección, path, estado y último `github_sha` conocido.
+- Workflow y metadata editorial: `cms_content_records`, `cms_workflow_events`; separan SHA editorial actual/aprobado/publicado del SHA técnico del blob y guardan rama, PR, merge y despliegue.
 - Auditoría: `audit_log`.
 - Medios: `cms_media` guarda ubicación, URL pública, checksum, dimensiones, metadata editorial y borrado lógico; el binario vive en el bucket público `cms-media`.
 - Operaciones: `cms_operation_keys` existe en esquema, pero el código de Functions todavía no lo usa para idempotencia.
@@ -120,13 +121,12 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 
 ## Límites conocidos
 
-- El workflow está persistido, pero publicar mediante `manage-content` no exige que el estado anterior sea `approved`.
 - Los modelos exigen UUID v4 y el corpus actual ya fue migrado. `migrate-content-uuids.mjs --check` bloquea check/build si falta un ID o está duplicado.
-- El panel solo expone `submit_review` y `approve`; `request_changes` y `archive` están solo en la Function, y la publicación del panel no usa la transición `publish`.
+- El panel expone `submit_review`, `approve` y `publish`; `request_changes` y `archive` siguen disponibles solo en la Function.
 - La navegación pública es estática en `src/components/Header.astro`; no forma parte del dominio editorial del CMS.
 - Las colecciones genéricas creadas por `manage-collections` no obtienen automáticamente CRUD en el panel.
 - La escritura GitHub y la auditoría Supabase no forman una transacción distribuida. Si la auditoría no persiste, queda el evento estructurado `audit.persist.failed`.
-- El CMS escribe directamente en la rama configurada. GitHub App, ramas por cambio y pull requests están **Planeados**.
+- La confirmación de merge ocurre al consultar el workflow; todavía no existe webhook de GitHub para reconciliación inmediata.
 - `deploy-status` informa estados de commit de GitHub; no consulta directamente la API de deploys de Netlify.
 - Separar los cuerpos no publicados para que GitHub contenga únicamente contenido publicado está **Planeado**; hoy los borradores permanecen versionados y Astro los filtra.
 
@@ -135,10 +135,11 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 ```text
 Implementado                         Planeado
 ────────────                         ────────
-Supabase Auth + Storage              Workflow obligatorio de punta a punta
-RBAC y metadata en Supabase          GitHub App y publicación por PR
-Workflow persistido                  Separar cuerpos no publicados de GitHub
-Auditoría Supabase + logs            Idempotencia usada por las Functions
+Supabase Auth + Storage              Separar cuerpos no publicados de GitHub
+RBAC y metadata en Supabase          Webhook de reconciliación de PR/merge
+Workflow ligado a SHA                Idempotencia genérica para todo el CMS
+GitHub App + publicación por PR
+Auditoría Supabase + logs
 Functions con validación
 Markdown versionado en GitHub
 Rate limit distribuido

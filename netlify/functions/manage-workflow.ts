@@ -36,7 +36,7 @@ export const handler = async (event: any, context?: any) => {
       });
       requestId = auth.requestId;
       headers = getCorsHeaders(event, 'GET, POST, OPTIONS', requestId);
-      const record = await getWorkflowState(path);
+      const record = await getWorkflowState(path, auth);
       return {
         statusCode: 200,
         headers,

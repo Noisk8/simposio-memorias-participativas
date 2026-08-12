@@ -1,6 +1,7 @@
 import { errorResponse, getCorsHeaders } from '../security';
 import { authorizeRequest } from '../../shared/security/rate-limit.ts';
 import { getGitHubConfiguration } from '../../shared/github/config.ts';
+import { githubRequest } from '../../shared/github/client.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { AppError, GitHubError } from '../../shared/observability/errors.ts';
 
@@ -17,16 +18,8 @@ export const handler = async (event: any, context?: any) => {
     requestId = auth.requestId;
     headers = getCorsHeaders(event, 'GET, OPTIONS', requestId);
     const config = getGitHubConfiguration();
-    const response = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/commits/${encodeURIComponent(config.branch)}/status`,
-      {
-        headers: {
-          Authorization: `Bearer ${config.token}`,
-          Accept: 'application/vnd.github+json',
-          'User-Agent': 'Simposio-CMS',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      }
+    const response = await githubRequest(
+      `/repos/${config.owner}/${config.repo}/commits/${encodeURIComponent(config.branch)}/status`
     );
     if (!response.ok)
       throw new GitHubError('No se pudo consultar el estado del despliegue.', {

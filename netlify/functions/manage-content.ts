@@ -35,7 +35,7 @@ export const handler = async (event: any, context?: any) => {
     const auth = await authorizeRequest(
       event,
       contentPermission(collection, action),
-      action === 'read' ? 'read' : action === 'publish' ? 'publish' : 'write',
+      action === 'read' ? 'read' : 'write',
       { netlifyContext: context }
     );
     requestId = auth.requestId;

@@ -15,7 +15,8 @@ import {
 import { parseMarkdownDocument, serializeMarkdownDocument } from '../content/frontmatter.ts';
 import { assignNewContentId, isContentId, preserveContentId } from '../content/identity.ts';
 import { newContentPath, publicUrlForContent } from '../content/paths.ts';
-import { normalizePublishedContent } from '../content/publication.ts';
+import { contentVersionSha, workflowStateAfterEdit } from '../content/version.ts';
+import { closePullRequest } from '../github/client.ts';
 import { getGitHubConfiguration } from '../github/config.ts';
 import { githubContentsRequest } from '../github/contents-client.ts';
 import { recordAudit } from '../observability/audit.ts';
@@ -38,7 +39,7 @@ export const CONTENT_COLLECTIONS = {
 } as const;
 
 export type ContentCollection = keyof typeof CONTENT_COLLECTIONS;
-export type ContentAction = 'read' | 'create' | 'update' | 'publish' | 'delete';
+export type ContentAction = 'read' | 'create' | 'update' | 'delete';
 type WorkflowState =
   'draft' | 'in_review' | 'changes_requested' | 'approved' | 'published' | 'archived';
 
@@ -62,7 +63,6 @@ export function contentPermission(collection: ContentCollection, action: Content
 export function contentAction(method: string, payload: any = {}): ContentAction {
   if (method === 'GET') return 'read';
   if (method === 'DELETE') return 'delete';
-  if (payload?.data?.draft === false) return 'publish';
   return method === 'POST' && !payload?.sha ? 'create' : 'update';
 }
 
@@ -86,6 +86,7 @@ function decodeFile(file: any) {
     sha: file.sha,
     data: document.data,
     body: document.body,
+    currentSha: contentVersionSha(document.data, document.body),
   };
 }
 
@@ -171,23 +172,23 @@ function validateDocument(collection: ContentCollection, data: unknown, body: un
 }
 
 async function assertOwnership(auth: PermissionContext, filePath: string, creating = false) {
-  if (creating) return { ownerId: auth.user.id, recordId: null };
+  if (creating) return { ownerId: auth.user.id, recordId: null, record: null };
   const client = getAdminClient();
   if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
   const { data, error } = await client
     .from('cms_content_records')
-    .select('id, owner_id')
+    .select('*')
     .eq('path', filePath)
     .maybeSingle();
   if (error)
     throw new AppError('INTERNAL_ERROR', 'No se pudo comprobar la propiedad editorial.', 500);
   if (auth.roles.some((role: string) => MANAGER_ROLES.has(role))) {
-    return { ownerId: data?.owner_id || auth.user.id, recordId: data?.id || null };
+    return { ownerId: data?.owner_id || auth.user.id, recordId: data?.id || null, record: data };
   }
   if (!data || data.owner_id !== auth.user.id) {
     throw new AuthorizationError('Solo puedes modificar contenido de tu autoría.');
   }
-  return { ownerId: data.owner_id, recordId: data.id };
+  return { ownerId: data.owner_id, recordId: data.id, record: data };
 }
 
 async function assertIdAvailable(contentId: string, filePath: string) {
@@ -213,7 +214,9 @@ async function registerContent(input: {
   ownerId: string;
   creating: boolean;
   sha?: string;
+  currentSha: string;
   state: WorkflowState;
+  deploymentState?: string;
 }) {
   const client = getAdminClient();
   if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
@@ -225,7 +228,9 @@ async function registerContent(input: {
       owner_id: input.ownerId,
       updated_by: input.auth.user.id,
       github_sha: input.sha || null,
+      current_sha: input.currentSha,
       workflow_state: input.state,
+      ...(input.deploymentState ? { deployment_state: input.deploymentState } : {}),
       updated_at: new Date().toISOString(),
       ...(input.creating ? { created_by: input.auth.user.id } : {}),
     },
@@ -250,12 +255,35 @@ async function reconcileRecord(item: any, collection: ContentCollection) {
   if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
   const { data: existing, error: readError } = await client
     .from('cms_content_records')
-    .select('id')
+    .select('*')
     .eq('path', item.path)
     .maybeSingle();
   if (readError)
     throw new AppError('INTERNAL_ERROR', 'No se pudo reconciliar la identidad editorial.', 500);
-  const values = { id: contentId, collection, path: item.path, github_sha: item.sha };
+  const approvalInvalid =
+    Boolean(existing?.approved_sha) && existing.approved_sha !== item.currentSha;
+  if (approvalInvalid && existing?.deployment_state === 'pr_open' && existing.github_pr_number) {
+    const closeResponse = await closePullRequest(Number(existing.github_pr_number));
+    if (!closeResponse.ok) {
+      throw new GitHubError('La versión cambió, pero no se pudo cerrar el Pull Request obsoleto.', {
+        status: closeResponse.status,
+      });
+    }
+  }
+  const values = {
+    id: contentId,
+    collection,
+    path: item.path,
+    github_sha: item.sha,
+    current_sha: item.currentSha,
+    ...(approvalInvalid
+      ? {
+          workflow_state: 'changes_requested',
+          deployment_state:
+            existing?.deployment_state === 'pr_open' ? 'stale' : existing?.deployment_state,
+        }
+      : {}),
+  };
   const query = existing
     ? client.from('cms_content_records').update(values).eq('path', item.path)
     : client.from('cms_content_records').insert({
@@ -268,6 +296,16 @@ async function reconcileRecord(item: any, collection: ContentCollection) {
     throw new ConflictError('El UUID editorial está duplicado en otro contenido.');
   if (error)
     throw new AppError('INTERNAL_ERROR', 'No se pudo reconciliar la identidad editorial.', 500);
+  const { data: record, error: resultError } = await client
+    .from('cms_content_records')
+    .select('*')
+    .eq('path', item.path)
+    .single();
+  if (resultError)
+    throw new AppError('INTERNAL_ERROR', 'No se pudo leer el estado editorial.', 500);
+  item.workflow = record;
+  item.data.workflow_state = record.workflow_state;
+  return record;
 }
 
 export async function getContent(input: { collection: ContentCollection; filePath?: unknown }) {
@@ -321,7 +359,7 @@ export async function saveContent(input: {
       ? payload.data
       : {};
   let filePath: string;
-  let ownership: { ownerId: string; recordId: string | null };
+  let ownership: { ownerId: string; recordId: string | null; record: any | null };
   let identifiedData: Record<string, unknown>;
   if (creating) {
     identifiedData = assignNewContentId(untrustedData);
@@ -334,6 +372,11 @@ export async function saveContent(input: {
       throw new ValidationError('La ruta de guardado no es válida.');
     }
     ownership = await assertOwnership(auth, filePath);
+    if (['creating_pr', 'pr_open'].includes(String(ownership.record?.deployment_state || ''))) {
+      throw new ConflictError(
+        'Hay un Pull Request de publicación abierto. Ciérralo o fusiónalo antes de editar.'
+      );
+    }
     const existing = await readContentFile(filePath);
     if (existing.sha !== payload.sha) {
       throw new ConflictError('El contenido cambió. Actualiza la lista antes de editarlo.');
@@ -347,27 +390,65 @@ export async function saveContent(input: {
   }
   const contentId = String(data.id);
   await assertIdAvailable(contentId, filePath);
-  const requestedState: WorkflowState = payload.data?.draft === false ? 'published' : 'draft';
+  const previousState = String(ownership.record?.workflow_state || 'draft') as WorkflowState;
+  const previousVersion = String(ownership.record?.current_sha || '');
+  const candidateVersion = contentVersionSha(data, payload.body);
+  const requestedState: WorkflowState = creating
+    ? 'draft'
+    : (workflowStateAfterEdit(previousState, previousVersion, candidateVersion) as WorkflowState);
   data.owner_id = ownership.ownerId;
   data.workflow_state = requestedState;
-  const normalizedData = normalizePublishedContent(data, requestedState);
-  const content = serializeMarkdownDocument(normalizedData, payload.body);
-  const response = await githubContentsRequest(filePath, {
-    method: 'PUT',
-    body: JSON.stringify({
-      message: `${payload.sha ? 'Actualizar' : 'Crear'} ${collection}: ${String(normalizedData.title || filePath)}`,
-      content: Buffer.from(content, 'utf8').toString('base64'),
-      branch: getGitHubConfiguration().branch,
-      ...(payload.sha ? { sha: payload.sha } : {}),
-    }),
-  });
+  data.draft = requestedState !== 'published';
+  const currentSha = contentVersionSha(data, payload.body);
+  const content = serializeMarkdownDocument(data, payload.body);
+  const previousDeployment = String(ownership.record?.deployment_state || 'none');
+  if (!creating) {
+    const client = getAdminClient();
+    if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
+    const { data: claimed, error: claimError } = await client
+      .from('cms_content_records')
+      .update({ deployment_state: 'editing', updated_at: new Date().toISOString() })
+      .eq('id', contentId)
+      .eq('deployment_state', previousDeployment)
+      .select('id')
+      .maybeSingle();
+    if (claimError || !claimed) {
+      throw new ConflictError('El estado de publicación cambió. Actualiza antes de editar.');
+    }
+  }
+  const restoreEditClaim = async () => {
+    if (creating) return;
+    await getAdminClient()
+      ?.from('cms_content_records')
+      .update({ deployment_state: previousDeployment, updated_at: new Date().toISOString() })
+      .eq('id', contentId)
+      .eq('deployment_state', 'editing');
+  };
+  let response: Awaited<ReturnType<typeof githubContentsRequest>>;
+  try {
+    response = await githubContentsRequest(filePath, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: `${payload.sha ? 'Actualizar' : 'Crear'} ${collection}: ${String(data.title || filePath)}`,
+        content: Buffer.from(content, 'utf8').toString('base64'),
+        branch: getGitHubConfiguration().branch,
+        ...(payload.sha ? { sha: payload.sha } : {}),
+      }),
+    });
+  } catch (error) {
+    await restoreEditClaim();
+    throw error;
+  }
   if (response.status === 409 || response.status === 422) {
+    await restoreEditClaim();
     throw new ConflictError(
       'El contenido cambió o ya existe. Actualiza la lista antes de reintentar.'
     );
   }
-  if (!response.ok)
+  if (!response.ok) {
+    await restoreEditClaim();
     throw new GitHubError('No se pudo guardar el contenido.', { status: response.status });
+  }
   const result: any = await response.json();
   LIST_CACHE.delete(collection);
   await registerContent({
@@ -378,8 +459,35 @@ export async function saveContent(input: {
     ownerId: ownership.ownerId,
     creating,
     sha: result.content?.sha,
+    currentSha,
     state: requestedState,
+    deploymentState: !creating && previousVersion !== currentSha ? 'none' : previousDeployment,
   });
+  const approvalInvalidated =
+    Boolean(ownership.record?.approved_sha) && ownership.record.approved_sha !== currentSha;
+  if (approvalInvalidated) {
+    await getAdminClient()
+      ?.from('cms_workflow_events')
+      .insert({
+        content_id: contentId,
+        from_state: previousState,
+        to_state: 'changes_requested',
+        event_type: 'approval_invalidated',
+        content_sha: currentSha,
+        actor_id: auth.user.id,
+        comment: 'La aprobación quedó invalidada porque el contenido fue modificado.',
+        metadata: { approved_sha: ownership.record.approved_sha, current_sha: currentSha },
+      });
+    await recordAudit({
+      requestId: auth.requestId,
+      actorId: auth.user.id,
+      action: 'content_approval_invalidated',
+      resourceType: collection,
+      resourceId: contentId,
+      result: 'success',
+      metadata: { approved_sha: ownership.record.approved_sha, current_sha: currentSha },
+    });
+  }
   await mirrorLocal(filePath, content);
   const action = contentAction(input.method, payload);
   await recordAudit({
@@ -394,7 +502,7 @@ export async function saveContent(input: {
   return {
     creating,
     item: { id: contentId, path: filePath, sha: result.content?.sha },
-    publicUrl: publicUrlForContent(collection, filePath, normalizedData),
+    publicUrl: publicUrlForContent(collection, filePath, data),
   };
 }
 
@@ -413,21 +521,55 @@ export async function deleteContent(input: {
     throw new ValidationError('La ruta o versión a eliminar no es válida.');
   }
   const ownership = await assertOwnership(input.auth, input.filePath);
-  const response = await githubContentsRequest(input.filePath, {
-    method: 'DELETE',
-    body: JSON.stringify({
-      message: `Eliminar ${input.collection}: ${input.filePath}`,
-      sha: input.sha,
-      branch: getGitHubConfiguration().branch,
-    }),
-  });
+  if (['editing', 'creating_pr', 'pr_open'].includes(String(ownership.record?.deployment_state))) {
+    throw new ConflictError(
+      'Hay una edición o publicación en curso. Ciérrala o fusiónala antes de eliminar.'
+    );
+  }
+  const client = getAdminClient();
+  if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
+  const previousDeployment = String(ownership.record?.deployment_state || 'none');
+  const { data: claimed, error: claimError } = await client
+    .from('cms_content_records')
+    .update({ deployment_state: 'editing', updated_at: new Date().toISOString() })
+    .eq('id', ownership.recordId)
+    .eq('deployment_state', previousDeployment)
+    .select('id')
+    .maybeSingle();
+  if (claimError || !claimed) {
+    throw new ConflictError('El estado de publicación cambió. Actualiza antes de eliminar.');
+  }
+  const restoreDeleteClaim = async () => {
+    await client
+      .from('cms_content_records')
+      .update({ deployment_state: previousDeployment, updated_at: new Date().toISOString() })
+      .eq('id', ownership.recordId)
+      .eq('deployment_state', 'editing');
+  };
+  let response: Awaited<ReturnType<typeof githubContentsRequest>>;
+  try {
+    response = await githubContentsRequest(input.filePath, {
+      method: 'DELETE',
+      body: JSON.stringify({
+        message: `Eliminar ${input.collection}: ${input.filePath}`,
+        sha: input.sha,
+        branch: getGitHubConfiguration().branch,
+      }),
+    });
+  } catch (error) {
+    await restoreDeleteClaim();
+    throw error;
+  }
   if (response.status === 409 || response.status === 422) {
+    await restoreDeleteClaim();
     throw new ConflictError('El contenido cambió. Actualiza la lista antes de eliminarlo.');
   }
-  if (!response.ok)
+  if (!response.ok) {
+    await restoreDeleteClaim();
     throw new GitHubError('No se pudo eliminar el contenido.', { status: response.status });
+  }
   LIST_CACHE.delete(input.collection);
-  await getAdminClient()?.from('cms_content_records').delete().eq('path', input.filePath);
+  await client.from('cms_content_records').delete().eq('path', input.filePath);
   await removeLocal(input.filePath);
   await recordAudit({
     requestId: input.auth.requestId,

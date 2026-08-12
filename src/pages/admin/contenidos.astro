@@ -115,6 +115,11 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
                   Nuevo contenido
                 </h2>
                 <p id="file-path" class="mt-1 text-xs text-gray-500"></p>
+                <div
+                  id="version-info"
+                  class="mt-3 hidden rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs"
+                >
+                </div>
               </div>
               <div class="flex gap-2">
                 <button
@@ -376,14 +381,6 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       return window.cmsMediaPreviewBase + raw.replace(/^\/images\//, '');
     }
     return raw;
-  }
-  function absoluteUrl(value) {
-    const raw = String(value || '').trim();
-    if (!raw) return '';
-    if (/^(?:https?:\/\/|data:|blob:)/i.test(raw)) return raw;
-    const origin = String(window.location.origin).replace(/\/+$/, '');
-    if (raw.startsWith('/')) return origin + raw;
-    return origin + '/' + raw.replace(/^\/+/, '');
   }
   async function token() {
     return window.supabaseAuth ? await window.supabaseAuth.getToken() : null;
@@ -781,6 +778,69 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     }
     return wrapper;
   }
+  function shortSha(value) {
+    return value ? String(value).slice(0, 12) : '—';
+  }
+  function renderWorkflow(record) {
+    const versionNode = document.getElementById('version-info');
+    if (!current || !record) {
+      versionNode.classList.add('hidden');
+      document.getElementById('publish-button').classList.add('hidden');
+      document.getElementById('submit-review-button').classList.add('hidden');
+      document.getElementById('approve-button').classList.add('hidden');
+      return;
+    }
+    const approvalInvalid = Boolean(
+      record.approved_sha && record.current_sha !== record.approved_sha
+    );
+    const prLink = record.github_pr_url
+      ? '<a class="font-semibold text-ugr-green underline" target="_blank" rel="noopener noreferrer" href="' +
+        esc(record.github_pr_url) +
+        '">PR #' +
+        esc(record.github_pr_number) +
+        '</a>'
+      : '';
+    versionNode.innerHTML =
+      '<div class="grid gap-1 sm:grid-cols-2"><span>Versión actual: <code>' +
+      esc(shortSha(record.current_sha)) +
+      '</code></span><span>Versión aprobada: <code>' +
+      esc(shortSha(record.approved_sha)) +
+      '</code></span></div>' +
+      (approvalInvalid
+        ? '<p class="mt-2 font-semibold text-amber-700">La aprobación quedó invalidada porque el contenido fue modificado.</p>'
+        : '') +
+      (prLink
+        ? '<p class="mt-2">Publicación: ' + esc(record.deployment_state) + ' · ' + prLink + '</p>'
+        : '');
+    versionNode.classList.remove('hidden');
+    const workflowState = String(record.workflow_state || 'draft');
+    const mayPublish =
+      can('publish') &&
+      workflowState === 'approved' &&
+      record.current_sha &&
+      record.current_sha === record.approved_sha &&
+      ['none', 'closed', 'failed'].includes(record.deployment_state);
+    document.getElementById('publish-button').classList.toggle('hidden', !mayPublish);
+    document.getElementById('publish-button').textContent = 'Crear Pull Request';
+    document
+      .getElementById('submit-review-button')
+      .classList.toggle(
+        'hidden',
+        !current || !can('submit_review') || !['draft', 'changes_requested'].includes(workflowState)
+      );
+    document
+      .getElementById('approve-button')
+      .classList.toggle('hidden', !current || !can('approve') || workflowState !== 'in_review');
+  }
+  async function refreshWorkflow() {
+    if (!current?.path || ['categorias', 'etiquetas'].includes(collection.value)) return;
+    const result = await api(
+      '/.netlify/functions/manage-workflow?path=' + encodeURIComponent(current.path)
+    );
+    current.workflow = result.record;
+    current.data.workflow_state = result.record.workflow_state;
+    renderWorkflow(result.record);
+  }
   function openEditor(item) {
     current = item || null;
     historyNode.classList.add('hidden');
@@ -825,19 +885,11 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     document
       .getElementById('save-draft-button')
       .classList.toggle('hidden', !can(item ? 'update' : 'create'));
-    const workflowState = String(item?.data.workflow_state || 'draft');
-    document.getElementById('publish-button').classList.toggle('hidden', !can('publish'));
-    document.getElementById('publish-button').textContent =
-      workflowState === 'published' ? 'Actualizar publicado' : 'Publicar';
-    document
-      .getElementById('submit-review-button')
-      .classList.toggle(
-        'hidden',
-        !item || !can('submit_review') || !['draft', 'changes_requested'].includes(workflowState)
-      );
-    document
-      .getElementById('approve-button')
-      .classList.toggle('hidden', !item || !can('approve') || workflowState !== 'in_review');
+    document.getElementById('publish-button').classList.add('hidden');
+    renderWorkflow(item?.workflow || null);
+    if (item && !['categorias', 'etiquetas'].includes(collection.value)) {
+      refreshWorkflow().catch((error) => setStatus(error.message, true));
+    }
   }
   function draftStorageKey() {
     return 'cms-editor:' + collection.value + ':' + (current?.path || 'new');
@@ -955,55 +1007,33 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       markdown(body || 'El contenido escrito en Markdown aparecerá aquí en tiempo real.') +
       '</p></div></div>';
   }
-  async function saveWithDraft(draft) {
+  async function saveDraft() {
     const draftInput = fieldsNode.querySelector('[data-key="draft"]');
-    if (draftInput) draftInput.checked = draft;
+    if (draftInput) draftInput.checked = true;
     editor.requestSubmit();
   }
   editor.addEventListener('submit', async (event) => {
     event.preventDefault();
     const payloadData = formData();
-    const isPublishing = payloadData.draft === false;
-    const currentState = String(current?.data.workflow_state || 'draft');
     setStatus('Guardando…');
     try {
-      const result = await api(
-        '/.netlify/functions/manage-content?collection=' + collection.value,
-        {
-          method: current ? 'PUT' : 'POST',
-          body: JSON.stringify({
-            path: current?.path,
-            sha: current?.sha,
-            data: payloadData,
-            body: document.getElementById('body').value,
-          }),
-        }
-      );
+      await api('/.netlify/functions/manage-content?collection=' + collection.value, {
+        method: current ? 'PUT' : 'POST',
+        body: JSON.stringify({
+          path: current?.path,
+          sha: current?.sha,
+          data: payloadData,
+          body: document.getElementById('body').value,
+        }),
+      });
       checkDeployment();
       dirty = false;
       localStorage.removeItem(draftStorageKey());
       await loadReferences();
       await loadItems();
-      if (isPublishing) {
-        const finalUrl =
-          absoluteUrl(result.publicUrl) ||
-          getPublicUrl(collection.value, result.item?.path || current?.path || '', payloadData);
-        const verb = currentState === 'published' ? 'actualizado' : 'publicado';
-        setStatus(
-          'Contenido ' +
-            verb +
-            '. ' +
-            (finalUrl
-              ? '<a href="' +
-                esc(finalUrl) +
-                '" class="font-semibold text-ugr-green underline" target="_blank" rel="noopener noreferrer">Abrir la URL final</a>'
-              : 'No se pudo calcular la URL final.'),
-          false,
-          true
-        );
-      } else {
-        setStatus('Contenido guardado. El despliegue se actualizará desde GitHub.');
-      }
+      setStatus(
+        'Borrador guardado. Los cambios requieren una nueva aprobación antes de publicarse.'
+      );
     } catch (error) {
       setStatus(error.message, true);
     }
@@ -1062,10 +1092,13 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   document.getElementById('new-button').onclick = () => openEditor(null);
   document.getElementById('header-new-button').onclick = () => openEditor(null);
   document.getElementById('back-button').onclick = loadItems;
-  document.getElementById('save-draft-button').onclick = () => saveWithDraft(true);
-  document.getElementById('publish-button').onclick = () => saveWithDraft(false);
+  document.getElementById('save-draft-button').onclick = () => saveDraft();
+  document.getElementById('publish-button').onclick = () => transition('publish');
   async function transition(name) {
     if (!current) return;
+    if (name === 'publish' && dirty) {
+      return setStatus('Guarda los cambios y obtén una nueva aprobación antes de publicar.', true);
+    }
     try {
       const comment =
         name === 'approve' ? prompt('Comentario de aprobación (opcional):', '') || '' : '';
@@ -1073,7 +1106,20 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
         method: 'POST',
         body: JSON.stringify({ path: current.path, transition: name, comment }),
       });
-      setStatus('Estado editorial actualizado: ' + result.state + '.');
+      if (result.pullRequestUrl) {
+        setStatus(
+          'Pull Request creado. La publicación requiere checks correctos y fusión manual: <a class="font-semibold text-ugr-green underline" target="_blank" rel="noopener noreferrer" href="' +
+            esc(result.pullRequestUrl) +
+            '">abrir PR #' +
+            esc(result.pullRequestNumber) +
+            '</a>',
+          false,
+          true
+        );
+      } else {
+        setStatus('Estado editorial actualizado: ' + result.state + '.');
+      }
+      await refreshWorkflow();
     } catch (error) {
       setStatus(error.message, true);
     }

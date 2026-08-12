@@ -83,7 +83,9 @@ Solo servidor:
 
 - `SUPABASE_URL`;
 - `SUPABASE_SERVICE_ROLE_KEY`;
-- `GITHUB_TOKEN`;
+- `GITHUB_APP_ID` y `GITHUB_APP_INSTALLATION_ID`;
+- `GITHUB_APP_PRIVATE_KEY`;
+- `GITHUB_TOKEN`, solo durante la retirada del fallback obsoleto;
 - `RESEND_API_KEY`, si se usa correo.
 
 Expuestos deliberadamente al navegador para Supabase Auth:
@@ -119,8 +121,7 @@ El sujeto autenticado es el `user.id` obtenido de `auth.getUser`; el anónimo us
 
 ## Riesgos y trabajo planeado
 
-- Workflow obligatorio antes de publicar: **Planeado**. La publicación directa aún lo omite.
 - Variantes `thumbnail`/`medium`/`large`: **Planeado** hasta que el modelo público consuma `srcset`/`picture`.
-- GitHub App, ramas por operación y pull requests: **Planeado**. Hoy se usa un token con escritura directa en la rama configurada.
-- Idempotencia efectiva: **Planeado**. Existe `cms_operation_keys`, pero las Functions no la consumen.
+- La publicación exige SHA aprobada, GitHub App, rama y PR; el merge es manual y se reconcilia al consultar el documento. Un webhook para reconciliación inmediata está **Planeado**.
+- La creación de publicación es idempotente para rama y PR. El uso general de `cms_operation_keys` por las demás Functions está **Planeado**.
 - MFA para administración: configuración manual recomendada en Supabase; el repositorio no puede imponerla por sí solo.
