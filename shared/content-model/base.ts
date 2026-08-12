@@ -23,7 +23,16 @@ export const editorialIdentityFields = {
 export const editorialMetadataFields = {
   owner_id: z.uuid().optional(),
   workflow_state: z
-    .enum(['draft', 'in_review', 'changes_requested', 'approved', 'published', 'archived'])
+    .enum([
+      'draft',
+      'publishing',
+      'published',
+      'publish_failed',
+      'archived',
+      'in_review',
+      'changes_requested',
+      'approved',
+    ])
     .optional(),
 };
 

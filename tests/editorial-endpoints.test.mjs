@@ -29,7 +29,7 @@ test('el wrapper legacy delega RBAC, validación y rate limit al adaptador canó
   assert.match(canonical, /createCollection/);
 });
 
-test('solo content-service escribe o elimina Markdown editorial', () => {
+test('los borradores solo se escriben en Supabase y GitHub queda en el publicador', () => {
   const functionSources = fs
     .readdirSync('netlify/functions')
     .filter((name) => name.endsWith('.ts'))
@@ -42,18 +42,22 @@ test('solo content-service escribe o elimina Markdown editorial', () => {
   assert.match(collectionService, /\.gitkeep/);
 
   const contentService = fs.readFileSync('shared/cms/content-service.ts', 'utf8');
-  assert.match(contentService, /githubContentsRequest\(filePath, \{/);
-  assert.match(contentService, /method: 'DELETE'/);
+  const publicationService = fs.readFileSync('shared/cms/publication-service.ts', 'utf8');
+  assert.match(contentService, /cms_save_content_draft/);
+  assert.match(contentService, /p_expected_revision/);
+  assert.doesNotMatch(contentService, /method: 'PUT'/);
+  assert.doesNotMatch(contentService, /method: 'DELETE'/);
+  assert.match(publicationService, /createContent|updateContent/);
+  assert.match(publicationService, /cms_content_versions/);
   assert.match(contentService, /recordAudit/);
   assert.match(contentService, /payload\.sha/);
   assert.match(contentService, /workflow_state/);
   assert.match(contentService, /preserveContentId/);
 });
 
-test('workflow usa locking por estado y exige que una fila haya sido actualizada', () => {
+test('workflow público solo expone publicar y delega en el servicio único', () => {
   const source = fs.readFileSync('shared/cms/workflow-service.ts', 'utf8');
-  assert.match(source, /\.eq\('workflow_state', record\.workflow_state\)/);
-  assert.match(source, /\.select\('id'\)/);
-  assert.match(source, /if \(updateError \|\| !updated\)/);
-  assert.match(source, /recordAudit/);
+  assert.match(source, /WORKFLOW_TRANSITIONS = \{\s*publish:/);
+  assert.doesNotMatch(source, /submit_review|request_changes|approve:/);
+  assert.match(source, /return publishContent\(/);
 });

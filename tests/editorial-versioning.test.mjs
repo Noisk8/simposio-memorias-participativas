@@ -7,6 +7,7 @@ import {
   workflowStateAfterEdit,
 } from '../shared/content/version.ts';
 import { publicationBranch } from '../shared/cms/workflow-service.ts';
+import { summarizeCommitVerification } from '../shared/github/client.ts';
 
 const baseData = {
   id: '123e4567-e89b-42d3-a456-426614174000',
@@ -67,16 +68,39 @@ test('la rama editorial no deriva del título', () => {
   assert.doesNotMatch(branch, /\s/);
 });
 
-test('manage-content no conserva el bypass de publicación directa', () => {
+test('los checks fallidos se distinguen de los pendientes y no dejan publicación infinita', () => {
+  const failed = summarizeCommitVerification(
+    { statuses: [], state: 'pending' },
+    {
+      check_runs: [
+        { name: 'verify', status: 'completed', conclusion: 'failure' },
+        { name: 'security', status: 'completed', conclusion: 'success' },
+      ],
+    }
+  );
+  assert.equal(failed.failed, true);
+  assert.equal(failed.pending, false);
+  assert.deepEqual(failed.failedChecks, ['verify']);
+
+  const pending = summarizeCommitVerification(
+    { statuses: [], state: 'pending' },
+    { check_runs: [{ name: 'verify', status: 'in_progress', conclusion: null }] }
+  );
+  assert.equal(pending.failed, false);
+  assert.equal(pending.pending, true);
+});
+
+test('el recorrido minimalista separa borrador y publicación exacta', () => {
   const contentService = fs.readFileSync('shared/cms/content-service.ts', 'utf8');
-  const workflowService = fs.readFileSync('shared/cms/workflow-service.ts', 'utf8');
+  const publicationService = fs.readFileSync('shared/cms/publication-service.ts', 'utf8');
   const panel = fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8');
   assert.doesNotMatch(contentService, /payload\?\.data\?\.draft === false/);
-  assert.match(contentService, /approvalInvalidated/);
-  assert.match(workflowService, /current_sha', record\.approved_sha/);
-  assert.match(workflowService, /content_published/);
+  assert.match(contentService, /cms_save_content_draft/);
+  assert.match(publicationService, /version\.content_sha/);
+  assert.match(publicationService, /content_published/);
   assert.match(panel, /transition\('publish'\)/);
-  assert.match(panel, /La aprobación quedó invalidada porque el contenido fue modificado/);
+  assert.doesNotMatch(panel, /Enviar a revisión|>Aprobar</);
+  assert.match(panel, /Borrador guardado en Supabase/);
 });
 
 test('la migración persiste versiones, PR y SHA en eventos de auditoría', () => {
@@ -97,4 +121,17 @@ test('la migración persiste versiones, PR y SHA en eventos de auditoría', () =
   ]) {
     assert.match(migration, new RegExp(`\\b${field}\\b`));
   }
+});
+
+test('la migración minimalista crea copia editable, snapshots e intentos idempotentes', () => {
+  const migration = fs.readFileSync(
+    'supabase/migrations/202608110009_supabase_drafts_minimal_publication.sql',
+    'utf8'
+  );
+  for (const table of ['cms_content_drafts', 'cms_content_versions', 'cms_publications']) {
+    assert.match(migration, new RegExp(`create table if not exists public\\.${table}`));
+  }
+  assert.match(migration, /cms_save_content_draft/);
+  assert.match(migration, /p_expected_revision/);
+  assert.match(migration, /operation_key uuid not null unique/);
 });

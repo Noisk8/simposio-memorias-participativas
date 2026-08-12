@@ -15,6 +15,8 @@
 --   202608110005_professional_media_validation.sql
 --   202608110006_media_types_and_2mib_limit.sql
 --   202608110007_approved_version_pr_publication.sql
+--   202608110008_fix_rate_limit_timestamp.sql
+--   202608110009_supabase_drafts_minimal_publication.sql
 --
 -- No vuelvas a definir aquí tablas sueltas: hacerlo separaría el entorno local
 -- del historial aplicado en Supabase.

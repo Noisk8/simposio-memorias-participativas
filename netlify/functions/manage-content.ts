@@ -45,6 +45,7 @@ export const handler = async (event: any, context?: any) => {
       const result = await getContent({
         collection,
         filePath: event.queryStringParameters?.path,
+        auth,
       });
       return {
         statusCode: 200,
@@ -75,7 +76,7 @@ export const handler = async (event: any, context?: any) => {
     await deleteContent({
       collection,
       filePath: event.queryStringParameters?.path,
-      sha: event.queryStringParameters?.sha,
+      revision: event.queryStringParameters?.revision,
       auth,
     });
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true, requestId }) };

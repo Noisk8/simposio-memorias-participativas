@@ -15,6 +15,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Classify changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            changed="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA")"
+            if [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qvE '^(src/content/|public/images/)'; then
+              echo "content_only=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "content_only=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "content_only=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -26,21 +44,27 @@ jobs:
         run: npm ci
 
       - name: Dependency audit
+        if: steps.changes.outputs.content_only != 'true'
         run: npm audit --omit=dev --audit-level=high
 
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lint
+        if: steps.changes.outputs.content_only != 'true'
         run: npm run lint
 
       - name: Taxonomías y tipos
         run: npm run check
 
       - name: Tests
+        if: steps.changes.outputs.content_only != 'true'
         run: npm test
 
       - name: API contract tests
+        if: steps.changes.outputs.content_only != 'true'
         run: |
           npm install -g netlify-cli
           npm run test:api
@@ -49,6 +73,7 @@ jobs:
         run: npm run build
 
       - name: Smoke E2E
+        if: steps.changes.outputs.content_only != 'true'
         run: |
           npx playwright install --with-deps chromium
           npx playwright test

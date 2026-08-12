@@ -16,6 +16,7 @@
     "check:content-uuids": "node scripts/migrate-content-uuids.mjs --check",
     "check:taxonomies": "node scripts/lint-taxonomies.mjs",
     "migrate:media": "node scripts/migrate-media-to-storage.mjs",
+    "migrate:content-drafts": "node --env-file=.env --experimental-strip-types scripts/migrate-content-drafts-to-supabase.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:api": "node scripts/test-api-contract.mjs",
     "test:e2e": "npm run build && playwright test",

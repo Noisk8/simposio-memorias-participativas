@@ -26,23 +26,23 @@ El editor permite listar, buscar, crear, abrir, modificar y eliminar:
 
 Cada documento tiene un `id` UUID v4. La Function lo genera al crear y conserva la identidad existente al editar; no se copia ni se modifica manualmente desde el formulario.
 
-Para entradas, memorias y páginas muestra vistas de borradores y botones para guardar, enviar a revisión, aprobar y preparar la publicación cuando los permisos y el estado lo permiten. La vista previa interpreta un subconjunto de Markdown y permite seleccionar relaciones con simposios y taxonomías. Los archivos existentes muestran su historial de commits de GitHub.
+El recorrido normal tiene dos acciones: **Guardar borrador** y **Publicar**. La vista previa interpreta un subconjunto de Markdown y permite seleccionar relaciones con simposios y taxonomías. Los contenidos existentes muestran el historial de versiones guardadas en Supabase.
 
-La casilla `draft` determina la visibilidad pública, pero el servidor controla su valor. Publicar no guarda directamente en `main`: abre un Pull Request que cambia el artefacto aprobado a público. La nueva versión se verá tras checks correctos, fusión manual y el siguiente deploy de Netlify.
+El servidor controla la visibilidad pública. Guardar nunca toca GitHub ni provoca un deploy. Publicar congela la versión actual y prepara internamente un Pull Request técnico; los checks y el merge son automáticos y la persona editora no necesita entrar en GitHub.
 
-El navegador conserva temporalmente un borrador local en `localStorage` mientras se escribe. Ese respaldo no sustituye el guardado en el servidor y no se sincroniza entre dispositivos.
+Después del primer guardado, el panel hace autosave en Supabase. También conserva temporalmente una copia en `localStorage` como respaldo ante una interrupción del navegador.
 
-### Workflow
+### Publicación
 
-El panel permite enviar un documento guardado a revisión y aprobar uno que esté `in_review`. Supabase conserva estado, propiedad, eventos y las versiones actual/aprobada/publicada.
+El botón **Publicar** aparece cuando existe una versión actual diferente de la publicada y la cuenta tiene permiso. El panel muestra `Publicación en curso`, `Desplegando`, `Publicado` o `Error de publicación`. Un fallo puede reintentarse sin duplicar una publicación activa.
 
-El botón **Crear Pull Request** solo aparece si la versión actual coincide exactamente con la aprobada. Si alguien modifica el contenido, el panel muestra que la aprobación fue invalidada y el estado vuelve a `changes_requested`. Solicitar cambios y archivar existen en la Function, pero aún no tienen controles en el panel.
+Si se sigue editando durante una publicación, los nuevos cambios permanecen como borrador; no alteran la versión inmutable que ya estaba publicándose.
 
 ## Crear memoria rápidamente
 
 Ruta: `/admin/crear-memoria`.
 
-El formulario usa el endpoint canónico `manage-content?collection=memorias`. Verifica `memoria.create`, valida el modelo y crea un borrador Markdown en GitHub. `/admin/crear-proyecto` se mantiene solo como redirección; la Function homónima fue retirada.
+El formulario usa el endpoint canónico `manage-content?collection=memorias`. Verifica `memoria.create`, valida el modelo y crea el borrador en Supabase. `/admin/crear-proyecto` se mantiene solo como redirección; la Function homónima fue retirada.
 
 ## Biblioteca de imágenes
 

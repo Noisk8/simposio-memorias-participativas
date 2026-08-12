@@ -154,11 +154,56 @@ export async function getPullRequest(number: number) {
   return githubRequest(repositoryRoute(`/pulls/${number}`));
 }
 
+export async function enablePullRequestAutoMerge(pullRequestNodeId: string) {
+  return githubRequest('/graphql', {
+    method: 'POST',
+    body: JSON.stringify({
+      query: `mutation EnableCmsAutoMerge($pullRequestId: ID!) {
+        enablePullRequestAutoMerge(input: {
+          pullRequestId: $pullRequestId,
+          mergeMethod: SQUASH
+        }) {
+          pullRequest { number autoMergeRequest { enabledAt } }
+        }
+      }`,
+      variables: { pullRequestId: pullRequestNodeId },
+    }),
+  });
+}
+
 export async function closePullRequest(number: number) {
   return githubRequest(repositoryRoute(`/pulls/${number}`), {
     method: 'PATCH',
     body: JSON.stringify({ state: 'closed' }),
   });
+}
+
+export function summarizeCommitVerification(status: any, checks: any) {
+  const runs = checks?.check_runs || [];
+  const statuses = status?.statuses || [];
+  const acceptedConclusions = new Set(['success', 'neutral', 'skipped']);
+  const failedRuns = runs.filter(
+    (run: any) => run.status === 'completed' && !acceptedConclusions.has(run.conclusion)
+  );
+  const failedStatuses = statuses.filter((item: any) =>
+    ['error', 'failure'].includes(String(item.state || '').toLowerCase())
+  );
+  const pending =
+    runs.some((run: any) => run.status !== 'completed') ||
+    statuses.some((item: any) => String(item.state || '').toLowerCase() === 'pending') ||
+    runs.length + statuses.length === 0;
+  const failed = failedRuns.length > 0 || failedStatuses.length > 0;
+  return {
+    success: !failed && !pending,
+    failed,
+    pending,
+    status: status?.state,
+    checks: runs,
+    failedChecks: [
+      ...failedRuns.map((run: any) => run.name || 'check'),
+      ...failedStatuses.map((item: any) => item.context || 'status'),
+    ],
+  };
 }
 
 export async function getCommitVerification(sha: string) {
@@ -173,20 +218,7 @@ export async function getCommitVerification(sha: string) {
   }
   const status: any = await statusResponse.json();
   const checks: any = await checksResponse.json();
-  const runs = checks.check_runs || [];
-  const statuses = status.statuses || [];
-  const completed = runs.every((run: any) => run.status === 'completed');
-  const accepted = runs.every((run: any) =>
-    ['success', 'neutral', 'skipped'].includes(run.conclusion)
-  );
-  return {
-    success:
-      statuses.length + runs.length > 0 &&
-      (statuses.length === 0 || status.state === 'success') &&
-      (runs.length === 0 || (completed && accepted)),
-    status: status.state,
-    checks: runs,
-  };
+  return summarizeCommitVerification(status, checks);
 }
 
 export async function mergePullRequest(input: {

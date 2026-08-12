@@ -41,6 +41,8 @@ Consulta la creación, permisos mínimos y retirada del token legacy en `docs/GI
    202608110005_professional_media_validation.sql
    202608110006_media_types_and_2mib_limit.sql
    202608110007_approved_version_pr_publication.sql
+   202608110008_fix_rate_limit_timestamp.sql
+   202608110009_supabase_drafts_minimal_publication.sql
    ```
 
 3. Predeclara el primer administrador en `public.admin_emails` antes de crear su cuenta.
@@ -104,10 +106,10 @@ RESEND_FROM_EMAIL=panel@tu-dominio.example
 
 1. Sigue `docs/GITHUB-APP.md` y limita la instalación a este repositorio.
 2. Configura `GITHUB_BRANCH` como rama base.
-3. Exige los checks de CI y revisión humana en los PR editoriales; bloquea force-push.
+3. Activa auto-merge y exige los checks de CI en los PR técnicos; no añadas una segunda revisión humana al flujo editorial y bloquea force-push.
 4. Confirma que el merge activa el build de Netlify.
 
-Los borradores siguen versionándose en la rama configurada y son filtrados por Astro. La operación protegida `approved → publish` nunca cambia allí `draft:false`: crea una rama y un PR. Si una regla impide guardar borradores, configura explícitamente la excepción mínima para la GitHub App o migra los borradores a una rama separada antes de activarla.
+Los borradores viven en Supabase y no generan commits ni deploys. La operación protegida **Publicar** congela un snapshot, crea una rama técnica y solicita auto-merge después de CI. `netlify-ignore-build.mjs` omite previews de `cms/**`, por lo que solo el merge en `main` genera el deploy de producción.
 
 El proveedor editorial anterior basado en Decap CMS, Netlify Identity y Git Gateway es **legacy**. No habilites esos servicios para el despliegue actual.
 

@@ -63,6 +63,7 @@ export const handler = async (event: any, context?: any) => {
       path,
       transition: operation.transition,
       comment: payload.comment,
+      operationKey: payload.operationKey,
       auth,
     });
     return {

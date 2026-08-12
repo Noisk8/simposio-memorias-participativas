@@ -36,15 +36,16 @@ No hacen falta permisos de Issues, Members, Administration, Secrets ni Workflows
 
    `GITHUB_APP_PRIVATE_KEY` puede ser el PEM multilínea completo. También se aceptan saltos de línea representados por `\n`. En Netlify se recomienda `GITHUB_APP_PRIVATE_KEY_BASE64`: codifica el archivo PEM completo en Base64 y pega el resultado sin comillas; esta variable tiene prioridad si ambas existen.
 
-7. Despliega y abre una colección desde el panel con una sesión autorizada. El log estructurado debe indicar `github.auth.mode` con `mechanism: github_app`; nunca imprime credenciales. Aprueba un documento de prueba y solicita publicar: debe aparecer una rama `cms/<uuid>/<timestamp>` y un PR.
-8. Protege `main`: exige Pull Request, los checks de CI necesarios y al menos una revisión según la política editorial; bloquea force pushes. La fusión es manual desde GitHub.
-9. Tras validar lectura, escritura, creación de rama y PR, elimina `GITHUB_TOKEN` de Netlify. Si el log muestra `legacy_token`, la App no está configurada en ese contexto.
+7. Despliega y abre una colección desde el panel con una sesión autorizada. El log estructurado debe indicar `github.auth.mode` con `mechanism: github_app`; nunca imprime credenciales. Guarda y publica un documento de prueba: debe aparecer internamente una rama `cms/<uuid>/<timestamp>` y un PR.
+8. Activa **Allow auto-merge** en el repositorio.
+9. Protege `main`: exige Pull Request y los checks de CI necesarios, bloquea force pushes y no exijas una segunda revisión humana para las ramas técnicas del CMS. El CMS ya valida el permiso `*.publish`.
+10. Tras validar lectura, escritura, creación de rama y PR, elimina `GITHUB_TOKEN` de Netlify. Si el log muestra `legacy_token`, la App no está configurada en ese contexto.
 
 Una configuración parcial de la App produce un error explícito y no cae silenciosamente al token personal. Los tokens de instalación se limitan de nuevo al repositorio y permisos declarados al solicitarlos.
 
 ## Flujo y recuperación
 
-El CMS no fusiona automáticamente. Si CI falla, corrige la causa y deja que los checks vuelvan a ejecutarse; no evites la protección de rama. Si un PR se cierra sin merge, vuelve al documento en el panel para reconciliar el estado y solicita una nueva publicación. Si GitHub está caído, el registro queda en `failed` y un reintento reutiliza la rama reservada y el PR abierto cuando exista.
+El CMS solicita auto-merge. Si el repositorio no lo permite, la reconciliación intenta fusionar únicamente después de comprobar checks correctos. Si CI falla, el panel conserva el estado de error y permite reintentar; nunca se pide al usuario editorial que revise o fusione el PR manualmente.
 
 La API es idempotente en los puntos recuperables: reconoce una rama ya creada, busca un PR abierto antes de crear otro y devuelve el PR ya registrado para solicitudes repetidas.
 

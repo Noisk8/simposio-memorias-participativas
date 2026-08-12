@@ -1,48 +1,69 @@
-# Flujo editorial
+# Flujo editorial minimalista
 
-## Persistencia actual
+## Regla de arquitectura
 
-Supabase almacena la metadata editorial en:
+Ninguna creación, edición, autosave, vista previa o restauración requiere GitHub ni provoca un
+deploy. GitHub solo interviene cuando una persona autorizada publica una versión inmutable. Las
+ramas, Pull Requests, checks y merges son infraestructura interna y nunca pasos manuales del panel.
 
-- `cms_content_records`: UUID editorial canónico, path GitHub, colección, propietario, estado, versiones actual/aprobada/publicada y estado del PR;
-- `cms_workflow_events`: tipo de evento, transición, SHA editorial, comentario, actor y fecha;
-- `audit_log`: decisiones de autorización y operaciones de dominio.
+## Persistencia
 
-El Markdown guarda también `owner_id` y `workflow_state` cuando pasa por `manage-content`. GitHub conserva tanto borradores (`draft: true`) como documentos publicados y su historial de commits; Supabase no almacena actualmente el cuerpo.
+- `cms_content_records`: identidad, propietario, estado y punteros a la versión actual/publicada.
+- `cms_content_drafts`: copia editable, cuerpo, metadata, SHA-256 y revisión optimista.
+- `cms_content_versions`: snapshots inmutables creados al guardar manualmente o publicar.
+- `cms_publications`: intentos idempotentes, estado técnico, rama, PR, merge y errores.
+- `cms_workflow_events` y `audit_log`: trazabilidad de guardado y publicación.
+- GitHub: únicamente Markdown publicado consumido por Astro.
+- Supabase Storage: medios binarios del CMS.
 
-## Máquina de estados implementada
+## Recorrido del usuario
 
 ```text
-draft ──submit_review──► in_review ──approve──► approved ──publish──► published
-  ▲                           │                                      │
-  └──── submit_review ◄─ changes_requested ◄─ request_changes       └─archive─► archived
+Crear ──► Guardar borrador ──► Vista previa ──► Publicar
+              │                                      │
+              └──── autosave en Supabase             ▼
+                                         validación + PR técnico automático
+                                                      │
+                                                      ▼
+                                                merge + Netlify
 ```
 
-`manage-workflow` valida estado anterior, permiso, propiedad al enviar a revisión y concurrencia al actualizar. Las transiciones disponibles son `submit_review`, `request_changes`, `approve`, `publish` y `archive`. Al aprobar copia `current_sha` a `approved_sha` y conserva el SHA del blob Git que fue revisado.
+Los estados visibles se reducen a `draft`, `publishing`, `published`, `publish_failed` y
+`archived`. Los estados de aprobación anteriores permanecen admitidos en PostgreSQL solo para una
+migración aditiva; el endpoint ya no permite `submit_review`, `approve` ni `request_changes`.
 
-`current_sha` es SHA-256 de una representación canónica del contenido editorial. Excluye únicamente `draft`, `workflow_state` y `owner_id`, porque son campos operativos controlados por servidor. `github_sha` sigue siendo el SHA del blob usado para concurrencia. Cualquier cambio en los demás metadatos o en el cuerpo modifica `current_sha`.
+## Versiones y concurrencia
 
-Si una edición posterior deja `current_sha != approved_sha`, el estado pasa a `changes_requested`. Se eligió ese estado —en vez de `draft`— porque expresa que existió una revisión previa y que la nueva versión necesita atención; el SHA aprobado anterior se conserva para mostrar por qué fue invalidado.
+`current_sha` es SHA-256 de la representación canónica editorial. Excluye `draft`,
+`workflow_state` y `owner_id`. `cms_content_drafts.revision` aumenta con cada guardado y la RPC
+`cms_save_content_draft` bloquea actualizaciones basadas en una revisión obsoleta.
 
-## Integración del panel y publicación
+El autosave actualiza la copia mutable, pero no crea una fila histórica en cada pulsación. El
+guardado manual y la publicación crean o reutilizan un snapshot inmutable por `content_sha`.
 
-- El panel muestra Enviar a revisión para `draft` y `changes_requested` cuando existe permiso.
-- Muestra Aprobar para `in_review` cuando existe permiso.
-- No muestra todavía controles para solicitar cambios ni archivar.
-- Muestra la versión actual, la aprobada y una advertencia cuando difieren.
-- El botón Publicar solo aparece para un registro `approved` cuyos SHAs coinciden.
-- Publicar crea una rama segura `cms/<uuid>/<timestamp>`, escribe allí el artefacto aprobado y abre un Pull Request.
+Publicar congela el borrador actual y publica ese `version_id`. Si la persona continúa editando
+mientras la publicación está en curso, el snapshot sigue siendo estable: la versión fusionada pasa
+a `published_version_id` y los cambios posteriores permanecen como un nuevo borrador.
 
-`manage-content` nunca publica y trata `draft` como campo controlado por servidor. Una edición de una versión aprobada o publicada vuelve a `changes_requested`. Mientras un PR está abierto, el CMS bloquea nuevas ediciones para no dejar una rama publicable obsoleta.
+## Publicación técnica
 
-El PR requiere checks y fusión manual. El registro permanece `approved` con `deployment_state=pr_open`; al consultar el workflow, el backend reconcilia GitHub. Solo un PR fusionado con `current_sha == approved_sha` pasa a `published`, fija `published_sha`, `merge_sha` y los datos de autoría, y registra `content_published`.
+1. Revalidar el documento y su checksum.
+2. Reservar `cms_publications.operation_key` para idempotencia.
+3. Crear `cms/<uuid>/<timestamp>` desde `main`.
+4. Crear o actualizar el Markdown con `draft:false`.
+5. Abrir un PR técnico y solicitar auto-merge.
+6. Si auto-merge no está disponible, reconciliar y fusionar únicamente cuando los checks pasen.
+7. Registrar `published_version_id`, `published_sha`, actor, fecha y `merge_sha`.
+8. Netlify construye una sola vez después del merge; los previews de ramas `cms/**` se omiten.
 
-Los eventos `content_approved`, `content_publish_requested`, `content_published` y `approval_invalidated` incluyen el SHA correspondiente. `audit_log` añade reviewer/publisher, timestamp, rama, PR y merge cuando proceda.
+El panel solo muestra `Publicación en curso`, `Desplegando`, `Publicado` o `Error de publicación`.
+No muestra enlaces ni acciones GitHub.
 
 ## Activación
 
-1. Aplica todas las migraciones, incluida `202608110007_approved_version_pr_publication.sql`.
-2. Desactiva el registro público de Supabase Auth.
-3. Crea cuentas desde el panel y asigna exactamente un rol.
-4. Configura la GitHub App según `docs/GITHUB-APP.md` y protege `main` con PR, revisión y checks obligatorios.
-5. Supervisa `audit.persist.failed` y errores de registro editorial.
+1. Aplicar las migraciones hasta `202608110009_supabase_drafts_minimal_publication.sql`.
+2. Configurar la GitHub App según `docs/GITHUB-APP.md`.
+3. Proteger `main` con PR y checks obligatorios, sin exigir una segunda aprobación humana.
+4. Ejecutar `npm run migrate:content-drafts -- --dry-run` y después
+   `npm run migrate:content-drafts -- --apply`; abrir una colección también importa bajo demanda.
+5. Probar crear, autosave, guardar y publicar antes de retirar `GITHUB_TOKEN`.

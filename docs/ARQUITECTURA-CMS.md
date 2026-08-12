@@ -18,7 +18,7 @@ Este documento es la fuente de verdad técnica del CMS. Describe lo que está im
 | GitHub              | Fuente versionada del Markdown; conserva medios legacy durante la migración |
 | Netlify             | Functions, build y hosting del sitio                                        |
 
-Supabase es la única autoridad de identidad y autorización editorial. GitHub es la fuente versionada que Astro consume durante el build. En la implementación actual también contiene borradores marcados con `draft: true`; Supabase guarda su estado y metadata, pero no el cuerpo Markdown.
+Supabase es la única autoridad de identidad y autorización editorial y también la fuente de trabajo para los borradores. GitHub conserva únicamente el Markdown publicado que Astro consume durante el build. Los documentos legacy con `draft: true` no se eliminan durante la transición, pero dejan de recibir escrituras del panel.
 
 ## Flujo de una operación administrativa
 
@@ -37,10 +37,11 @@ Netlify Function
   ├─ toma user.id de la sesión verificada
   ├─ consulta roles y permisos en PostgreSQL
   ├─ aplica CORS, rate limit distribuido y validación Zod/path
-  ├─ opera con GitHub o Supabase según la acción
+  ├─ guarda borradores y versiones en Supabase
+  ├─ usa GitHub exclusivamente al publicar
   └─ emite auditoría y logs con requestId
        │
-       ├─► Supabase: RBAC, workflow, auditoría
+       ├─► Supabase: RBAC, borrador, versiones, publicación y auditoría
        ├─► Supabase Storage: binario de medios
        └─► GitHub: commit de Markdown
                     │
@@ -57,18 +58,18 @@ El frontend puede usar los permisos devueltos por la API para mostrar u ocultar 
 
 | Function               | Responsabilidad                                                                               |
 | ---------------------- | --------------------------------------------------------------------------------------------- |
-| `manage-content`       | CRUD de seis colecciones, UUID canónico, validación, propiedad e invalidación de aprobaciones |
-| `manage-workflow`      | Versiones exactas, transiciones, creación/reconciliación de ramas y Pull Requests             |
+| `manage-content`       | CRUD de borradores Supabase, UUID canónico, validación, autosave y concurrencia por revisión  |
+| `manage-workflow`      | Publicación directa para el usuario y reconciliación de la infraestructura Git automática     |
 | `manage-media`         | Lista, sube, actualiza metadata y elimina medios en Supabase Storage                          |
 | `manage-users`         | Lista/crea usuarios de Supabase Auth y reemplaza su rol efectivo                              |
-| `get-revision-history` | Hasta 30 commits GitHub de un archivo permitido                                               |
+| `get-revision-history` | Hasta 30 snapshots editoriales inmutables almacenados en Supabase                             |
 | `deploy-status`        | Estado combinado del commit de la rama configurada en GitHub                                  |
 | `manage-collections`   | Modifica `src/content.config.ts` y crea el marcador `.gitkeep`; no escribe Markdown editorial |
 | `create-coleccion`     | Wrapper temporal obsoleto que delega íntegramente en `manage-collections`                     |
 
 `create-proyecto` fue retirado: no tenía consumidores internos. La redirección de página `/admin/crear-proyecto` permanece por compatibilidad de navegación.
 
-Los handlers delegan en `shared/cms/content-service.ts`, `workflow-service.ts`, `media-service.ts` y `collection-service.ts`. Solo `content-service` ejecuta `PUT`/`DELETE` de Markdown bajo `src/content`; así no existe una segunda ruta que omita RBAC, validación, SHA, workflow/metadata o auditoría.
+Los handlers delegan en `shared/cms/content-service.ts`, `publication-service.ts`, `workflow-service.ts`, `media-service.ts` y `collection-service.ts`. `content-service` no ejecuta escrituras GitHub; únicamente `publication-service` crea o actualiza Markdown editorial después de RBAC, validación, snapshot e idempotencia.
 
 ## Persistencia
 
@@ -79,14 +80,17 @@ Los handlers delegan en `shared/cms/content-service.ts`, `workflow-service.ts`, 
 - Medios legacy: `public/images/*`, conservados temporalmente y sin nuevas escrituras del CMS.
 - Historial: commits consultados por path.
 - Autenticación: GitHub App server-side; `GITHUB_TOKEN` es solo fallback temporal obsoleto.
-- Los borradores se guardan en `GITHUB_BRANCH`; publicar nunca escribe el artefacto público directamente allí, sino en una rama `cms/<uuid>/<timestamp>` mediante PR.
+- Ningún guardado de borrador escribe en GitHub. Publicar crea internamente una rama `cms/<uuid>/<timestamp>` y un PR con auto-merge condicionado a CI.
 - Paths de contenido: allowlist de colecciones y patrón seguro en servidor.
 
 ### Supabase
 
 - Auth: usuarios y sesiones.
 - RBAC: `roles`, `permissions`, `role_permissions`, `user_roles`.
-- Workflow y metadata editorial: `cms_content_records`, `cms_workflow_events`; separan SHA editorial actual/aprobado/publicado del SHA técnico del blob y guardan rama, PR, merge y despliegue.
+- Contenido editable: `cms_content_drafts` mantiene una copia mutable con revisión optimista.
+- Historial: `cms_content_versions` mantiene snapshots inmutables sin crear una versión por pulsación.
+- Publicación: `cms_publications` conserva idempotencia, intentos, PR, merge, errores y despliegue; `cms_content_records` apunta a las versiones actual y publicada.
+- Auditoría editorial: `cms_workflow_events` y `audit_log` conservan SHA, actor y timestamps.
 - Auditoría: `audit_log`.
 - Medios: `cms_media` guarda ubicación, URL pública, checksum, dimensiones, metadata editorial y borrado lógico; el binario vive en el bucket público `cms-media`.
 - Operaciones: `cms_operation_keys` existe en esquema, pero el código de Functions todavía no lo usa para idempotencia.
@@ -97,6 +101,8 @@ Los handlers delegan en `shared/cms/content-service.ts`, `workflow-service.ts`, 
 Las categorías activas son `read`, `write`, `login-sensitive`, `media-upload`, `user-management` y `publish`. Después de validar la sesión, la clave se deriva del `user.id` verificado; las peticiones sin identidad se agrupan por la IP del contexto confiable de Netlify. No se usan `x-forwarded-for` ni `x-real-ip`.
 
 Cada consumo es un `INSERT ... ON CONFLICT DO UPDATE` atómico sobre la clave primaria. La tabla mantiene como máximo una fila activa por sujeto/acción, tiene índice de expiración, poda oportunista acotada y limpieza completa mediante `cms_prune_operational_data`.
+
+La migración `202608110008_fix_rate_limit_timestamp.sql` corrige una colisión con la palabra reservada PostgreSQL `CURRENT_TIME`: la RPC usa `v_now timestamptz` explícito para que las escrituras no fallen al crear o actualizar el bucket.
 
 Fallback explícito:
 
@@ -122,26 +128,26 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 ## Límites conocidos
 
 - Los modelos exigen UUID v4 y el corpus actual ya fue migrado. `migrate-content-uuids.mjs --check` bloquea check/build si falta un ID o está duplicado.
-- El panel expone `submit_review`, `approve` y `publish`; `request_changes` y `archive` siguen disponibles solo en la Function.
+- El panel expone únicamente guardar borrador y publicar; los estados legacy de revisión quedan admitidos solo para migración de datos históricos.
 - La navegación pública es estática en `src/components/Header.astro`; no forma parte del dominio editorial del CMS.
 - Las colecciones genéricas creadas por `manage-collections` no obtienen automáticamente CRUD en el panel.
 - La escritura GitHub y la auditoría Supabase no forman una transacción distribuida. Si la auditoría no persiste, queda el evento estructurado `audit.persist.failed`.
-- La confirmación de merge ocurre al consultar el workflow; todavía no existe webhook de GitHub para reconciliación inmediata.
+- La confirmación de merge ocurre al consultar el workflow; auto-merge evita acciones humanas, pero todavía no existe webhook de GitHub para reconciliación inmediata.
 - `deploy-status` informa estados de commit de GitHub; no consulta directamente la API de deploys de Netlify.
-- Separar los cuerpos no publicados para que GitHub contenga únicamente contenido publicado está **Planeado**; hoy los borradores permanecen versionados y Astro los filtra.
+- La importación inicial desde GitHub ocurre al abrir una colección que todavía no tenga copias editables. No se borran los Markdown legacy automáticamente.
 
 ## Arquitectura objetivo aún no completada
 
 ```text
-Implementado                         Planeado
-────────────                         ────────
-Supabase Auth + Storage              Separar cuerpos no publicados de GitHub
-RBAC y metadata en Supabase          Webhook de reconciliación de PR/merge
-Workflow ligado a SHA                Idempotencia genérica para todo el CMS
-GitHub App + publicación por PR
+Implementado                              Planeado
+────────────                              ────────
+Supabase Auth + Storage                   Webhook de reconciliación de PR/merge/deploy
+RBAC, borradores y versiones Supabase     Restauración de snapshots desde la interfaz
+Autosave y concurrencia por revisión      Idempotencia genérica para operaciones no editoriales
+Publicación exacta e idempotente
+GitHub App + PR técnico automático
+CI editorial ligero y un solo deploy
 Auditoría Supabase + logs
-Functions con validación
-Markdown versionado en GitHub
 Rate limit distribuido
 Panel propio
 ```

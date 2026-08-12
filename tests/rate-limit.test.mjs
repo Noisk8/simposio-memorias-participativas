@@ -13,6 +13,16 @@ import { errorResponse, getCorsHeaders } from '../netlify/security.ts';
 const EVENT = { headers: { 'x-request-id': '6f55cb59-bf47-4f19-9b82-8c492e3d18db' } };
 const KEY = 'test-rate-limit-secret-with-sufficient-entropy';
 
+test('la RPC usa un identificador no reservado para el timestamptz actual', () => {
+  const migration = fs.readFileSync(
+    'supabase/migrations/202608110008_fix_rate_limit_timestamp.sql',
+    'utf8'
+  );
+  assert.match(migration, /v_now timestamptz := clock_timestamp\(\)/);
+  assert.doesNotMatch(migration, /\bcurrent_time timestamptz/);
+  assert.match(migration, /values \([\s\S]*v_now/);
+});
+
 function fixedWindowClient() {
   let now = 0;
   const buckets = new Map();
