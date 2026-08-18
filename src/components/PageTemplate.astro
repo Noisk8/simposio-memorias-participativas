@@ -21,6 +21,9 @@ const { data, simposio, simposioTitle, crumbs = [], entries = [] } = Astro.props
 const heroImage = resolvePublicImageUrl(
   data.image || simposio?.data.image || '/images/hero-bg.jpg'
 );
+const entryBaseUrl = simposio?.data.is_default
+  ? '/entradas'
+  : `/ediciones/${simposio?.data.slug || data.simposio}/entradas`;
 
 const organizadores = data.organizadores.map((o: string) => {
   const [nombre, institucion] = o.split(' | ');
@@ -230,4 +233,4 @@ const organizadores = data.organizadores.map((o: string) => {
   )
 }
 
-<PageEntries entries={entries} />
+<PageEntries entries={entries} baseUrl={entryBaseUrl} />

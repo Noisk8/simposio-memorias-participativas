@@ -19,7 +19,7 @@ import {
 } from '../../../lib/taxonomies';
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const SPECIAL = ['simposios', 'paginas', 'memorias', 'categorias', 'etiquetas'];
+  const SPECIAL = ['simposios', 'paginas', 'memorias', 'entradas', 'categorias', 'etiquetas'];
   const contentDir = path.resolve('src/content');
   const folders = fs
     .readdirSync(contentDir, { withFileTypes: true })

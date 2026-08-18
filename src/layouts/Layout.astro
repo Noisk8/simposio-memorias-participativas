@@ -16,6 +16,10 @@ interface Props {
   publishDate?: Date | string;
   modifiedDate?: Date | string;
   tags?: string[];
+  author?: string;
+  authorType?: 'Person' | 'Organization';
+  section?: string;
+  keywords?: string[];
 }
 
 const {
@@ -28,6 +32,10 @@ const {
   publishDate,
   modifiedDate,
   tags,
+  author,
+  authorType,
+  section,
+  keywords,
 } = Astro.props;
 ---
 
@@ -45,6 +53,10 @@ const {
       publishDate={publishDate}
       modifiedDate={modifiedDate}
       tags={tags}
+      author={author}
+      authorType={authorType}
+      section={section}
+      keywords={keywords}
     />
   </head>
   <body class="min-h-screen flex flex-col">

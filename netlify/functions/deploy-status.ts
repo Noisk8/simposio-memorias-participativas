@@ -4,6 +4,7 @@ import { getGitHubConfiguration } from '../../shared/github/config.ts';
 import { githubRequest } from '../../shared/github/client.ts';
 import { getRequestId } from '../../shared/observability/request-id.ts';
 import { AppError, GitHubError } from '../../shared/observability/errors.ts';
+import { getLatestProductionDeploy } from '../../shared/netlify/deploys.ts';
 
 export const handler = async (event: any, context?: any) => {
   let requestId = getRequestId(event);
@@ -26,6 +27,7 @@ export const handler = async (event: any, context?: any) => {
         status: response.status,
       });
     const status: any = await response.json();
+    const deploy = await getLatestProductionDeploy();
     return {
       statusCode: 200,
       headers,
@@ -34,6 +36,14 @@ export const handler = async (event: any, context?: any) => {
         state: status.state,
         sha: status.sha,
         checks: status.statuses || [],
+        netlify: deploy
+          ? {
+              id: deploy.id,
+              state: deploy.state,
+              commitSha: deploy.commit_ref || null,
+              publishedAt: deploy.published_at || null,
+            }
+          : null,
         requestId,
       }),
     };

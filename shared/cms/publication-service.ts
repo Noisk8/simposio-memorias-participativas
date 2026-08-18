@@ -3,12 +3,14 @@ import { randomUUID } from 'node:crypto';
 import type { PermissionContext } from '../auth/require-permission.ts';
 import { serializeMarkdownDocument } from '../content/frontmatter.ts';
 import { normalizePublishedContent } from '../content/publication.ts';
+import { assertPublicationReady, publicDocumentData } from '../content/publication-readiness.ts';
 import { contentVersionSha } from '../content/version.ts';
 import {
   createBranch,
   closePullRequest,
   createContent,
   createPullRequest,
+  deleteContent as deleteGitHubContent,
   enablePullRequestAutoMerge,
   findOpenPullRequest,
   getBranchHeadSha,
@@ -18,8 +20,10 @@ import {
   readContent,
   updateContent,
 } from '../github/client.ts';
+import { deployPublicUrl, getDeployForCommit, isDeployFailure } from '../netlify/deploys.ts';
 import { recordAudit } from '../observability/audit.ts';
 import { AppError, ConflictError, GitHubError, InternalError } from '../observability/errors.ts';
+import { logEvent } from '../observability/logger.ts';
 import { getAdminClient } from '../supabase/admin-client.ts';
 import {
   contentCollection,
@@ -28,6 +32,8 @@ import {
 } from './content-service.ts';
 
 const ACTIVE_PUBLICATION_STATES = ['queued', 'validating', 'pr_open', 'merged'];
+type PublicationOperation = 'publish' | 'archive';
+type ReconciliationContext = Pick<PermissionContext, 'requestId'>;
 
 export function publicationBranch(contentId: string, now = new Date()): string {
   const stamp = now.toISOString().replace(/[-:.]/g, '');
@@ -57,7 +63,9 @@ async function recordEvent(input: {
     actor_id: input.actorId || null,
     metadata: input.metadata || {},
   });
-  if (error) throw new InternalError('No se pudo registrar el evento de publicación.');
+  if (error && error.code !== '23505') {
+    throw new InternalError('No se pudo registrar el evento de publicación.');
+  }
 }
 
 async function immutableVersion(record: any, draft: any, actorId: string) {
@@ -98,7 +106,12 @@ async function immutableVersion(record: any, draft: any, actorId: string) {
   return created;
 }
 
-async function markFailed(publicationId: string, recordId: string, error: unknown) {
+async function markFailed(
+  publicationId: string,
+  recordId: string,
+  error: unknown,
+  operation: PublicationOperation = 'publish'
+) {
   const client = getAdminClient();
   if (!client) return;
   const code = error instanceof AppError ? error.code : 'INTERNAL_ERROR';
@@ -109,69 +122,130 @@ async function markFailed(publicationId: string, recordId: string, error: unknow
     .eq('id', publicationId);
   await client
     .from('cms_content_records')
-    .update({ publication_state: 'failed', workflow_state: 'publish_failed' })
+    .update({
+      publication_state: 'failed',
+      deployment_state: 'failed',
+      workflow_state: operation === 'archive' ? 'archive_failed' : 'publish_failed',
+    })
     .eq('id', recordId);
 }
 
-async function confirmMerged(record: any, publication: any, pull: any, auth: PermissionContext) {
-  const client = getAdminClient();
-  if (!client) throw new InternalError('Supabase no está configurado.');
-  const mergedAt = pull.merged_at || new Date().toISOString();
-  const mergeSha = pull.merge_commit_sha || publication.merge_sha;
-  const { data: version, error: versionError } = await client
-    .from('cms_content_versions')
-    .select('*')
-    .eq('id', publication.version_id)
-    .single();
-  if (versionError || !version) throw new InternalError('No se encontró la versión publicada.');
-
-  const hasNewerDraft = record.current_sha !== version.content_sha;
-  const { error: publicationError } = await client
-    .from('cms_publications')
-    .update({ status: 'merged', merge_sha: mergeSha, merged_at: mergedAt })
-    .eq('id', publication.id);
-  if (publicationError) throw new InternalError('No se pudo confirmar la publicación.');
-  const { data: updated, error } = await client
-    .from('cms_content_records')
-    .update({
-      published_sha: version.content_sha,
-      published_version_id: version.id,
-      published_by: publication.requested_by,
-      published_at: mergedAt,
-      merge_sha: mergeSha,
-      github_sha: mergeSha,
-      workflow_state: hasNewerDraft ? 'draft' : 'published',
-      publication_state: 'merged',
-      deployment_state: 'merged',
-    })
-    .eq('id', record.id)
-    .select('*')
-    .single();
-  if (error) throw new InternalError('No se pudo actualizar la versión publicada.');
-  await recordEvent({
-    record: updated,
-    eventType: 'content_published',
-    actorId: publication.requested_by,
-    contentSha: version.content_sha,
-    metadata: {
-      publication_id: publication.id,
-      pull_request: publication.github_pr_number,
-      merge_sha: mergeSha,
-    },
-  });
-  await recordAudit({
-    requestId: auth.requestId,
-    actorId: publication.requested_by,
-    action: 'content_published',
-    resourceType: record.collection,
-    resourceId: record.id,
-    result: 'success',
-    metadata: { path: record.path, published_sha: version.content_sha, merge_sha: mergeSha },
-  });
-  return updated;
+function publicationOperation(publication: any): PublicationOperation {
+  return publication?.operation === 'archive' ? 'archive' : 'publish';
 }
 
-export async function reconcilePublication(record: any, auth: PermissionContext) {
+async function freshRecord(recordId: string) {
+  const client = getAdminClient();
+  if (!client) throw new InternalError('Supabase no está configurado.');
+  const { data, error } = await client
+    .from('cms_content_records')
+    .select('*, cms_content_drafts(*), cms_publications(*)')
+    .eq('id', recordId)
+    .single();
+  if (error || !data) throw new InternalError('No se pudo refrescar el estado editorial.');
+  return data;
+}
+
+async function confirmDeployment(record: any, publication: any, context: ReconciliationContext) {
+  if (!publication.merge_sha) return record;
+  const deploy = await getDeployForCommit(publication.merge_sha);
+  if (!deploy) return record;
+  if (isDeployFailure(deploy)) {
+    const failure = new AppError(
+      'BUILD_ERROR',
+      deploy.error_message || 'Netlify informó un despliegue fallido.',
+      502
+    );
+    const client = getAdminClient();
+    if (client) {
+      await client
+        .from('cms_publications')
+        .update({ error_code: failure.code, error_message: failure.message })
+        .eq('id', publication.id)
+        .eq('status', 'merged');
+      await client
+        .from('cms_content_records')
+        .update({ deployment_state: 'failed' })
+        .eq('id', record.id)
+        .eq('publication_state', 'merged');
+    }
+    logEvent('error', 'cms_publication.deploy_failed', {
+      requestId: context.requestId,
+      publicationId: publication.id,
+      deployId: deploy.id,
+      mergeSha: publication.merge_sha,
+    });
+    return {
+      ...record,
+      workflow_state: publicationOperation(publication) === 'archive' ? 'archiving' : 'publishing',
+      publication_state: 'merged',
+      deployment_state: 'failed',
+      publication_error: failure.message,
+    };
+  }
+  const deployedAt = deploy.published_at || deploy.updated_at;
+  if (deploy.state !== 'ready' || !deployedAt) return record;
+
+  const client = getAdminClient();
+  if (!client) throw new InternalError('Supabase no está configurado.');
+  const { data: finalized, error } = await client.rpc('cms_finalize_publication', {
+    p_publication_id: publication.id,
+    p_deploy_id: deploy.id,
+    p_deploy_url: deployPublicUrl(deploy),
+    p_deployed_at: deployedAt,
+    p_request_id: context.requestId,
+  });
+  if (error) throw new InternalError('No se pudo confirmar el despliegue de Netlify.');
+  if (finalized) {
+    logEvent('info', 'cms_publication.live', {
+      requestId: context.requestId,
+      publicationId: publication.id,
+      operation: publicationOperation(publication),
+      deployId: deploy.id,
+      mergeSha: publication.merge_sha,
+    });
+  }
+  return freshRecord(record.id);
+}
+
+async function confirmMerged(
+  record: any,
+  publication: any,
+  pull: any,
+  context: ReconciliationContext
+) {
+  const client = getAdminClient();
+  if (!client) throw new InternalError('Supabase no está configurado.');
+  const mergedAt = pull.merged_at || publication.merged_at || new Date().toISOString();
+  const mergeSha = pull.merge_commit_sha || publication.merge_sha;
+  if (!mergeSha) throw new InternalError('GitHub no devolvió el SHA del merge.');
+
+  if (publication.status !== 'merged') {
+    const { error } = await client.rpc('cms_mark_publication_merged', {
+      p_publication_id: publication.id,
+      p_merge_sha: mergeSha,
+      p_merged_at: mergedAt,
+    });
+    if (error) throw new InternalError('No se pudo confirmar el merge de la publicación.');
+  }
+
+  const mergedPublication = {
+    ...publication,
+    status: 'merged',
+    merge_sha: mergeSha,
+    merged_at: mergedAt,
+  };
+  const mergedRecord = {
+    ...record,
+    workflow_state: publicationOperation(publication) === 'archive' ? 'archiving' : 'publishing',
+    publication_state: 'merged',
+    deployment_state: 'deploying',
+    merge_sha: mergeSha,
+  };
+  return confirmDeployment(mergedRecord, mergedPublication, context);
+}
+
+export async function reconcilePublication(record: any, context: ReconciliationContext) {
   const client = getAdminClient();
   if (!client) throw new InternalError('Supabase no está configurado.');
   const { data: publication, error } = await client
@@ -182,19 +256,24 @@ export async function reconcilePublication(record: any, auth: PermissionContext)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !publication?.github_pr_number) return record;
+  if (error || !publication) return record;
+  if (publication.status === 'merged') return confirmDeployment(record, publication, context);
+  if (!publication.github_pr_number) return record;
 
   const response = await getPullRequest(Number(publication.github_pr_number));
   if (!response.ok) return record;
   let pull: any = await response.json();
-  if (pull.merged_at) return confirmMerged(record, publication, pull, auth);
+  if (pull.merged_at) return confirmMerged(record, publication, pull, context);
   if (pull.state === 'closed') {
+    const failedState =
+      publicationOperation(publication) === 'archive' ? 'archive_failed' : 'publish_failed';
     await markFailed(
       publication.id,
       record.id,
-      new ConflictError('La publicación fue cerrada antes de fusionarse.')
+      new ConflictError('La publicación fue cerrada antes de fusionarse.'),
+      publicationOperation(publication)
     );
-    return { ...record, workflow_state: 'publish_failed', publication_state: 'failed' };
+    return { ...record, workflow_state: failedState, publication_state: 'failed' };
   }
 
   // Si el repositorio no admite auto-merge, esta reconciliación realiza el merge
@@ -204,11 +283,12 @@ export async function reconcilePublication(record: any, auth: PermissionContext)
     if (verification.failed) {
       const failedChecks = verification.failedChecks.join(', ') || 'validación técnica';
       const failure = new ConflictError(`Fallaron los checks de publicación: ${failedChecks}.`);
-      await markFailed(publication.id, record.id, failure);
+      await markFailed(publication.id, record.id, failure, publicationOperation(publication));
       await closePullRequest(Number(publication.github_pr_number)).catch(() => null);
       return {
         ...record,
-        workflow_state: 'publish_failed',
+        workflow_state:
+          publicationOperation(publication) === 'archive' ? 'archive_failed' : 'publish_failed',
         publication_state: 'failed',
         publication_error: failure.message,
       };
@@ -223,7 +303,7 @@ export async function reconcilePublication(record: any, auth: PermissionContext)
         const refreshed = await getPullRequest(Number(publication.github_pr_number));
         if (refreshed.ok) {
           pull = await refreshed.json();
-          if (pull.merged_at) return confirmMerged(record, publication, pull, auth);
+          if (pull.merged_at) return confirmMerged(record, publication, pull, context);
         }
       }
     }
@@ -233,10 +313,11 @@ export async function reconcilePublication(record: any, auth: PermissionContext)
   return record;
 }
 
-export async function publishContent(input: {
+async function startPublication(input: {
   path: string;
   auth: PermissionContext;
   operationKey?: unknown;
+  operation: PublicationOperation;
 }) {
   const client = getAdminClient();
   if (!client) throw new InternalError('Supabase no está configurado.');
@@ -247,26 +328,46 @@ export async function publishContent(input: {
     .maybeSingle();
   if (error || !record) throw new AppError('NOT_FOUND', 'Contenido no encontrado.', 404);
   const draft = draftFromRecord(record);
-  if (!draft) throw new ConflictError('No existe un borrador publicable.');
   const collection = contentCollection(record.collection) as ContentCollection;
-  const validated = validateContentDocument(collection, draft.data, draft.body);
-  if (contentVersionSha(validated, draft.body) !== draft.content_sha) {
-    throw new ConflictError('La integridad del borrador no coincide con su checksum.');
+  let version: any;
+
+  if (input.operation === 'publish') {
+    if (!draft) throw new ConflictError('No existe un borrador publicable.');
+    const validated = validateContentDocument(collection, draft.data, draft.body);
+    if (contentVersionSha(validated, draft.body) !== draft.content_sha) {
+      throw new ConflictError('La integridad del borrador no coincide con su checksum.');
+    }
+    if (record.published_sha === draft.content_sha && record.publication_state !== 'failed') {
+      return { state: 'published', publicationState: record.publication_state, idempotent: true };
+    }
+    version = await immutableVersion(record, draft, input.auth.user.id);
+  } else {
+    if (record.workflow_state === 'archived' && record.publication_state === 'archived') {
+      return { state: 'archived', publicationState: 'archived', idempotent: true };
+    }
+    if (!record.published_version_id || !record.published_sha) {
+      throw new ConflictError('Este contenido no tiene una versión publicada para archivar.');
+    }
+    const { data: publishedVersion, error: versionError } = await client
+      .from('cms_content_versions')
+      .select('*')
+      .eq('id', record.published_version_id)
+      .single();
+    if (versionError || !publishedVersion) {
+      throw new InternalError('No se encontró la versión publicada que debe archivarse.');
+    }
+    version = publishedVersion;
   }
-  if (record.published_sha === draft.content_sha && record.publication_state !== 'failed') {
-    return { state: 'published', publicationState: record.publication_state, idempotent: true };
-  }
-  const version = await immutableVersion(record, draft, input.auth.user.id);
+
   const { data: active } = await client
     .from('cms_publications')
     .select('*')
     .eq('content_id', record.id)
-    .eq('version_id', version.id)
     .in('status', ACTIVE_PUBLICATION_STATES)
     .maybeSingle();
   if (active) {
     return {
-      state: 'publishing',
+      state: publicationOperation(active) === 'archive' ? 'archiving' : 'publishing',
       publicationState: active.status,
       publicationId: active.id,
       idempotent: true,
@@ -284,6 +385,7 @@ export async function publishContent(input: {
       content_id: record.id,
       version_id: version.id,
       operation_key: operationKey,
+      operation: input.operation,
       status: 'validating',
       github_branch: branch,
       requested_by: input.auth.user.id,
@@ -294,23 +396,27 @@ export async function publishContent(input: {
   await client
     .from('cms_content_records')
     .update({
-      workflow_state: 'publishing',
+      workflow_state: input.operation === 'archive' ? 'archiving' : 'publishing',
       publication_state: 'validating',
       publication_requested_by: input.auth.user.id,
       publication_requested_at: new Date().toISOString(),
       github_branch: branch,
       deployment_state: 'creating_pr',
     })
-    .eq('id', record.id)
-    .eq('current_sha', draft.content_sha);
+    .eq('id', record.id);
 
   try {
-    const publicationData = normalizePublishedContent(
-      { ...version.data, draft: false, workflow_state: 'published' },
-      'published'
-    );
-    validateContentDocument(collection, publicationData, version.body);
-    const artifact = serializeMarkdownDocument(publicationData, version.body);
+    const publicationData =
+      input.operation === 'publish'
+        ? normalizePublishedContent(
+            { ...version.data, draft: false, workflow_state: 'published' },
+            'published'
+          )
+        : version.data;
+    if (input.operation === 'publish') {
+      validateContentDocument(collection, publicationData, version.body);
+      assertPublicationReady(collection, publicationData, version.body);
+    }
     const baseSha = await getBranchHeadSha();
     const branchResponse = await createBranch(branch, baseSha);
     if (!branchResponse.ok) {
@@ -320,7 +426,21 @@ export async function publishContent(input: {
     }
     const existingResponse = await readContent(record.path, branch);
     let writeResponse;
-    if (existingResponse.status === 404) {
+    if (input.operation === 'archive') {
+      if (!existingResponse.ok) {
+        throw new GitHubError('No se encontró el Markdown publicado que debe archivarse.', {
+          status: existingResponse.status,
+        });
+      }
+      const existing: any = await existingResponse.json();
+      writeResponse = await deleteGitHubContent({
+        path: record.path,
+        sha: existing.sha,
+        message: `Archivar ${record.collection}: ${String(publicationData.title || record.path)}`,
+        branch,
+      });
+    } else if (existingResponse.status === 404) {
+      const artifact = serializeMarkdownDocument(publicDocumentData(publicationData), version.body);
       writeResponse = await createContent({
         path: record.path,
         content: artifact,
@@ -328,6 +448,7 @@ export async function publishContent(input: {
         branch,
       });
     } else if (existingResponse.ok) {
+      const artifact = serializeMarkdownDocument(publicDocumentData(publicationData), version.body);
       const existing: any = await existingResponse.json();
       const existingSource = Buffer.from(
         String(existing.content || '').replace(/\n/g, ''),
@@ -349,22 +470,27 @@ export async function publishContent(input: {
       });
     }
     if (!writeResponse.ok) {
-      throw new GitHubError('No se pudo escribir la versión publicable.', {
-        status: writeResponse.status,
-      });
+      throw new GitHubError(
+        input.operation === 'archive'
+          ? 'No se pudo retirar el Markdown publicado.'
+          : 'No se pudo escribir la versión publicable.',
+        {
+          status: writeResponse.status,
+        }
+      );
     }
     let pull: any = await findOpenPullRequest(branch);
     if (!pull) {
       const response = await createPullRequest({
         head: branch,
-        title: `CMS: publicar ${String(publicationData.title || record.path)}`,
+        title: `CMS: ${input.operation === 'archive' ? 'archivar' : 'publicar'} ${String(publicationData.title || record.path)}`,
         body: [
-          'Publicación técnica generada automáticamente por el CMS.',
+          `${input.operation === 'archive' ? 'Archivo' : 'Publicación'} técnico generado automáticamente por el CMS.`,
           '',
           `- Contenido: \`${record.path}\``,
           `- Versión: \`${version.content_sha}\``,
           '',
-          'No requiere revisión editorial adicional. Se fusionará al superar las validaciones.',
+          'Se fusionará únicamente después de superar las validaciones obligatorias.',
         ].join('\n'),
       });
       if (!response.ok) {
@@ -421,7 +547,8 @@ export async function publishContent(input: {
       .eq('id', record.id);
     await recordEvent({
       record,
-      eventType: 'content_publish_requested',
+      eventType:
+        input.operation === 'archive' ? 'content_archive_requested' : 'content_publish_requested',
       actorId: input.auth.user.id,
       contentSha: version.content_sha,
       metadata: { publication_id: publication.id, pull_request: pull.number },
@@ -429,19 +556,61 @@ export async function publishContent(input: {
     await recordAudit({
       requestId: input.auth.requestId,
       actorId: input.auth.user.id,
-      action: 'content_publish_requested',
+      action:
+        input.operation === 'archive' ? 'content_archive_requested' : 'content_publish_requested',
       resourceType: record.collection,
       resourceId: record.id,
       result: 'success',
       metadata: { path: record.path, content_sha: version.content_sha },
     });
     return {
-      state: 'publishing',
+      state: input.operation === 'archive' ? 'archiving' : 'publishing',
       publicationState: 'pr_open',
       publicationId: publication.id,
     };
   } catch (publicationError) {
-    await markFailed(publication.id, record.id, publicationError);
+    await markFailed(publication.id, record.id, publicationError, input.operation);
     throw publicationError;
   }
+}
+
+export async function publishContent(input: {
+  path: string;
+  auth: PermissionContext;
+  operationKey?: unknown;
+}) {
+  return startPublication({ ...input, operation: 'publish' });
+}
+
+export async function archiveContent(input: {
+  path: string;
+  auth: PermissionContext;
+  operationKey?: unknown;
+}) {
+  return startPublication({ ...input, operation: 'archive' });
+}
+
+export async function reconcilePendingPublications(requestId = randomUUID()) {
+  const client = getAdminClient();
+  if (!client) throw new InternalError('Supabase no está configurado.');
+  const { data: records, error } = await client
+    .from('cms_content_records')
+    .select('*, cms_content_drafts(*)')
+    .in('publication_state', ACTIVE_PUBLICATION_STATES)
+    .limit(100);
+  if (error) throw new InternalError('No se pudieron consultar las publicaciones pendientes.');
+
+  const results = [];
+  for (const record of records || []) {
+    try {
+      results.push(await reconcilePublication(record, { requestId }));
+    } catch (error) {
+      logEvent('error', 'cms_publication.reconcile_failed', {
+        requestId,
+        contentId: record.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return { processed: (records || []).length, results };
 }

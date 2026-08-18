@@ -15,10 +15,14 @@ import Layout from '../layouts/Layout.astro';
 
 <link href="/pagefind/pagefind-ui.css" rel="stylesheet" />
 <script src="/pagefind/pagefind-ui.js" is:inline></script>
-<script is:inline>
-  /* global PagefindUI */
+<script>
+  const PagefindUI = (
+    window as typeof window & {
+      PagefindUI?: new (_options: Record<string, unknown>) => unknown;
+    }
+  ).PagefindUI;
   window.addEventListener('DOMContentLoaded', function () {
-    if (typeof PagefindUI !== 'undefined') {
+    if (PagefindUI) {
       new PagefindUI({
         element: '#pagefind-ui',
         showSubResults: true,

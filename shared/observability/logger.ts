@@ -12,18 +12,31 @@ function sanitize(value: unknown): unknown {
   );
 }
 
-function sendAlert(entry: Record<string, unknown>) {
+async function deliverAlert(entry: Record<string, unknown>) {
   const webhookUrl = process.env.ALERT_WEBHOOK_URL;
-  if (!webhookUrl) return;
+  if (!webhookUrl) return false;
   const text = `[simposio-cms] ${entry.event}: ${JSON.stringify(entry)}`;
-  fetch(webhookUrl, {
+  const response = await fetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
     signal: AbortSignal.timeout(5000),
-  }).catch(() => {
-    // La alerta nunca debe interrumpir la petición que la originó.
   });
+  return response.ok;
+}
+
+export async function sendOperationalAlert(event: string, context: Record<string, unknown> = {}) {
+  const entry = sanitize({
+    level: 'error',
+    event,
+    timestamp: new Date().toISOString(),
+    ...context,
+  }) as Record<string, unknown>;
+  try {
+    return await deliverAlert(entry);
+  } catch {
+    return false;
+  }
 }
 
 export function logEvent(
@@ -40,7 +53,9 @@ export function logEvent(
   const line = JSON.stringify(entry);
   if (level === 'error') {
     console.error(line);
-    sendAlert(entry);
+    deliverAlert(entry).catch(() => {
+      // La alerta nunca debe interrumpir la petición que la originó.
+    });
   } else if (level === 'warn') console.warn(line);
   else console.log(line);
 }

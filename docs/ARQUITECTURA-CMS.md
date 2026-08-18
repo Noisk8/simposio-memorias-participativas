@@ -56,6 +56,8 @@ El frontend puede usar los permisos devueltos por la API para mostrar u ocultar 
 
 La vista previa editorial interpreta CommonMark y GitHub Flavored Markdown mediante `marked` —incluyendo tablas, listas de tareas, citas y bloques de código— y sanitiza el resultado con `DOMPurify` antes de insertarlo en el DOM. La vista previa no ejecuta HTML activo aportado por el contenido.
 
+Las entradas disponen además de una barra de bloques controlados para insertar imágenes de la biblioteca, galerías, carruseles, citas y listados de entradas por categoría en la posición del cursor. Estos componentes se guardan como bloques cercados `cms-image`, `cms-gallery` y `cms-entries` con configuración JSON: siguen siendo legibles y versionables dentro del Markdown, pero el backend rechaza tipos desconocidos, JSON inválido y URLs de medios inseguras. El mismo renderizador genera la vista previa y el HTML estático público; los listados por categoría se resuelven durante el build y excluyen borradores y la propia entrada.
+
 Una entrada puede apuntar opcionalmente a una página mediante `page_id`, que conserva el UUID estable de la página y no su título o slug mutable. El selector del panel limita las opciones a la misma edición del simposio. Una entrada publicada conserva su ruta canónica y aparece además como tarjeta relacionada en la página asignada; el build rechaza referencias inexistentes, páginas no publicadas y relaciones entre ediciones diferentes.
 
 ## Funciones activas
@@ -63,11 +65,14 @@ Una entrada puede apuntar opcionalmente a una página mediante `page_id`, que co
 | Function               | Responsabilidad                                                                               |
 | ---------------------- | --------------------------------------------------------------------------------------------- |
 | `manage-content`       | CRUD de borradores Supabase, UUID canónico, validación, autosave y concurrencia por revisión  |
-| `manage-workflow`      | Publicación directa para el usuario y reconciliación de la infraestructura Git automática     |
-| `manage-media`         | Lista, sube, actualiza metadata y elimina medios en Supabase Storage                          |
+| `manage-workflow`      | Publicación/archivo y reconciliación idempotente de GitHub y Netlify                          |
+| `manage-media`         | Lista, actualiza metadata y elimina medios en Supabase Storage                                |
+| `upload-media`         | Valida, redimensiona, convierte a WebP y sube imágenes; conserva PDF sin transformación       |
 | `manage-users`         | Lista/crea usuarios de Supabase Auth y reemplaza su rol efectivo                              |
 | `get-revision-history` | Hasta 30 snapshots editoriales inmutables almacenados en Supabase                             |
-| `deploy-status`        | Estado combinado del commit de la rama configurada en GitHub                                  |
+| `deploy-status`        | Estado combinado de GitHub y del último deploy de Netlify                                     |
+| `cms-operations`       | Reconciliación, salud operativa y poda programadas cada diez minutos                          |
+| `scheduled-publish`    | Rebuild diario de Netlify para activar contenido cuya `publish_date` ya venció                |
 | `manage-collections`   | Modifica `src/content.config.ts` y crea el marcador `.gitkeep`; no escribe Markdown editorial |
 | `create-coleccion`     | Wrapper temporal obsoleto que delega íntegramente en `manage-collections`                     |
 
@@ -119,13 +124,19 @@ El inicio de sesión del navegador llama directamente a Supabase Auth y conserva
 
 ## Estado de medios
 
-`manage-media` acepta únicamente JPEG, PNG, WebP y PDF, con un máximo absoluto de 2 MiB. Para imágenes contrasta extensión, MIME declarado, firma y formato decodificado por `sharp`; fuerza la decodificación completa y limita ancho, alto y píxeles mediante configuración server-side. Cualquier otro tipo, imágenes animadas, nombres peligrosos y archivos corruptos se rechazan antes de consultar Storage.
+`upload-media` acepta únicamente JPEG, PNG, WebP y PDF, con un máximo absoluto de 2 MiB. Para imágenes contrasta extensión, MIME declarado, firma y formato decodificado por `sharp`; fuerza la decodificación completa, limita ancho/alto/píxeles, aplica orientación, reduce a un máximo predeterminado de 2560×2560 y almacena WebP con calidad 82. Cualquier otro tipo, imágenes animadas, nombres peligrosos y archivos corruptos se rechazan antes de consultar Storage. Los límites de salida pueden ajustarse con `CMS_IMAGE_OUTPUT_MAX_WIDTH`, `CMS_IMAGE_OUTPUT_MAX_HEIGHT` y `CMS_IMAGE_WEBP_QUALITY`.
 
 Las imágenes nuevas requieren crédito, licencia y una decisión explícita entre texto alternativo no vacío o `is_decorative=true`. El original se conserva en `original_filename`, pero nunca se usa como key: las cargas nuevas emplean `images|documents/YYYY/MM/<uuid>-<slug-seguro>.<ext>`. Los paths históricos por SHA-256 siguen siendo válidos. El SHA-256 permanece en `checksum_sha256` para deduplicación, integridad y trazabilidad.
 
 Los campos de imagen del editor permiten elegir un recurso existente mediante un selector autenticado que consulta `manage-media`, además de subir una imagen nueva. La URL manual se conserva únicamente para compatibilidad con referencias legacy; seleccionar o subir un medio actualiza el borrador y su vista previa sin exponer credenciales de Storage al navegador.
 
-No se generan `thumbnail`, `medium` y `large` en esta fase: el Markdown y los componentes públicos consumen una única URL y todavía no tienen un modelo de variantes. Añadir derivados ahora multiplicaría objetos sin un consumidor ni una política clara de borrado. `sharp` queda centralizado para incorporarlos cuando el modelo público use `srcset`/`picture`.
+No se generan variantes `thumbnail`, `medium` y `large`: el Markdown consume una única URL ya optimizada. `sharp` solo forma parte del endpoint `upload-media`; listar, editar metadata o eliminar medios no carga su binario nativo.
+
+## Límite navegador/administración
+
+El sitio público no consulta sesiones ni incluye `@supabase/supabase-js`. El encabezado carga únicamente navegación y el acceso oculto al login. Supabase Auth, su clave anónima y el manejo de tokens se importan desde `src/scripts/admin/` solo en rutas `/admin`; los permisos siempre se vuelven a comprobar en Functions. La configuración pública de Auth ya no tiene un endpoint JSON adicional.
+
+Las pantallas administrativas usan módulos compartidos para autenticación, llamadas HTTP, layout y configuración del editor. Astro procesa estos scripts como módulos versionados; las páginas públicas no descargan los chunks administrativos.
 
 El bucket permite lectura pública para el sitio estático. Políticas RLS restrictivas bloquean `INSERT`, `UPDATE` y `DELETE` desde clientes incluso si hubiera otra política permisiva; la Function usa `service_role` únicamente server-side después de RBAC. La tabla permite lectura directa solo a usuarios con `media.read`, pero las mutaciones se hacen por la Function.
 
@@ -134,12 +145,13 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 ## Límites conocidos
 
 - Los modelos exigen UUID v4 y el corpus actual ya fue migrado. `migrate-content-uuids.mjs --check` bloquea check/build si falta un ID o está duplicado.
-- El panel expone únicamente guardar borrador y publicar; los estados legacy de revisión quedan admitidos solo para migración de datos históricos.
+- El panel expone guardar borrador, publicar y archivar; los estados legacy de revisión quedan admitidos solo para migración de datos históricos.
 - La navegación pública es estática en `src/components/Header.astro`; no forma parte del dominio editorial del CMS.
 - Las colecciones genéricas creadas por `manage-collections` no obtienen automáticamente CRUD en el panel.
 - La escritura GitHub y la auditoría Supabase no forman una transacción distribuida. Si la auditoría no persiste, queda el evento estructurado `audit.persist.failed`.
-- La confirmación de merge ocurre al consultar el workflow; auto-merge evita acciones humanas, pero todavía no existe webhook de GitHub para reconciliación inmediata.
-- `deploy-status` informa estados de commit de GitHub; no consulta directamente la API de deploys de Netlify.
+- La confirmación ocurre al consultar el workflow y también mediante `cms-operations`; el merge y el deploy son estados separados.
+- La programación conserva fechas futuras y depende de `scheduled-publish` + `SCHEDULED_BUILD_HOOK_URL`; su precisión es diaria (00:05 America/Bogota).
+- Netlify se confirma por las variables confiables del runtime para el deploy actual y, opcionalmente, por API para despliegues históricos.
 - La importación inicial desde GitHub ocurre al abrir una colección que todavía no tenga copias editables. No se borran los Markdown legacy automáticamente.
 
 ## Arquitectura objetivo aún no completada
@@ -147,13 +159,17 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 ```text
 Implementado                              Planeado
 ────────────                              ────────
-Supabase Auth + Storage                   Webhook de reconciliación de PR/merge/deploy
+Supabase Auth + Storage                   Webhook inmediato de GitHub/Netlify (la tarea programada ya reconcilia)
 RBAC, borradores y versiones Supabase     Restauración de snapshots desde la interfaz
 Autosave y concurrencia por revisión      Idempotencia genérica para operaciones no editoriales
 Publicación exacta e idempotente
+Archivo/despublicación idempotente
 GitHub App + PR técnico automático
+Confirmación del deploy exacto de Netlify
 CI editorial ligero y un solo deploy
 Auditoría Supabase + logs
 Rate limit distribuido
 Panel propio
+SEO, canonical, assets y WCAG bloqueantes en CI
+Publicación programada diaria
 ```

@@ -1,11 +1,32 @@
 import { z } from 'zod';
 import { contentIdSchema } from '../content/identity.ts';
 
+export const contentSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Usa un slug en minúsculas, sin espacios ni tildes.');
+
+export const optionalContentSlugSchema = z
+  .union([z.literal(''), contentSlugSchema])
+  .optional()
+  .default('');
+
 export const dateField = z
   .union([z.string(), z.date()])
   .optional()
   .default('')
-  .transform((value) => (value instanceof Date ? value.toISOString().slice(0, 10) : value));
+  .transform((value) => (value instanceof Date ? value.toISOString().slice(0, 10) : value))
+  .refine(
+    (value) => {
+      if (value === '') return true;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const parsed = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+    },
+    { message: 'Usa una fecha de calendario válida en formato AAAA-MM-DD.' }
+  );
 
 export const nonEmptyStringList = z
   .preprocess((value) => (Array.isArray(value) ? value : []), z.array(z.string()))
@@ -33,7 +54,9 @@ export const editorialMetadataFields = {
       'publishing',
       'published',
       'publish_failed',
+      'archiving',
       'archived',
+      'archive_failed',
       'in_review',
       'changes_requested',
       'approved',

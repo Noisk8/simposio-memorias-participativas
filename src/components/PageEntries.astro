@@ -5,9 +5,10 @@ import { resolvePublicImageUrl } from '../lib/public-image';
 
 interface Props {
   entries: CollectionEntry<'entradas'>[];
+  baseUrl?: string;
 }
 
-const { entries } = Astro.props;
+const { entries, baseUrl = '/entradas' } = Astro.props;
 ---
 
 {
@@ -32,7 +33,7 @@ const { entries } = Astro.props;
           {entries.map((entry) => (
             <article class="group overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:border-ugr-green/30 hover:shadow-md">
               {entry.data.image && (
-                <a href={`/entradas/${entry.id}`} class="block h-44 overflow-hidden">
+                <a href={`${baseUrl}/${entry.id}`} class="block h-44 overflow-hidden">
                   <img
                     src={resolvePublicImageUrl(entry.data.image)}
                     alt=""
@@ -49,7 +50,7 @@ const { entries } = Astro.props;
                   </p>
                 )}
                 <h3 class="font-[family-name:var(--font-heading)] text-lg font-bold text-ugr-green-dark">
-                  <a href={`/entradas/${entry.id}`} class="transition-colors hover:text-ugr-green">
+                  <a href={`${baseUrl}/${entry.id}`} class="transition-colors hover:text-ugr-green">
                     {entry.data.title}
                   </a>
                 </h3>
@@ -59,7 +60,7 @@ const { entries } = Astro.props;
                   </p>
                 )}
                 <a
-                  href={`/entradas/${entry.id}`}
+                  href={`${baseUrl}/${entry.id}`}
                   class="mt-4 inline-block text-xs font-semibold uppercase tracking-wide text-ugr-green hover:underline"
                 >
                   Leer entrada →

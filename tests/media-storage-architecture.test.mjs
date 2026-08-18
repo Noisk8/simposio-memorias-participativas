@@ -11,8 +11,9 @@ const limitsMigration = fs.readFileSync(
   'supabase/migrations/202608110006_media_types_and_2mib_limit.sql',
   'utf8'
 );
-const service = fs.readFileSync('shared/cms/media-service.ts', 'utf8');
+const uploadService = fs.readFileSync('shared/cms/media-upload-service.ts', 'utf8');
 const handler = fs.readFileSync('netlify/functions/manage-media.ts', 'utf8');
+const uploadHandler = fs.readFileSync('netlify/functions/upload-media.ts', 'utf8');
 
 test('el bucket bloquea toda escritura cliente aunque exista otra política permisiva', () => {
   assert.match(migration, /'cms-media'[\s\S]*true,[\s\S]*4194304/);
@@ -35,16 +36,19 @@ test('cms_media queda bajo RLS y las escrituras solo se conceden a service_role'
 });
 
 test('manage-media usa Storage y metadata, no GitHub Contents para binarios', () => {
-  assert.match(service, /\.storage[\s\S]*\.upload\(/);
-  assert.match(service, /\.from\('cms_media'\)/);
-  assert.match(service, /createHash\('sha256'\)/);
-  assert.match(service, /randomUUID\(\)/);
-  assert.match(service, /validateImageUpload/);
-  assert.match(service, /validateEditorialMetadata/);
-  assert.doesNotMatch(service, /githubContentsRequest/);
+  assert.match(uploadService, /\.storage[\s\S]*\.upload\(/);
+  assert.match(uploadService, /\.from\('cms_media'\)/);
+  assert.match(uploadService, /createHash\('sha256'\)/);
+  assert.match(uploadService, /randomUUID\(\)/);
+  assert.match(uploadService, /optimizeImageUpload/);
+  assert.match(uploadService, /validateEditorialMetadata/);
+  assert.doesNotMatch(uploadService, /githubContentsRequest/);
   assert.match(handler, /event\.httpMethod === 'PATCH'/);
   assert.match(handler, /'media\.update'/);
   assert.match(handler, /errorResponse\(error, headers, requestId\)/);
+  assert.doesNotMatch(handler, /uploadMedia|sharp/);
+  assert.match(uploadHandler, /uploadMedia/);
+  assert.match(uploadHandler, /'media\.upload'/);
 });
 
 test('la política de imagen del bucket y PostgreSQL excluye SVG, GIF y AVIF', () => {

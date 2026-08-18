@@ -11,7 +11,7 @@ import {
   formatDate,
   filterPublished,
 } from '../../../../lib/taxonomies';
-import { getSimposioBySlug } from '../../../../lib/simposios';
+import { getSimposioBySlug, getSimposioDefault } from '../../../../lib/simposios';
 import { resolvePublicImageUrl } from '../../../../lib/public-image';
 
 type Props = {
@@ -20,10 +20,13 @@ type Props = {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const entradas = filterPublished(await getCollection('entradas'));
-  return entradas.map((entry) => ({
-    params: { slug: entry.data.simposio, entrada: entry.id },
-    props: { entry },
-  }));
+  const defaultSimposio = await getSimposioDefault();
+  return entradas
+    .filter((entry) => entry.data.simposio !== defaultSimposio?.data.slug)
+    .map((entry) => ({
+      params: { slug: entry.data.simposio, entrada: entry.id },
+      props: { entry },
+    }));
 };
 
 const { entry } = Astro.props;
@@ -37,7 +40,19 @@ const simposio = await getSimposioBySlug(slug || entrada.simposio || '2026');
 const simposioTitle = simposio?.data.title || `Edición ${slug}`;
 ---
 
-<Layout title={`${entrada.title} - ${simposioTitle}`}>
+<Layout
+  title={`${entrada.title} - ${simposioTitle}`}
+  description={entrada.description}
+  image={entrada.image || undefined}
+  type="article"
+  canonical={`/ediciones/${slug}/entradas/${entry.id}/`}
+  publishDate={entrada.publish_date || entrada.date}
+  author={entrada.author}
+  authorType={entrada.author_type}
+  section={entrada.categories[0]}
+  tags={entrada.tags}
+  keywords={[...entrada.categories, ...entrada.tags]}
+>
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">

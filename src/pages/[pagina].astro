@@ -13,10 +13,13 @@ interface Props {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const paginas = filterPublished(await getCollection('paginas'));
-  return paginas.map((entry) => ({
-    params: { pagina: entry.data.slug || entry.data.template },
-    props: { entry },
-  }));
+  const defaultSimposio = await getSimposioDefault();
+  return paginas
+    .filter((entry) => entry.data.simposio === defaultSimposio?.data.slug)
+    .map((entry) => ({
+      params: { pagina: entry.data.slug || entry.data.template },
+      props: { entry },
+    }));
 };
 
 const { entry } = Astro.props;
@@ -33,7 +36,12 @@ const pageTitle = `${data.title} - ${simposioTitle}`;
 const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
 ---
 
-<Layout title={pageTitle} description={data.description} image={heroImage}>
+<Layout
+  title={pageTitle}
+  description={data.description}
+  image={heroImage}
+  canonical={`/${data.slug || data.template}/`}
+>
   <PageTemplate data={data} simposio={simposio} simposioTitle={simposioTitle} entries={entries}>
     <Content />
   </PageTemplate>

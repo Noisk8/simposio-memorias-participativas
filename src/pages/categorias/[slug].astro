@@ -12,6 +12,7 @@ import {
   getParentChain,
   filterPublished,
 } from '../../lib/taxonomies';
+import { entryPublicPath, getSimposioDefault } from '../../lib/simposios';
 
 type TermProps = {
   title: string;
@@ -66,6 +67,8 @@ const catTitles = slugTitleMap(await getCategorias());
 const tagTitles = slugTitleMap(await getEtiquetas());
 const allCategorias = await getCategorias();
 const total = entradas.length + memorias.length;
+const defaultSimposio = await getSimposioDefault();
+const defaultSlug = defaultSimposio?.data.slug || '2026';
 
 const breadcrumbs = getParentChain(term.slug, allCategorias);
 ---
@@ -126,7 +129,10 @@ const breadcrumbs = getParentChain(term.slug, allCategorias);
             <div class="grid gap-8 md:grid-cols-2">
               {entradas.map((entry) => (
                 <article class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-ugr-green/30 transition-all duration-300 group">
-                  <a href={`/entradas/${entry.id}`} class="block">
+                  <a
+                    href={entryPublicPath(entry.id, entry.data.simposio, defaultSlug)}
+                    class="block"
+                  >
                     {entry.data.image && (
                       <div class="relative h-48 overflow-hidden">
                         <img
@@ -145,7 +151,7 @@ const breadcrumbs = getParentChain(term.slug, allCategorias);
                         {formatDate(entry.data.date)}
                       </p>
                     )}
-                    <a href={`/entradas/${entry.id}`}>
+                    <a href={entryPublicPath(entry.id, entry.data.simposio, defaultSlug)}>
                       <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2 group-hover:text-ugr-green transition-colors">
                         {entry.data.title}
                       </h3>

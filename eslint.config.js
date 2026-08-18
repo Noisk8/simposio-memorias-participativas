@@ -19,6 +19,31 @@ const nodeGlobals = {
   exports: 'readonly',
 };
 
+const browserGlobals = {
+  window: 'readonly',
+  document: 'readonly',
+  localStorage: 'readonly',
+  fetch: 'readonly',
+  Headers: 'readonly',
+  RequestInit: 'readonly',
+  URLSearchParams: 'readonly',
+  CustomEvent: 'readonly',
+  Element: 'readonly',
+  HTMLElement: 'readonly',
+  HTMLInputElement: 'readonly',
+  EventTarget: 'readonly',
+  Event: 'readonly',
+  FileReader: 'readonly',
+  CSS: 'readonly',
+  crypto: 'readonly',
+  navigator: 'readonly',
+  location: 'readonly',
+  history: 'readonly',
+  confirm: 'readonly',
+  clearTimeout: 'readonly',
+  Window: 'readonly',
+};
+
 export default [
   ...eslintPluginAstro.configs.recommended,
   {
@@ -33,9 +58,15 @@ export default [
       globals: nodeGlobals,
     },
     rules: {
-      'no-unused-vars': 'warn',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-undef': 'warn',
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    files: ['src/scripts/**/*.{js,ts}'],
+    languageOptions: {
+      globals: browserGlobals,
     },
   },
   {

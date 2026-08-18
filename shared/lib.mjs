@@ -20,7 +20,10 @@ export function parseFrontmatter(content) {
     const arrayItem = line.match(/^\s*-\s+(.+)/);
     if (arrayItem && currentKey) {
       if (!Array.isArray(data[currentKey])) data[currentKey] = [];
-      data[currentKey].push(arrayItem[1].trim());
+      const item = arrayItem[1].trim();
+      data[currentKey].push(
+        /^"(.*)"$/.test(item) || /^'(.*)'$/.test(item) ? item.slice(1, -1) : item
+      );
       continue;
     }
     const kv = line.match(/^(\w+):\s*(.*)/);

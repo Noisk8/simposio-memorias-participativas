@@ -93,14 +93,31 @@ test('los checks fallidos se distinguen de los pendientes y no dejan publicació
 test('el recorrido minimalista separa borrador y publicación exacta', () => {
   const contentService = fs.readFileSync('shared/cms/content-service.ts', 'utf8');
   const publicationService = fs.readFileSync('shared/cms/publication-service.ts', 'utf8');
-  const panel = fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8');
+  const panel =
+    fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8') +
+    fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8');
   assert.doesNotMatch(contentService, /payload\?\.data\?\.draft === false/);
   assert.match(contentService, /cms_save_content_draft/);
   assert.match(publicationService, /version\.content_sha/);
-  assert.match(publicationService, /content_published/);
+  assert.match(publicationService, /cms_finalize_publication/);
+  assert.match(publicationService, /getDeployForCommit/);
   assert.match(panel, /transition\('publish'\)/);
+  assert.match(panel, /transition\('archive'\)/);
   assert.doesNotMatch(panel, /Enviar a revisión|>Aprobar</);
   assert.match(panel, /Borrador guardado en Supabase/);
+});
+
+test('la migración P0 hace terminales e idempotentes publicación y archivo', () => {
+  const migration = fs.readFileSync(
+    'supabase/migrations/202608160001_production_readiness.sql',
+    'utf8'
+  );
+  assert.match(migration, /cms_mark_publication_merged/);
+  assert.match(migration, /cms_finalize_publication/);
+  assert.match(migration, /status in \('live', 'archived'\)/);
+  assert.match(migration, /return false/);
+  assert.match(migration, /content_archived/);
+  assert.match(migration, /content_published/);
 });
 
 test('la migración persiste versiones, PR y SHA en eventos de auditoría', () => {
