@@ -5,3 +5,4 @@ package-lock.json
 netlify.toml
 supabase/**/*.sql
 supabase/.temp/
+results.sarif
