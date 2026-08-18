@@ -20,6 +20,7 @@ interface Props {
   authorType?: 'Person' | 'Organization';
   section?: string;
   keywords?: string[];
+  allowSupabase?: boolean;
 }
 
 const {
@@ -36,7 +37,12 @@ const {
   authorType,
   section,
   keywords,
+  allowSupabase = false,
 } = Astro.props;
+
+if (allowSupabase) {
+  Astro.csp?.insertDirective("connect-src 'self' https://*.supabase.co");
+}
 ---
 
 <!doctype html>

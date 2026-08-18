@@ -26,6 +26,13 @@ for (const file of htmlFiles(root)) {
   for (const directive of ["object-src 'none'", 'base-uri', 'form-action']) {
     if (!policy.includes(directive)) failures.push(`${relative}: falta ${directive}`);
   }
+  const isAdminPage = relative.split(path.sep).includes('admin');
+  if (isAdminPage && !policy.includes("connect-src 'self' https://*.supabase.co")) {
+    failures.push(`${relative}: la CSP no permite conectar con Supabase Auth`);
+  }
+  if (!isAdminPage && policy.includes('supabase.co')) {
+    failures.push(`${relative}: una página pública permite conexiones innecesarias a Supabase`);
+  }
 }
 
 if (failures.length) {

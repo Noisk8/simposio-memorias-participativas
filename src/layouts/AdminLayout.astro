@@ -11,6 +11,10 @@ const githubRepo = String(
 ).replace(/\.git$/i, '');
 const githubBranch = String(import.meta.env.GITHUB_BRANCH || 'main').trim() || 'main';
 const mediaPreviewBase = `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/images/`;
+
+// Debe registrarse antes de renderizar el <head>; hacerlo desde un componente
+// situado en el <slot> llega demasiado tarde para la CSP generada por Astro.
+Astro.csp?.insertDirective("connect-src 'self' https://*.supabase.co");
 ---
 
 <!doctype html>
