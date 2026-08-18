@@ -34,7 +34,11 @@ Después del primer guardado, el panel hace autosave en Supabase. También conse
 
 ### Publicación
 
-El botón **Publicar** aparece cuando existe una versión actual diferente de la publicada y la cuenta tiene permiso. El panel muestra `Publicación en curso`, `Desplegando`, `Publicado` o `Error de publicación`. Un fallo puede reintentarse sin duplicar una publicación activa.
+El botón **Publicar** aparece cuando existe una versión actual diferente de la publicada y la cuenta tiene permiso. El panel muestra `Publicación en curso`, `Desplegando`, `Publicado`, `Programado`, `Archivado` o el error correspondiente. Un fallo puede reintentarse sin duplicar una publicación activa.
+
+Si **Fecha de publicación** es posterior al día actual, el panel conserva esa fecha y muestra **Programado**. El contenido versionado permanece oculto hasta el rebuild diario de las 00:05 de Bogotá. La unidad de programación es el día; para publicar de inmediato, deja la fecha vacía o usa hoy.
+
+Una entrada publicable necesita autoría, tipo de autoría (persona u organización), descripción, imagen y cuerpo. Una memoria necesita una persona autora o un colectivo responsable, además de descripción, imagen y cuerpo. Slugs con mayúsculas, tildes o espacios, taxonomías inexistentes y referencias rotas son rechazados antes del PR.
 
 Si se sigue editando durante una publicación, los nuevos cambios permanecen como borrador; no alteran la versión inmutable que ya estaba publicándose.
 
@@ -55,7 +59,8 @@ Estado actual:
 - valida MIME, extensión, contenido real, peso y dimensiones antes de almacenar;
 - exige crédito, licencia y texto alternativo, o que la imagen se marque explícitamente como decorativa;
 - reutiliza un archivo idéntico y rechaza una colisión con contenido diferente;
-- impide eliminar una imagen cuando GitHub Code Search encuentra referencias en `src/content`.
+- impide eliminar una imagen cuando GitHub Code Search o un borrador de Supabase contiene referencias;
+- al reutilizar un archivo idéntico solo permite cambiar su metadata a perfiles con `media.update`.
 
 Los campos de imagen del editor también pueden subir archivos a esta biblioteca. El campo guarda la URL pública estable devuelta por Storage; las rutas `/images/…` existentes siguen funcionando durante la migración.
 
@@ -68,6 +73,8 @@ Con `users.read` se listan cuentas. Con `users.manage` se puede:
 - crear una cuenta en Supabase Auth;
 - asignar exactamente un rol efectivo;
 - reemplazar el rol de una cuenta existente.
+
+Las altas directas en Supabase quedan **sin rol** y no pueden entrar al panel. La única excepción es un correo predeclarado en `admin_emails`. Desde esta pantalla, administración debe escoger explícitamente el rol de la cuenta creada.
 
 Los roles disponibles son `superadmin`, `admin`, `editor`, `reviewer`, `author` y `read_only`. Si no se proporciona contraseña, el backend genera una temporal. Con Resend configurado intenta enviarla por correo; sin esa configuración, el panel la muestra para compartirla mediante un canal seguro.
 

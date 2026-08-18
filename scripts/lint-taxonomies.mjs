@@ -133,7 +133,8 @@ function main() {
   }
 
   if (warnings > 0) {
-    console.log(`\n⚠ ${warnings} advertencia(s). Considera crear documentos faltantes.`);
+    console.error(`\n✖ ${warnings} problema(s) de taxonomía. Corrígelos antes de publicar.`);
+    process.exitCode = 1;
   } else {
     console.log('✓ Taxonomías íntegras: sin huérfanos, sin duplicados.');
   }

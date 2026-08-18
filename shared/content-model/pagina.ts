@@ -4,6 +4,7 @@ import {
   editorialIdentityFields,
   editorialMetadataFields,
   nonEmptyStringList,
+  optionalContentSlugSchema,
 } from './base.ts';
 
 export const paginaSchema = z.object({
@@ -12,8 +13,8 @@ export const paginaSchema = z.object({
   publish_date: dateField,
   ...editorialMetadataFields,
   simposio: z.string().default('2026'),
-  slug: z.string().optional().default(''),
-  parent: z.string().optional().default(''),
+  slug: optionalContentSlugSchema,
+  parent: optionalContentSlugSchema,
   is_home: z.boolean().optional().default(false),
   order: z.number().optional().default(0),
   template: z

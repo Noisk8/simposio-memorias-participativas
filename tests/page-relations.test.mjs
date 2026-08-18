@@ -11,12 +11,15 @@ test('una entrada pertenece solo a la página UUID de su misma edición', () => 
 });
 
 test('el CMS ofrece la relación y las páginas renderizan entradas relacionadas', () => {
-  const editor = fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8');
+  const editor =
+    fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8') +
+    fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8');
+  const editorConfig = fs.readFileSync('src/scripts/admin/editor-config.ts', 'utf8');
   const pageTemplate = fs.readFileSync('src/components/PageTemplate.astro', 'utf8');
   const schema = fs.readFileSync('shared/content-model/entrada.ts', 'utf8');
   const validator = fs.readFileSync('scripts/lint-content-relations.mjs', 'utf8');
 
-  assert.match(editor, /Página donde aparecerá/);
+  assert.match(editorConfig, /Página donde aparecerá/);
   assert.match(editor, /item\.data\.id/);
   assert.match(editor, /syncEntryPageOptions/);
   assert.match(schema, /page_id: optionalContentReference/);

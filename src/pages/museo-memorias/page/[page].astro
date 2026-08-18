@@ -14,7 +14,7 @@ import { getSimposios } from '../../../lib/simposios';
 export const getStaticPaths: GetStaticPaths = async ({ paginate }) => {
   const todos = filterPublished(await getCollection('memorias'));
   const ordenados = todos.sort((a, b) => b.data.number - a.data.number);
-  return paginate(ordenados, { pageSize: 10 });
+  return paginate(ordenados, { pageSize: 10 }).filter((route) => route.params.page !== '1');
 };
 
 interface Props {
@@ -34,6 +34,8 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
 
 <Layout
   title={`Museo de Memorias Vivas — Página ${currentPage} - Red Internacional de Memorias Participativas`}
+  description={`Página ${currentPage} del archivo de proyectos del Museo de Memorias Vivas.`}
+  canonical={`/museo-memorias/page/${currentPage}/`}
 >
   <!-- Hero -->
   <section class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
@@ -171,7 +173,10 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
       <nav class="mt-12 flex justify-center items-center gap-2">
         {
           page.url.prev && (
-            <a href={page.url.prev} class="btn-green px-4 py-2 text-sm">
+            <a
+              href={currentPage === 2 ? '/museo-memorias/' : page.url.prev}
+              class="btn-green px-4 py-2 text-sm"
+            >
               ← Anterior
             </a>
           )
@@ -202,30 +207,4 @@ const simposioMap = new Map(simposios.map((s) => [s.data.slug, s.data.title]));
   </section>
 </Layout>
 
-<script is:inline>
-  (function () {
-    const buttons = document.querySelectorAll('.simposio-filter');
-    const cards = document.querySelectorAll('.memoria-card');
-    const noResults = document.getElementById('no-results');
-
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', function () {
-        const filter = this.dataset.filter;
-        buttons.forEach((b) => {
-          b.classList.remove('bg-ugr-green', 'text-white');
-          b.classList.add('bg-gray-100', 'text-ugr-green');
-        });
-        this.classList.remove('bg-gray-100', 'text-ugr-green');
-        this.classList.add('bg-ugr-green', 'text-white');
-
-        let visible = 0;
-        cards.forEach((card) => {
-          const match = filter === 'all' || card.dataset.simposio === filter;
-          card.style.display = match ? '' : 'none';
-          if (match) visible++;
-        });
-        noResults.classList.toggle('hidden', visible > 0);
-      });
-    });
-  })();
-</script>
+<script src="../../../scripts/museum-filter.ts"></script>

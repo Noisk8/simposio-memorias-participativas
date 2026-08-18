@@ -1,10 +1,16 @@
 import type { PermissionContext } from '../auth/require-permission.ts';
 import { ValidationError, InternalError } from '../observability/errors.ts';
 import { getAdminClient } from '../supabase/admin-client.ts';
-import { publicationBranch, publishContent, reconcilePublication } from './publication-service.ts';
+import {
+  archiveContent,
+  publicationBranch,
+  publishContent,
+  reconcilePublication,
+} from './publication-service.ts';
 
 export const WORKFLOW_TRANSITIONS = {
   publish: { suffix: 'publish' },
+  archive: { suffix: 'archive' },
 } as const;
 
 export type WorkflowTransition = keyof typeof WORKFLOW_TRANSITIONS;
@@ -36,12 +42,15 @@ export function validateWorkflowPath(value: unknown): string {
 }
 
 export function workflowPermission(path: string, transition: unknown) {
-  if (transition !== 'publish') throw new ValidationError('Transición editorial inválida.');
+  if (!['publish', 'archive'].includes(String(transition))) {
+    throw new ValidationError('Transición editorial inválida.');
+  }
   const base = collectionPermissionBase(path.split('/')[2]);
   if (!base) throw new ValidationError('Esta colección no admite publicación.');
+  const normalized = transition as WorkflowTransition;
   return {
-    transition: 'publish' as const,
-    permission: base === 'taxonomy' ? 'taxonomy.manage' : `${base}.publish`,
+    transition: normalized,
+    permission: base === 'taxonomy' ? 'taxonomy.manage' : `${base}.${normalized}`,
   };
 }
 
@@ -65,7 +74,8 @@ export async function transitionWorkflow(input: {
   operationKey?: unknown;
   auth: PermissionContext;
 }) {
-  return publishContent({
+  const operation = input.transition === 'archive' ? archiveContent : publishContent;
+  return operation({
     path: input.path,
     auth: input.auth,
     operationKey: input.operationKey,

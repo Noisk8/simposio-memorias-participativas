@@ -19,6 +19,7 @@ if (!simposio) {
 }
 
 const data = simposio.data;
+const editionBase = data.is_default ? '' : `/ediciones/${data.slug}`;
 const paginas = filterPublished(await getCollection('paginas')).filter(
   ({ data }) => data.simposio === (slug || '2026')
 );
@@ -107,7 +108,7 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
       </h2>
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <a
-          href={`/ediciones/${data.slug}/el-simposio`}
+          href={`${editionBase}/el-simposio`}
           class="card-shadow bg-ugr-cream rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
         >
           <h3
@@ -118,7 +119,7 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           <p class="text-sm text-ugr-text-light">Propósito, objetivos y dinámica</p>
         </a>
         <a
-          href={`/ediciones/${data.slug}/programa`}
+          href={`${editionBase}/programa`}
           class="card-shadow bg-ugr-cream rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
         >
           <h3
@@ -129,7 +130,7 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           <p class="text-sm text-ugr-text-light">Sesiones, talleres y actividades</p>
         </a>
         <a
-          href={`/ediciones/${data.slug}/organizacion`}
+          href={`${editionBase}/organizacion`}
           class="card-shadow bg-ugr-cream rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
         >
           <h3
@@ -151,7 +152,7 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           <p class="text-sm text-ugr-text-light">Memorias y exposiciones</p>
         </a>
         <a
-          href={`/ediciones/${data.slug}/entradas`}
+          href={`${editionBase}/entradas`}
           class="card-shadow bg-ugr-cream rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
         >
           <h3
@@ -162,7 +163,7 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           <p class="text-sm text-ugr-text-light">Noticias y novedades</p>
         </a>
         <a
-          href={`/ediciones/${data.slug}/contacto`}
+          href={`${editionBase}/contacto`}
           class="card-shadow bg-ugr-cream rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
         >
           <h3

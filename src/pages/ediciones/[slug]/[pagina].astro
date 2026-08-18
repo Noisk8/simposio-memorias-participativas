@@ -3,7 +3,7 @@ import Layout from '../../../layouts/Layout.astro';
 import PageTemplate from '../../../components/PageTemplate.astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import { getSimposioBySlug } from '../../../lib/simposios';
+import { getSimposioBySlug, getSimposioDefault } from '../../../lib/simposios';
 import { filterPublished, sortByDateDesc } from '../../../lib/taxonomies';
 import { entryBelongsToPage } from '../../../../shared/content/page-relations';
 
@@ -13,10 +13,13 @@ interface Props {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const paginas = filterPublished(await getCollection('paginas'));
-  return paginas.map((entry) => ({
-    params: { slug: entry.data.simposio, pagina: entry.data.slug || entry.data.template },
-    props: { entry },
-  }));
+  const defaultSimposio = await getSimposioDefault();
+  return paginas
+    .filter((entry) => entry.data.simposio !== defaultSimposio?.data.slug)
+    .map((entry) => ({
+      params: { slug: entry.data.simposio, pagina: entry.data.slug || entry.data.template },
+      props: { entry },
+    }));
 };
 
 const { entry } = Astro.props;
@@ -34,7 +37,12 @@ const pageTitle = `${data.title} - ${simposioTitle}`;
 const heroImage = data.image || simposio?.data.image || '/images/hero-bg.jpg';
 ---
 
-<Layout title={pageTitle} description={data.description} image={heroImage}>
+<Layout
+  title={pageTitle}
+  description={data.description}
+  image={heroImage}
+  canonical={`/ediciones/${slug}/${data.slug || data.template}/`}
+>
   <PageTemplate
     data={data}
     simposio={simposio}

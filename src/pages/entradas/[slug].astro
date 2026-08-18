@@ -13,6 +13,7 @@ import {
   filterPublished,
 } from '../../lib/taxonomies';
 import { resolvePublicImageUrl } from '../../lib/public-image';
+import { getSimposioDefault } from '../../lib/simposios';
 
 type Props = {
   entry: CollectionEntry<'entradas'>;
@@ -20,10 +21,13 @@ type Props = {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const entradas = filterPublished(await getCollection('entradas'));
-  return entradas.map((entry) => ({
-    params: { slug: entry.id },
-    props: { entry },
-  }));
+  const defaultSimposio = await getSimposioDefault();
+  return entradas
+    .filter((entry) => entry.data.simposio === defaultSimposio?.data.slug)
+    .map((entry) => ({
+      params: { slug: entry.id },
+      props: { entry },
+    }));
 };
 
 const { entry } = Astro.props;
@@ -44,7 +48,19 @@ const related = allPublished
   .slice(0, 3);
 ---
 
-<Layout title={`${entrada.title} - Entradas`}>
+<Layout
+  title={`${entrada.title} - Entradas`}
+  description={entrada.description}
+  image={entrada.image || undefined}
+  type="article"
+  canonical={`/entradas/${entry.id}/`}
+  publishDate={entrada.publish_date || entrada.date}
+  author={entrada.author}
+  authorType={entrada.author_type}
+  section={entrada.categories[0]}
+  tags={entrada.tags}
+  keywords={[...entrada.categories, ...entrada.tags]}
+>
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">

@@ -21,6 +21,7 @@ export interface Props {
   canonical?: string;
   lang?: string;
   author?: string;
+  authorType?: 'Person' | 'Organization';
   publishDate?: Date | string;
   modifiedDate?: Date | string;
   tags?: string[];
@@ -41,6 +42,7 @@ const {
   canonical,
   lang = SITE_LANG,
   author = AUTHOR,
+  authorType = 'Organization',
   publishDate,
   modifiedDate,
   tags = [],
@@ -51,9 +53,8 @@ const {
   twitterHandle,
 } = Astro.props;
 
-const origin = Astro.url.origin;
-const canonicalUrl = canonical || Astro.url.href;
-const resolvedImage = image.startsWith('http') ? image : new URL(image, origin).toString();
+const canonicalUrl = new URL(canonical || Astro.url.pathname, SITE_URL).toString();
+const resolvedImage = image.startsWith('http') ? image : new URL(image, SITE_URL).toString();
 const pageTitle = title.includes(NETWORK_TITLE) ? title : `${title} · ${NETWORK_TITLE}`;
 const pageOgTitle = ogTitle || pageTitle;
 const pageOgDescription = ogDescription || description;
@@ -93,7 +94,7 @@ const schema = {
       },
     },
     {
-      '@type': 'WebPage',
+      '@type': type === 'article' ? 'Article' : type === 'event' ? 'Event' : 'WebPage',
       '@id': `${canonicalUrl}#webpage`,
       url: canonicalUrl,
       name: pageTitle,
@@ -105,9 +106,12 @@ const schema = {
       ...(type === 'article' && author
         ? {
             author: {
-              '@type': type === 'article' ? 'Person' : 'Organization',
-              name: 'Noisk8',
+              '@type': authorType,
+              name: author,
             },
+            headline: pageOgTitle,
+            image: resolvedImage,
+            publisher: { '@id': `${SITE_URL}/#organization` },
           }
         : {}),
     },
@@ -161,7 +165,7 @@ const schema = {
 
 <!-- Favicon / app icons -->
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="shortcut icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/favicon.svg" />
 <link rel="manifest" href="/manifest.json" />
 

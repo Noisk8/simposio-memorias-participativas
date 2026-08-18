@@ -55,9 +55,11 @@ test('los borradores solo se escriben en Supabase y GitHub queda en el publicado
   assert.match(contentService, /preserveContentId/);
 });
 
-test('workflow público solo expone publicar y delega en el servicio único', () => {
+test('workflow público expone publicación y archivo mediante servicios únicos', () => {
   const source = fs.readFileSync('shared/cms/workflow-service.ts', 'utf8');
   assert.match(source, /WORKFLOW_TRANSITIONS = \{\s*publish:/);
+  assert.match(source, /archive: \{ suffix: 'archive' \}/);
   assert.doesNotMatch(source, /submit_review|request_changes|approve:/);
-  assert.match(source, /return publishContent\(/);
+  assert.match(source, /archiveContent/);
+  assert.match(source, /publishContent/);
 });

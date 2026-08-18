@@ -178,6 +178,15 @@ export async function closePullRequest(number: number) {
   });
 }
 
+export async function deleteOperationalBranch(branch: string) {
+  if (!/^cms\/[0-9a-f-]{36}\/[0-9]{8}T[0-9]{9}Z$/i.test(branch)) {
+    throw new GitHubError('La rama operacional no cumple el formato seguro.', { branch });
+  }
+  return githubRequest(repositoryRoute(`/git/refs/heads/${encodeURIComponent(branch)}`), {
+    method: 'DELETE',
+  });
+}
+
 export function summarizeCommitVerification(status: any, checks: any) {
   const runs = checks?.check_runs || [];
   const statuses = status?.statuses || [];

@@ -1,0 +1,69 @@
+name: Encrypted production backup
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: production-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production-backup
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: '22.12.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1 branch, pinned 2026-08-16
+        with:
+          version: 2.113.0
+
+      - name: Export database and media
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          backup_dir="$(mktemp -d)"
+          trap 'rm -rf "$backup_dir"' EXIT
+          export BACKUP_OUTPUT_DIR="$backup_dir/export"
+          mkdir -p "$BACKUP_OUTPUT_DIR/database"
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+          supabase db dump --linked --file "$BACKUP_OUTPUT_DIR/database/schema.sql"
+          supabase db dump --linked --data-only --use-copy --file "$BACKUP_OUTPUT_DIR/database/data.sql"
+          node scripts/backup-supabase-media.mjs
+          tar -C "$BACKUP_OUTPUT_DIR" -czf "$backup_dir/backup.tar.gz" .
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in "$backup_dir/backup.tar.gz" \
+            -out "production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          test -s "production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
+          openssl enc -d -aes-256-cbc -pbkdf2 \
+            -in "production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
+            -out "$backup_dir/verify.tar.gz" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          tar -tzf "$backup_dir/verify.tar.gz" >/dev/null
+
+      - name: Store encrypted backup
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-backup-${{ github.run_id }}
+          path: production-backup-${{ github.run_id }}.tar.gz.enc
+          retention-days: 30
+          if-no-files-found: error

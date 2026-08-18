@@ -1,5 +1,4 @@
 import { Buffer } from 'node:buffer';
-import sharp from 'sharp';
 import { ConfigurationError, ValidationError } from '../observability/errors.ts';
 
 export const MAX_MEDIA_BYTES = 2 * 1024 * 1024;
@@ -44,12 +43,6 @@ const OTHER_MEDIA_TYPES: Record<string, Omit<MediaType, 'extension'>> = {
 };
 
 const MEDIA_TYPES = { ...IMAGE_TYPES, ...OTHER_MEDIA_TYPES };
-const SHARP_MIME_TYPES: Record<string, string> = {
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
-};
-
 function configuredInteger(env: Environment, key: string, fallback: number, hardMaximum: number) {
   const raw = env[key];
   if (raw === undefined || raw === '') return fallback;
@@ -187,75 +180,5 @@ export function validateEditorialMetadata(payload: any, kind: MediaKind): Editor
     author,
     license: textValue(payload?.license, 'La licencia', 255, true),
     decorative,
-  };
-}
-
-export async function validateImageUpload(input: {
-  name: string;
-  declaredMimeType: unknown;
-  bytes: Buffer;
-  policy?: MediaValidationPolicy;
-}) {
-  const policy = input.policy || getMediaValidationPolicy();
-  const safeSlug = validateMediaFilename(input.name);
-  const type = inspectMediaBytes(safeSlug, input.bytes);
-  if (type.kind !== 'image') throw new ValidationError('El archivo no es una imagen permitida.');
-  if (!input.bytes.length || input.bytes.length > policy.maxBytes) {
-    throw new ValidationError(`La imagen debe pesar entre 1 byte y ${policy.maxBytes} bytes.`);
-  }
-  if (
-    typeof input.declaredMimeType !== 'string' ||
-    !policy.allowedImageMimeTypes.includes(input.declaredMimeType.toLowerCase())
-  ) {
-    throw new ValidationError('El MIME declarado de la imagen no está permitido.');
-  }
-
-  let metadata: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
-  try {
-    const pipeline = sharp(input.bytes, {
-      failOn: 'error',
-      limitInputPixels: policy.maxPixels,
-      sequentialRead: true,
-    });
-    metadata = await pipeline.metadata();
-    if (!metadata.width || !metadata.height || !metadata.format)
-      throw new Error('Metadata ausente');
-    if ((metadata.pages || 1) > 1) {
-      throw new ValidationError('No se permiten imágenes animadas.');
-    }
-    if (metadata.width > policy.maxWidth || metadata.height > policy.maxHeight) {
-      throw new ValidationError(
-        `La imagen supera las dimensiones máximas de ${policy.maxWidth}×${policy.maxHeight}.`
-      );
-    }
-    if (metadata.width * metadata.height > policy.maxPixels) {
-      throw new ValidationError(`La imagen supera el máximo de ${policy.maxPixels} píxeles.`);
-    }
-    // Fuerza la decodificación completa: metadata() por sí sola solo inspecciona cabeceras.
-    await pipeline.clone().stats();
-  } catch (error) {
-    if (error instanceof ValidationError) throw error;
-    throw new ValidationError('La imagen está corrupta o excede los límites de procesamiento.');
-  }
-
-  const realMimeType = SHARP_MIME_TYPES[metadata.format || ''];
-  const expectedExtension =
-    normalizedExtension(safeSlug) === 'jpg' ? 'jpeg' : normalizedExtension(safeSlug);
-  if (!realMimeType || metadata.format !== expectedExtension) {
-    throw new ValidationError('El formato decodificado no coincide con la extensión.');
-  }
-  if (input.declaredMimeType.toLowerCase() !== realMimeType) {
-    throw new ValidationError('El MIME declarado no coincide con el formato real de la imagen.');
-  }
-
-  return {
-    safeSlug,
-    extension: normalizedExtension(safeSlug),
-    mimeType: realMimeType,
-    kind: 'image' as const,
-    directory: 'images' as const,
-    width: metadata.width!,
-    height: metadata.height!,
-    format: metadata.format,
   };
 }

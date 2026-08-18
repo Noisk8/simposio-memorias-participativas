@@ -16,7 +16,7 @@ export function normalizePublishedContent<T extends { publish_date?: unknown }>(
   now = new Date()
 ): T {
   if (requestedState !== 'published') return data;
-  if (!String(data.publish_date || '').trim() || isFutureIsoDate(data.publish_date, now)) {
+  if (!String(data.publish_date || '').trim()) {
     return { ...data, publish_date: todayIsoDate(now) };
   }
   return data;

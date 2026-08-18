@@ -38,3 +38,10 @@ export async function resolveSimposioSlug(slug?: string): Promise<string> {
   const def = await getSimposioDefault();
   return def?.data.slug || '2026';
 }
+
+/** URL única de una entrada: corta para la edición actual y versionada para el archivo. */
+export function entryPublicPath(entryId: string, simposio: string, defaultSlug: string): string {
+  return simposio === defaultSlug
+    ? `/entradas/${entryId}`
+    : `/ediciones/${simposio}/entradas/${entryId}`;
+}

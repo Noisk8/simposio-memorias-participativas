@@ -51,12 +51,9 @@ export const handler = async (event: any, context?: any) => {
     }
 
     const operation = workflowPermission(path, payload.transition);
-    const auth = await authorizeRequest(
-      event,
-      operation.permission,
-      operation.transition === 'publish' ? 'publish' : 'write',
-      { netlifyContext: context }
-    );
+    const auth = await authorizeRequest(event, operation.permission, 'publish', {
+      netlifyContext: context,
+    });
     requestId = auth.requestId;
     headers = getCorsHeaders(event, 'GET, POST, OPTIONS', requestId);
     const result = await transitionWorkflow({

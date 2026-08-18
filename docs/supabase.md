@@ -58,7 +58,7 @@ La sexta:
 - crea `cms_media`, índices de checksum y trigger de `updated_at`;
 - añade la comprobación RBAC server-side `cms_has_permission`;
 - permite lectura de metadata con `media.read` y bloquea por RLS toda escritura cliente en el bucket;
-- deja las mutaciones a `manage-media`, que usa `service_role` solo después de validar sesión y permiso.
+- deja las mutaciones a `manage-media` y `upload-media`, que usan `service_role` solo después de validar sesión y permiso.
 
 La séptima:
 

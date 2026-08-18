@@ -10,6 +10,7 @@ import {
   UUID_V4_PATTERN,
 } from '../shared/content/identity.ts';
 import { newContentPath, publicUrlForContent } from '../shared/content/paths.ts';
+import { dateField } from '../shared/content-model/base.ts';
 import { CANONICAL_COLLECTIONS, inspectContentIds } from '../scripts/migrate-content-uuids.mjs';
 
 const EXISTING_ID = 'a438af39-4360-496b-a9af-b35859cbbf20';
@@ -24,6 +25,13 @@ test('el UUID canónico es obligatorio y debe ser v4', () => {
     false,
     'un UUID v1 no cumple el contrato editorial v4'
   );
+});
+
+test('las fechas editoriales deben ser días ISO reales', () => {
+  assert.equal(dateField.safeParse('2026-08-16').success, true);
+  assert.equal(dateField.safeParse('').success, true);
+  assert.equal(dateField.safeParse('16/08/2026').success, false);
+  assert.equal(dateField.safeParse('2026-02-30').success, false);
 });
 
 test('la creación ignora el UUID suministrado por el cliente', () => {

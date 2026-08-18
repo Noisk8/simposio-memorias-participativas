@@ -49,7 +49,19 @@ const related = allPublished
   .slice(0, 3);
 ---
 
-<Layout title={`${memoria.title} - Museo de Memorias Vivas`}>
+<Layout
+  title={`${memoria.title} - Museo de Memorias Vivas`}
+  description={memoria.description}
+  image={memoria.image}
+  type="article"
+  canonical={`/museo-memorias/${memoria.number}/`}
+  publishDate={memoria.publish_date}
+  author={memoria.author || memoria.collective}
+  authorType={memoria.author ? 'Person' : 'Organization'}
+  section={memoria.categories[0]}
+  tags={memoria.tags}
+  keywords={[...memoria.categories, ...memoria.tags]}
+>
   <section class="relative h-[30vh] min-h-[250px] flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0">
       <img
