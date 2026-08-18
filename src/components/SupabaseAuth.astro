@@ -10,8 +10,6 @@ const {
   redirectUnauthenticated = false,
   redirectAfterLogin = '',
 } = Astro.props;
-
-Astro.csp?.insertDirective("connect-src 'self' https://*.supabase.co");
 ---
 
 <div
