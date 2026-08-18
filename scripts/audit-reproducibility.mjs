@@ -12,6 +12,12 @@ for (const section of ['dependencies', 'devDependencies']) {
     if (lockfile.packages?.['']?.[section]?.[name] !== version) {
       failures.push(`${section}.${name} difiere entre package.json y package-lock.json`);
     }
+    const resolvedVersion = lockfile.packages?.[`node_modules/${name}`]?.version;
+    if (resolvedVersion !== version) {
+      failures.push(
+        `${section}.${name} declara ${version}, pero package-lock.json resuelve ${resolvedVersion || 'ninguna versión'}`
+      );
+    }
   }
 }
 
