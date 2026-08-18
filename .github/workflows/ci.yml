@@ -12,6 +12,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
@@ -73,11 +74,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install Playwright Chromium
+        if: steps.changes.outputs.content_only != 'true'
+        timeout-minutes: 10
+        run: npx playwright install --with-deps chromium
+
       - name: Smoke y accesibilidad E2E
         if: steps.changes.outputs.content_only != 'true'
-        run: |
-          npx playwright install --with-deps chromium
-          npx playwright test
+        timeout-minutes: 10
+        run: npx playwright test
 
       - name: Build must not mutate sources
         run: git diff --exit-code
