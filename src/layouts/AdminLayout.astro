@@ -18,11 +18,8 @@ const mediaPreviewBase = `https://raw.githubusercontent.com/${githubRepo}/${gith
   <head>
     <Font cssVariable="--font-montserrat" />
     <Seo title={title} noindex />
-    <script is:inline define:vars={{ mediaPreviewBase }}>
-      window.cmsMediaPreviewBase = mediaPreviewBase;
-    </script>
   </head>
-  <body class="cms-body" data-pagefind-ignore="all">
+  <body class="cms-body" data-pagefind-ignore="all" data-media-preview-base={mediaPreviewBase}>
     <header class="cms-topbar">
       <a class="cms-brand" href="/admin/"><span>◉</span> Red de Memorias</a>
       <nav class="cms-topnav" aria-label="Navegación principal del CMS">
@@ -49,47 +46,7 @@ const mediaPreviewBase = `https://raw.githubusercontent.com/${githubRepo}/${gith
       </div>
     </header>
     <main class="cms-main"><slot /></main>
-    <script is:inline>
-      const root = document.documentElement;
-      const saved = localStorage.getItem('cms_admin_theme') || 'light';
-      root.dataset.adminTheme = saved;
-      document.getElementById('cms-theme')?.addEventListener('click', () => {
-        const next = root.dataset.adminTheme === 'dark' ? 'light' : 'dark';
-        root.dataset.adminTheme = next;
-        localStorage.setItem('cms_admin_theme', next);
-      });
-      (function user() {
-        if (!window.supabaseAuth) return setTimeout(user, 100);
-        window.supabaseAuth.ready.then(async () => {
-          const current = await window.supabaseAuth.getUser();
-          const name =
-            current?.user_metadata?.full_name || current?.email?.split('@')[0] || 'Usuario';
-          const node = document.getElementById('cms-user-name');
-          if (node) node.textContent = name;
-          const avatar = document.getElementById('cms-avatar');
-          if (avatar) avatar.textContent = name.slice(0, 1).toUpperCase();
-        });
-      })();
-      const accountButton = document.getElementById('cms-account');
-      const accountMenu = document.getElementById('cms-account-menu');
-      accountButton?.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const opening = accountMenu?.classList.contains('hidden');
-        accountMenu?.classList.toggle('hidden', !opening);
-        accountButton.setAttribute('aria-expanded', String(opening));
-        document.getElementById('cms-account-arrow').textContent = opening ? '⌃' : '⌄';
-      });
-      document.addEventListener('click', (event) => {
-        if (!event.target.closest('.cms-account-wrap')) {
-          accountMenu?.classList.add('hidden');
-          accountButton?.setAttribute('aria-expanded', 'false');
-          document.getElementById('cms-account-arrow').textContent = '⌄';
-        }
-      });
-      document
-        .getElementById('cms-menu-signout')
-        ?.addEventListener('click', () => window.supabaseAuth?.signOut());
-    </script>
+    <script src="../scripts/admin/layout.ts"></script>
   </body>
 </html>
 

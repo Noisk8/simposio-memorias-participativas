@@ -9,6 +9,25 @@
 [functions]
   directory = "netlify/functions"
 
+[functions."cms-operations"]
+  schedule = "*/10 * * * *"
+
+# 00:05 America/Bogota (UTC-5): activa contenido cuya publish_date ya venció.
+[functions."scheduled-publish"]
+  schedule = "5 5 * * *"
+
+# Sharp solo se empaqueta en el endpoint de transformación; listar y editar medios sigue ligero.
+[functions."upload-media"]
+  external_node_modules = ["sharp"]
+
+[context.staging]
+  command = "npm run build"
+
+[context.staging.environment]
+  GITHUB_BRANCH = "staging"
+  NETLIFY_DEPLOY_CONTEXT = "branch-deploy"
+  SITE_URL = "https://staging--simposio-memorias-participativas.netlify.app"
+
 # Los headers de seguridad viven en public/_headers (fuente única).
 
 [dev]

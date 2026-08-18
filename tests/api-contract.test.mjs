@@ -72,6 +72,7 @@ test('sin bearer token: 401 AUTHENTICATION_REQUIRED en todas las funciones', asy
     ['manage-content?collection=memorias', 'PATCH'],
     ['manage-users', 'GET'],
     ['manage-media', 'GET'],
+    ['upload-media', 'POST'],
     ['deploy-status', 'GET'],
     ['create-coleccion', 'POST'],
     ['manage-collections', 'POST'],

@@ -21,19 +21,20 @@ Netlify Function
 
 ## Funciones y permisos
 
-| Function               | Operación                                   | Permiso                                        |
-| ---------------------- | ------------------------------------------- | ---------------------------------------------- |
-| `manage-content`       | GET                                         | `*.read` según colección                       |
-| `manage-content`       | POST nuevo; PUT/PATCH edición o publicación | `*.create`, `*.update` o `*.publish`           |
-| `manage-content`       | DELETE                                      | `*.delete`                                     |
-| `manage-workflow`      | GET                                         | `admin.access`                                 |
-| `manage-workflow`      | POST                                        | permiso de transición derivado de la colección |
-| `manage-media`         | GET/POST/PATCH/DELETE                       | `media.read`, `media.upload/update/delete`     |
-| `manage-users`         | GET/POST                                    | `users.read`, `users.manage`                   |
-| `manage-collections`   | POST                                        | `settings.manage`                              |
-| `create-coleccion`     | wrapper obsoleto                            | delega en `manage-collections`                 |
-| `get-revision-history` | GET                                         | `*.read` según path permitido                  |
-| `deploy-status`        | GET                                         | `admin.access`                                 |
+| Function               | Operación                     | Permiso                                        |
+| ---------------------- | ----------------------------- | ---------------------------------------------- |
+| `manage-content`       | GET                           | `*.read` según colección                       |
+| `manage-content`       | POST nuevo; PUT/PATCH edición | `*.create` o `*.update`                        |
+| `manage-content`       | DELETE                        | `*.delete`                                     |
+| `manage-workflow`      | GET                           | `admin.access`                                 |
+| `manage-workflow`      | POST                          | permiso de transición derivado de la colección |
+| `manage-media`         | GET/PATCH/DELETE              | `media.read`, `media.update/delete`            |
+| `upload-media`         | POST                          | `media.upload`                                 |
+| `manage-users`         | GET/POST                      | `users.read`, `users.manage`                   |
+| `manage-collections`   | POST                          | `settings.manage`                              |
+| `create-coleccion`     | wrapper obsoleto              | delega en `manage-collections`                 |
+| `get-revision-history` | GET                           | `*.read` según path permitido                  |
+| `deploy-status`        | GET                           | `admin.access`                                 |
 
 `create-proyecto` fue eliminado al no tener consumidores. Todos los cambios de Markdown editorial pasan por `manage-content` y `shared/cms/content-service.ts`.
 
@@ -46,8 +47,8 @@ Netlify Function
 - El path de un documento nuevo se genera en servidor a partir de datos validados.
 - El UUID editorial se genera en servidor al crear y se preserva desde el documento/registro existente al editar; no se confía en un reemplazo enviado por el cliente.
 - Los modelos Zod compartidos validan frontmatter y el cuerpo se limita a 200.000 caracteres.
-- Las actualizaciones y eliminaciones usan el SHA de GitHub para detectar conflictos.
-- `manage-media` rechaza nombres peligrosos y genera una key UUID-slug independiente del original.
+- Las ediciones usan una revisión optimista de Supabase; GitHub solo interviene al publicar o archivar.
+- `upload-media` rechaza nombres peligrosos y genera una key UUID-slug independiente del original.
 - Solo admite JPEG, PNG, WebP y PDF, con máximo absoluto de 2 MiB. Para imágenes contrasta MIME, extensión, firma y decodificación `sharp`, y limita dimensiones y píxeles antes de Storage.
 - Las imágenes exigen crédito, licencia y texto alternativo o declaración decorativa explícita.
 - CORS acepta `SITE_URL`, `URL`, `ALLOWED_ORIGINS` y los orígenes locales definidos.
@@ -87,6 +88,8 @@ Solo servidor:
 - `GITHUB_APP_PRIVATE_KEY`;
 - `GITHUB_TOKEN`, solo durante la retirada del fallback obsoleto;
 - `RESEND_API_KEY`, si se usa correo.
+- `SCHEDULED_BUILD_HOOK_URL`, build hook limitado a la rama de despliegue.
+- `ALERT_WEBHOOK_URL`, canal de alertas operativas.
 
 Expuestos deliberadamente al navegador para Supabase Auth:
 
@@ -94,6 +97,14 @@ Expuestos deliberadamente al navegador para Supabase Auth:
 - `PUBLIC_SUPABASE_ANON_KEY`.
 
 La service role y la credencial GitHub nunca deben tener prefijo `PUBLIC_`, incluirse en logs o llegar al bundle del navegador.
+
+Las variables `PUBLIC_SUPABASE_*` solo se consumen en los módulos de `/admin`. El sitio público no carga el SDK ni inspecciona la sesión. Son parámetros públicos de Supabase Auth, no credenciales privilegiadas; toda autorización efectiva ocurre en servidor.
+
+## CSP y cadena de suministro
+
+Astro genera una CSP por página con hashes SHA-256 para scripts y estilos procesados. La política no contiene `unsafe-inline` ni `unsafe-eval`, limita scripts a origen propio y Giscus, restringe conexiones a Supabase, y bloquea objetos. `X-Frame-Options: DENY` permanece como cabecera porque `frame-ancestors` no es efectivo en una CSP entregada mediante `<meta>`.
+
+`npm run build` ejecuta `audit-csp` y falla si una página renderizable pierde la política o reintroduce fuentes inseguras. Las versiones directas de npm, Node y Netlify están fijadas; todas las Actions usan SHA completo e inmutable.
 
 ## Controles de base de datos
 
@@ -122,6 +133,6 @@ El sujeto autenticado es el `user.id` obtenido de `auth.getUser`; el anónimo us
 ## Riesgos y trabajo planeado
 
 - Variantes `thumbnail`/`medium`/`large`: **Planeado** hasta que el modelo público consuma `srcset`/`picture`.
-- La publicación exige SHA aprobada, GitHub App, rama y PR; el merge es manual y se reconcilia al consultar el documento. Un webhook para reconciliación inmediata está **Planeado**.
+- La publicación exige snapshot inmutable, GitHub App, rama, PR, CI y confirmación del deploy exacto; auto-merge o `cms-operations` realizan el merge cuando `verify` termina correctamente. Un webhook para reducir la latencia de reconciliación está **Planeado**.
 - La creación de publicación es idempotente para rama y PR. El uso general de `cms_operation_keys` por las demás Functions está **Planeado**.
 - MFA para administración: configuración manual recomendada en Supabase; el repositorio no puede imponerla por sí solo.

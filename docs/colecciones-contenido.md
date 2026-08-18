@@ -4,23 +4,23 @@ Astro construye el sitio público desde Markdown bajo `src/content/`. `src/conte
 
 ## Colecciones actuales
 
-| Colección    | Modelo            | CMS `manage-content` | Publicación                   |
-| ------------ | ----------------- | -------------------- | ----------------------------- |
-| `entradas`   | `entradaSchema`   | Sí                   | `/entradas/:slug`             |
-| `memorias`   | `memoriaSchema`   | Sí                   | `/museo-memorias/:number`     |
-| `paginas`    | `paginaSchema`    | Sí                   | `/:pagina` y rutas de edición |
-| `simposios`  | `simposioSchema`  | Sí                   | `/ediciones/:slug`            |
-| `categorias` | `categoriaSchema` | Sí                   | archivos taxonómicos          |
-| `etiquetas`  | `etiquetaSchema`  | Sí                   | archivos taxonómicos          |
+| Colección    | Modelo            | CMS `manage-content` | Publicación                                           |
+| ------------ | ----------------- | -------------------- | ----------------------------------------------------- |
+| `entradas`   | `entradaSchema`   | Sí                   | actual: `/entradas/:slug`; archivo bajo `/ediciones/` |
+| `memorias`   | `memoriaSchema`   | Sí                   | `/museo-memorias/:number`                             |
+| `paginas`    | `paginaSchema`    | Sí                   | actual: `/:pagina`; archivo bajo `/ediciones/`        |
+| `simposios`  | `simposioSchema`  | Sí                   | `/ediciones/:slug`                                    |
+| `categorias` | `categoriaSchema` | Sí                   | archivos taxonómicos                                  |
+| `etiquetas`  | `etiquetaSchema`  | Sí                   | archivos taxonómicos                                  |
 
 La API administrativa usa una allowlist fija y no acepta un nombre de colección arbitrario enviado por el navegador.
 La navegación principal es configuración estática de `src/components/Header.astro`, no una colección editorial.
 
 ## Publicación
 
-Entradas, memorias y páginas comparten `draft` y `publish_date`. Las rutas principales usan `filterPublished`, que excluye borradores y fechas futuras. Algunas rutas genéricas de colección solo comprueban `draft`; revisa la ruta concreta antes de asumir programación uniforme.
+Entradas, memorias y páginas comparten `draft` y `publish_date`. Las rutas editoriales usan `filterPublished`, que excluye borradores y fechas futuras. El CMS conserva una fecha futura y `scheduled-publish` solicita un build diario a las 00:05 de Bogotá; cuando llega el día, Astro incorpora el documento. `SCHEDULED_BUILD_HOOK_URL` es obligatorio para esta capacidad.
 
-Limitación del panel: `manage-content` cambia una `publish_date` futura a la fecha actual cuando se publica. Por tanto, la programación desde el CMS está **Planeada**, aunque el helper público entienda fechas futuras en contenido creado directamente en el repositorio.
+La edición predeterminada usa rutas cortas. Las rutas bajo `/ediciones/:edicion/` solo generan páginas y entradas para ediciones no predeterminadas, de modo que un documento no produzca dos páginas indexables. La página 1 del museo es siempre `/museo-memorias/`; `/museo-memorias/page/1` no se genera.
 
 ## Ejemplo de memoria
 
@@ -42,6 +42,8 @@ description: 'Descripción breve'
 
 Contenido en Markdown.
 ```
+
+Antes de publicar, una entrada debe declarar `author` y seleccionar `author_type` (`Person` u `Organization`); una memoria debe declarar `author` o `collective`. Ambas requieren descripción, imagen y cuerpo suficientes. Slugs, relaciones, taxonomías y colisiones de ruta se validan en CI.
 
 Todos los modelos actuales exigen `id` como UUID v4. El CMS genera ese identificador para documentos nuevos y preserva el existente en actualizaciones. El ejemplo usa un valor ilustrativo; no lo reutilices. El CMS añade además `owner_id` y `workflow_state` al guardar. No copies un ID de usuario desde el cliente: la Function lo obtiene de la sesión verificada.
 
@@ -69,6 +71,7 @@ No construyas paths GitHub a partir de una carpeta libre enviada por el navegado
 npx astro sync
 npm run check:content-uuids
 npm run check
+npm run check:assets
 npm test
 npm run build
 ```

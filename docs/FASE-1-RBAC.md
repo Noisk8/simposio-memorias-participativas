@@ -54,9 +54,9 @@ No ejecutes esta reversión como procedimiento rutinario ni elimines tablas sin 
 ## Estado actual de riesgos
 
 - El rate limit por instancia descrito originalmente es **legacy**; la migración `202608110002_distributed_rate_limits.sql` lo sustituyó por buckets atómicos en PostgreSQL.
-- GitHub App y publicación por ramas/PR están **Planeados**.
+- GitHub App y publicación por ramas/PR se implementaron después de esta fase; consulta `ARQUITECTURA-CMS.md`.
 - Supabase Storage y metadata de medios se implementaron en las migraciones posteriores 004 y 005.
-- Workflow existe, pero su obligatoriedad de punta a punta está **Planeada**.
+- El workflow de publicación/archivo ya exige CI y confirmación de Netlify; esta limitación histórica está cerrada.
 - GitHub y auditoría Supabase no forman una transacción distribuida.
 
 El CMS basado en Decap CMS, Netlify Identity y Git Gateway pertenece al sistema **legacy** retirado.

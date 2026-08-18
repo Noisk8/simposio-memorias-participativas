@@ -20,5 +20,8 @@ test-results/
 playwright-report/
 blob-report/
 
+# Generado por el escaneo de secretos de GitHub Actions
+results.sarif
+
 # Generado por netlify dev (Deno); se regenera solo y rompe git diff en CI
 deno.lock

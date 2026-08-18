@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const editor = fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8');
+const editor =
+  fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8') +
+  fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8');
 
 test('el editor permite elegir imágenes existentes desde la biblioteca', () => {
   assert.match(editor, /id="media-library-dialog"/);
@@ -18,6 +20,7 @@ test('el selector conserva carga nueva, URL manual y controles accesibles', () =
   assert.match(editor, /aria-modal="true"/);
   assert.match(editor, /Buscar por nombre, crédito o licencia/);
   assert.match(editor, /Subir nueva/);
+  assert.match(editor, /\/\.netlify\/functions\/upload-media/);
   assert.match(editor, /method: 'POST'/);
   assert.match(editor, /input\.dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\)/);
 });

@@ -17,6 +17,7 @@ export const entradaSchema = z.object({
   title: z.string(),
   date: dateField,
   author: z.string().optional().default(''),
+  author_type: z.enum(['Person', 'Organization']).optional().default('Person'),
   categories: nonEmptyStringList,
   tags: nonEmptyStringList,
   image: z.string().optional().default(''),

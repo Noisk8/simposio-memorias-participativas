@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import { marked } from 'marked';
 
-const editor = fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8');
+const editor = fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8');
 
 test('el parser GFM reconoce la sintaxis editorial completa', () => {
   const source = [

@@ -19,7 +19,7 @@ ramas, Pull Requests, checks y merges son infraestructura interna y nunca pasos 
 ## Recorrido del usuario
 
 ```text
-Crear ──► Guardar borrador ──► Vista previa ──► Publicar
+Crear ──► Guardar borrador ──► Vista previa ──► Publicar ──► Archivar
               │                                      │
               └──── autosave en Supabase             ▼
                                          validación + PR técnico automático
@@ -53,17 +53,25 @@ a `published_version_id` y los cambios posteriores permanecen como un nuevo borr
 4. Crear o actualizar el Markdown con `draft:false`.
 5. Abrir un PR técnico y solicitar auto-merge.
 6. Si auto-merge no está disponible, reconciliar y fusionar únicamente cuando los checks pasen.
-7. Registrar `published_version_id`, `published_sha`, actor, fecha y `merge_sha`.
-8. Netlify construye una sola vez después del merge; los previews de ramas `cms/**` se omiten.
+7. Registrar el merge como estado intermedio `merged`/`deploying`.
+8. Confirmar que Netlify sirve un deploy `ready` cuyo `commit_ref` coincide exactamente con `merge_sha`.
+9. Finalizar de forma transaccional e idempotente como `live`; al archivar se elimina el Markdown mediante otro PR y el estado terminal es `archived`.
 
-El panel solo muestra `Publicación en curso`, `Desplegando`, `Publicado` o `Error de publicación`.
+El panel muestra `Publicación en curso`, `Desplegando`, `Publicado`, `Archivado` o el error correspondiente.
 No muestra enlaces ni acciones GitHub.
+
+## Publicación programada
+
+Una fecha futura no se normaliza a hoy. El PR incorpora el Markdown con `draft:false`, pero `filterPublished` lo excluye mientras `publish_date` siga en el futuro. `scheduled-publish` llama a un build hook de `main` cada día a las 00:05 de Bogotá; ese build activa todos los documentos cuya fecha ya venció. El panel muestra **Programado** mientras la fecha sea futura.
+
+La programación es diaria. Si falta `SCHEDULED_BUILD_HOOK_URL` o Netlify rechaza el hook, la Function falla, registra el `requestId` y envía `ALERT_WEBHOOK_URL`; el contenido permanece oculto hasta un build correcto.
 
 ## Activación
 
-1. Aplicar las migraciones hasta `202608110009_supabase_drafts_minimal_publication.sql`.
+1. Aplicar todas las migraciones, incluida `202608160001_production_readiness.sql`.
 2. Configurar la GitHub App según `docs/GITHUB-APP.md`.
 3. Proteger `main` con PR y checks obligatorios, sin exigir una segunda aprobación humana.
 4. Ejecutar `npm run migrate:content-drafts -- --dry-run` y después
    `npm run migrate:content-drafts -- --apply`; abrir una colección también importa bajo demanda.
 5. Probar crear, autosave, guardar y publicar antes de retirar `GITHUB_TOKEN`.
+6. Crear un build hook limitado a `main`, configurar `SCHEDULED_BUILD_HOOK_URL` y comprobar una fecha futura en staging.

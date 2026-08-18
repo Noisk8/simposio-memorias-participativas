@@ -11,13 +11,16 @@ import {
   sortByDateDesc,
   filterPublished,
 } from '../../../../lib/taxonomies';
-import { getSimposioBySlug } from '../../../../lib/simposios';
+import { getSimposioBySlug, getSimposioDefault } from '../../../../lib/simposios';
 import { resolvePublicImageUrl } from '../../../../lib/public-image';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const entradas = filterPublished(await getCollection('entradas'));
+  const defaultSimposio = await getSimposioDefault();
   const slugs = new Set(entradas.map((e) => e.data.simposio));
-  return Array.from(slugs).map((slug) => ({ params: { slug } }));
+  return Array.from(slugs)
+    .filter((slug) => slug !== defaultSimposio?.data.slug)
+    .map((slug) => ({ params: { slug } }));
 };
 
 const { slug } = Astro.params;
@@ -65,7 +68,10 @@ const tagTitles = slugTitleMap(await getEtiquetas());
           entradas.map((entry) => (
             <article class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-ugr-green/30 transition-all duration-300 group">
               {entry.data.image && (
-                <a href={`/entradas/${entry.id}`} class="block relative h-48 overflow-hidden">
+                <a
+                  href={`/ediciones/${slug}/entradas/${entry.id}`}
+                  class="block relative h-48 overflow-hidden"
+                >
                   <img
                     src={resolvePublicImageUrl(entry.data.image)}
                     alt={entry.data.title}
@@ -81,7 +87,7 @@ const tagTitles = slugTitleMap(await getEtiquetas());
                     {formatDate(entry.data.date)}
                   </p>
                 )}
-                <a href={`/entradas/${entry.id}`}>
+                <a href={`/ediciones/${slug}/entradas/${entry.id}`}>
                   <h2 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)] line-clamp-2 group-hover:text-ugr-green transition-colors">
                     {entry.data.title}
                   </h2>
@@ -99,7 +105,7 @@ const tagTitles = slugTitleMap(await getEtiquetas());
                   <p class="text-sm text-ugr-text-light line-clamp-3">{entry.data.description}</p>
                 )}
                 <a
-                  href={`/entradas/${entry.id}`}
+                  href={`/ediciones/${slug}/entradas/${entry.id}`}
                   class="inline-block mt-4 text-xs font-semibold text-ugr-green uppercase tracking-wide hover:underline"
                 >
                   Leer más →

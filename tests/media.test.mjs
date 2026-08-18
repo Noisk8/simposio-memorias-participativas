@@ -8,10 +8,10 @@ import {
   getMediaValidationPolicy,
   inspectMediaBytes,
   validateEditorialMetadata,
-  validateImageUpload,
   validateMediaFilename,
   validateOriginalFilename,
 } from '../shared/media/validation.ts';
+import { optimizeImageUpload } from '../shared/media/image-processor.ts';
 import { legacyReferences } from '../scripts/migrate-media-to-storage.mjs';
 
 const policy = getMediaValidationPolicy({});
@@ -39,7 +39,7 @@ test('solo detecta firmas binarias de JPEG, PNG y WebP como imágenes permitidas
 
 test('rechaza MIME declarado falso aunque los bytes y la extensión sean válidos', async () => {
   await assert.rejects(
-    validateImageUpload({
+    optimizeImageUpload({
       name: 'foto.png',
       declaredMimeType: 'image/jpeg',
       bytes: await png(),
@@ -51,7 +51,7 @@ test('rechaza MIME declarado falso aunque los bytes y la extensión sean válido
 
 test('rechaza extensión falsa aunque el MIME declarado sea correcto', async () => {
   await assert.rejects(
-    validateImageUpload({
+    optimizeImageUpload({
       name: 'foto.jpg',
       declaredMimeType: 'image/png',
       bytes: await png(),
@@ -64,7 +64,7 @@ test('rechaza extensión falsa aunque el MIME declarado sea correcto', async () 
 test('rechaza archivo que supera el peso configurable', async () => {
   const bytes = await png();
   await assert.rejects(
-    validateImageUpload({
+    optimizeImageUpload({
       name: 'foto.png',
       declaredMimeType: 'image/png',
       bytes,
@@ -77,7 +77,7 @@ test('rechaza archivo que supera el peso configurable', async () => {
 test('rechaza ancho, alto o número de píxeles excesivos', async () => {
   const bytes = await png(20, 10);
   await assert.rejects(
-    validateImageUpload({
+    optimizeImageUpload({
       name: 'foto.png',
       declaredMimeType: 'image/png',
       bytes,
@@ -86,7 +86,7 @@ test('rechaza ancho, alto o número de píxeles excesivos', async () => {
     /dimensiones máximas/
   );
   await assert.rejects(
-    validateImageUpload({
+    optimizeImageUpload({
       name: 'foto.png',
       declaredMimeType: 'image/png',
       bytes,
@@ -140,8 +140,8 @@ test('rechaza filename peligroso y conserva un slug seguro separado del original
   assert.equal(validateMediaFilename('Crédito final 2026.PNG'), 'credito-final-2026.png');
 });
 
-test('acepta una imagen válida y extrae formato, MIME y dimensiones con sharp', async () => {
-  const result = await validateImageUpload({
+test('optimiza una imagen válida a WebP y conserva sus dimensiones útiles', async () => {
+  const result = await optimizeImageUpload({
     name: 'Foto editorial.png',
     declaredMimeType: 'image/png',
     bytes: await png(20, 10),
@@ -154,8 +154,9 @@ test('acepta una imagen válida y extrae formato, MIME y dimensiones con sharp',
       width: result.width,
       height: result.height,
     },
-    { format: 'png', mimeType: 'image/png', width: 20, height: 10 }
+    { format: 'webp', mimeType: 'image/webp', width: 20, height: 10 }
   );
+  assert.equal(detectedImageType(result.bytes), 'webp');
   assert.deepEqual(
     validateEditorialMetadata(
       {

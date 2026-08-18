@@ -11,15 +11,23 @@ import {
   filterPublished,
 } from '../../lib/taxonomies';
 import { resolvePublicImageUrl } from '../../lib/public-image';
+import { getSimposioDefault } from '../../lib/simposios';
 
-const entradas = filterPublished(await getCollection('entradas'));
+const defaultSimposio = await getSimposioDefault();
+const entradas = filterPublished(await getCollection('entradas')).filter(
+  (entry) => entry.data.simposio === defaultSimposio?.data.slug
+);
 sortByDateDesc(entradas);
 
 const catTitles = slugTitleMap(await getCategorias());
 const tagTitles = slugTitleMap(await getEtiquetas());
 ---
 
-<Layout title="Entradas - I Simposio sobre Memorias Participativas">
+<Layout
+  title="Entradas - I Simposio sobre Memorias Participativas"
+  description="Noticias, actividades y novedades del Simposio sobre Memorias Participativas."
+  canonical="/entradas/"
+>
   <section class="bg-ugr-green py-14 px-4">
     <div class="max-w-4xl mx-auto text-center">
       <nav class="text-white/70 text-sm mb-4">

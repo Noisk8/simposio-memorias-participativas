@@ -10,6 +10,7 @@ import {
   simposioSchema,
 } from '../content-model/index.ts';
 import { parseMarkdownDocument } from '../content/frontmatter.ts';
+import { cmsEditorBlockErrors } from '../content/editor-blocks.ts';
 import { assignNewContentId, isContentId, preserveContentId } from '../content/identity.ts';
 import { newContentPath, publicUrlForContent } from '../content/paths.ts';
 import { contentVersionSha } from '../content/version.ts';
@@ -77,6 +78,12 @@ export function validateContentDocument(
   }
   if (typeof body !== 'string' || body.length > 200000) {
     throw new ValidationError('El cuerpo debe ser texto y no superar 200.000 caracteres.');
+  }
+  const blockErrors = cmsEditorBlockErrors(body);
+  if (blockErrors.length) {
+    throw new ValidationError('Hay bloques de contenido incompletos o inválidos.', {
+      fields: blockErrors.map((message) => ({ path: 'body', message })),
+    });
   }
   try {
     return CONTENT_COLLECTIONS[collection].schema.parse(data) as Record<string, any>;

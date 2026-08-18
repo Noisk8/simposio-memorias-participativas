@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { dateField, editorialIdentityFields } from './base.ts';
+import { contentSlugSchema, dateField, editorialIdentityFields } from './base.ts';
 
 export const simposioSchema = z.object({
   ...editorialIdentityFields,
   title: z.string(),
-  slug: z.string(),
+  slug: contentSlugSchema,
   edition: z.number(),
   year: z.number(),
   date: dateField,
