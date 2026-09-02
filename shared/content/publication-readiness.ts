@@ -8,15 +8,9 @@ export function publicationReadinessErrors(
 ): string[] {
   const errors: string[] = [];
   const title = String(data.title || '').trim();
-  const description = String(
-    data.description || (collection === 'simposios' ? data.theme : '') || ''
-  ).trim();
   const slug = String(data.slug || '').trim();
 
   if (title.length < 3) errors.push('El título debe tener al menos 3 caracteres.');
-  if (description.length < 20) {
-    errors.push('La descripción pública debe tener al menos 20 caracteres.');
-  }
   if (collection === 'entradas' && String(data.author || '').trim().length < 2) {
     errors.push('La entrada debe declarar una autoría editorial.');
   }

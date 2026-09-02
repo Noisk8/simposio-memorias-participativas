@@ -396,7 +396,16 @@ async function startPublication(input: {
       throw new ConflictError('La integridad del borrador no coincide con su checksum.');
     }
     if (record.published_sha === draft.content_sha && record.publication_state !== 'failed') {
-      return { state: 'published', publicationState: record.publication_state, idempotent: true };
+      const publishedFile = await readContent(record.path);
+      if (publishedFile.ok) {
+        return { state: 'published', publicationState: record.publication_state, idempotent: true };
+      }
+      if (publishedFile.status !== 404) {
+        throw new GitHubError('No se pudo comprobar la versión publicada.', {
+          status: publishedFile.status,
+          path: record.path,
+        });
+      }
     }
     version = await immutableVersion(record, draft, input.auth.user.id);
   } else {

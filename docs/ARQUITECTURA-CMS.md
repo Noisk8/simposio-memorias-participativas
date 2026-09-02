@@ -80,6 +80,10 @@ borrador. Los selectores de entradas, memorias y bloques muestran únicamente ta
 se actualizan al confirmarse el despliegue. Antes de abrir un PR de contenido, el servidor comprueba
 en la rama configurada que todas sus taxonomías ya existen; así una referencia pendiente se explica
 directamente en el panel y no se convierte en un fallo tardío de CI.
+El listado contrasta las taxonomías de Supabase con la rama publicada de GitHub: un registro histórico
+cuyo Markdown ya no existe se identifica como no publicado, deja de ofrecerse como relación y puede
+publicarse de nuevo sin editarlo artificialmente. La descripción editorial es opcional y no tiene una
+longitud mínima; el cuerpo tampoco impone un mínimo de caracteres.
 
 ## Funciones activas
 

@@ -125,6 +125,32 @@ function itemFromRecord(record: any) {
   };
 }
 
+export async function taxonomyReferenceAvailable(path: string): Promise<boolean> {
+  const response = await githubContentsRequest(path);
+  if (response.status === 404) return false;
+  if (!response.ok) return true;
+  const payload = await response.json();
+  return (Array.isArray(payload) ? payload : [payload]).some((item: any) => item.path === path);
+}
+
+async function annotateTaxonomyAvailability(collection: ContentCollection, items: any[]) {
+  if (!['categorias', 'etiquetas'].includes(collection) || !items.length) return items;
+  const target = items.length === 1 ? items[0].path : `src/content/${collection}`;
+  const response = await githubContentsRequest(target);
+  if (!response.ok && response.status !== 404) return items;
+  const payload = response.ok ? await response.json() : [];
+  const publishedPaths = new Set(
+    (Array.isArray(payload) ? payload : [payload]).map((item: any) => item.path)
+  );
+  for (const item of items) {
+    item.workflow = {
+      ...item.workflow,
+      reference_available: publishedPaths.has(item.path),
+    };
+  }
+  return items;
+}
+
 function decodeGitHubFile(file: any) {
   const source = Buffer.from(String(file.content || '').replace(/\n/g, ''), 'base64').toString(
     'utf8'
@@ -285,12 +311,15 @@ export async function getContent(input: {
     }
     if (error || !record)
       throw new AppError('INTERNAL_ERROR', 'No se pudo leer el contenido.', 500);
-    return { items: null, item: itemFromRecord(record), cached: false };
+    const item = itemFromRecord(record);
+    await annotateTaxonomyAvailability(input.collection, item ? [item] : []);
+    return { items: null, item, cached: false };
   }
 
   const initial = await recordsForCollection(input.collection);
   const rows = await ensureLegacyContentImported(input.collection, input.auth, initial);
   const items = rows.map(itemFromRecord).filter(Boolean);
+  await annotateTaxonomyAvailability(input.collection, items);
   items.sort((left: any, right: any) =>
     String(right.data.date || right.data.year || right.data.number || '').localeCompare(
       String(left.data.date || left.data.year || left.data.number || ''),
