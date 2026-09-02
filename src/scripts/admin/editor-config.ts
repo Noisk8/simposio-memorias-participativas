@@ -6,7 +6,6 @@ export const schemas = {
     ['date', 'Fecha', 'date'],
     ['publish_date', 'Fecha de publicación (programa si es futura)', 'date'],
     ['author', 'Autoría', 'text'],
-    ['author_type', 'Tipo de autoría', 'select:Person|Organization'],
     ['categories', 'Categorías', 'relations:categorias'],
     ['tags', 'Etiquetas', 'relations:etiquetas'],
     ['image', 'Imagen (URL de medios)', 'text'],

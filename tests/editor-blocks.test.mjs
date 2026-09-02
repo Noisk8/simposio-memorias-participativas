@@ -103,11 +103,19 @@ test('el procesador Markdown de Astro genera el bloque público final', async ()
 test('el panel ofrece herramientas visuales y selección múltiple de medios', () => {
   const source =
     fs.readFileSync('src/pages/admin/contenidos.astro', 'utf8') +
-    fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8');
+    fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8') +
+    fs.readFileSync('src/components/admin/VisualContentEditor.tsx', 'utf8') +
+    fs.readFileSync('src/components/admin/CmsBlockNode.tsx', 'utf8');
   assert.match(source, /data-block-action="image"/);
   assert.match(source, /data-block-action="gallery"/);
   assert.match(source, /data-block-action="carousel"/);
   assert.match(source, /data-block-action="entries"/);
   assert.match(source, /mediaPickerMode === 'multiple'/);
   assert.match(source, /serializeCmsEditorBlock/);
+  assert.match(source, /LexicalComposer/);
+  assert.match(source, /DraggableBlockPlugin_EXPERIMENTAL/);
+  assert.match(source, /cms:block-insert/);
+  assert.match(source, /Mover hacia arriba/);
+  assert.match(source, /Mover hacia abajo/);
+  assert.match(source, /aria-label="Contenido"/);
 });

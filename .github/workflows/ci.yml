@@ -42,6 +42,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
+        if: steps.changes.outputs.content_only != 'true'
         run: npm ci
 
       - name: Dependency audit
@@ -58,10 +59,16 @@ jobs:
         run: npm run lint
 
       - name: Format
+        if: steps.changes.outputs.content_only != 'true'
         run: npm run format:check
 
       - name: Taxonomías y tipos
+        if: steps.changes.outputs.content_only != 'true'
         run: npm run check
+
+      - name: Validación editorial rápida
+        if: steps.changes.outputs.content_only == 'true'
+        run: npm run check:editorial
 
       - name: Tests
         if: steps.changes.outputs.content_only != 'true'
@@ -72,6 +79,7 @@ jobs:
         run: npm exec --yes --package=netlify-cli@27.1.1 -- npm run test:api
 
       - name: Build
+        if: steps.changes.outputs.content_only != 'true'
         run: npm run build
 
       - name: Install Playwright Chromium
