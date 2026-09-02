@@ -1,6 +1,7 @@
-# Gestionar colecciones desde el panel
+# Colecciones y extensibilidad
 
-`/admin/gestion-colecciones` permite crear una estructura genérica en GitHub. Requiere sesión Supabase y `settings.manage`.
+El panel no permite crear colecciones genéricas. Administra seis colecciones canónicas con esquemas,
+permisos, relaciones y rutas públicas completas.
 
 ## Qué hace
 
@@ -28,7 +29,7 @@ No se genera configuración del CMS legacy ni se modifica la autorización.
 - No añade la colección a la allowlist de `manage-content` ni genera formularios del panel.
 - La colección requiere revisión de código, pruebas y un build exitoso.
 
-El CRUD automático para colecciones nuevas está **Planeado**.
+Las colecciones nuevas requieren un cambio de código revisado y no se habilitan automáticamente.
 
 `create-coleccion` se conserva temporalmente como wrapper para clientes externos, añade cabeceras `Deprecation`, `Warning` y `Link`, y ejecuta exactamente la misma autorización, validación, rate limit y auditoría que `manage-collections`. El panel ya no lo consume.
 

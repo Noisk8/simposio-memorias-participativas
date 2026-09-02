@@ -468,7 +468,6 @@ function createNavigation() {
   [
     ['/admin/medios', '▧ Biblioteca de imágenes'],
     ['/admin/gestion-usuarios', '♟ Usuarios y roles'],
-    ['/admin/gestion-colecciones', '⚙ Gestionar colecciones'],
   ].forEach(([href, label]) => {
     const link = document.createElement('a');
     link.href = href;

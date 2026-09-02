@@ -78,11 +78,13 @@ Las altas directas en Supabase quedan **sin rol** y no pueden entrar al panel. L
 
 Los roles disponibles son `superadmin`, `admin`, `editor`, `reviewer`, `author` y `read_only`. Si no se proporciona contraseña, el backend genera una temporal. Con Resend configurado intenta enviarla por correo; sin esa configuración, el panel la muestra para compartirla mediante un canal seguro.
 
-## Gestión de colecciones
+## Colecciones de contenido
 
-Ruta: `/admin/gestion-colecciones`.
-
-Con `settings.manage`, `manage-collections` crea en GitHub una definición basada en `genericContentSchema` y un `.gitkeep` para conservar el directorio vacío. No crea Markdown editorial. La nueva colección requiere revisión técnica y un nuevo build.
+El panel administra únicamente las colecciones canónicas del proyecto: entradas, memorias, páginas,
+simposios, categorías y etiquetas. La creación de colecciones genéricas desde la interfaz está
+deshabilitada porque no tendría todavía formulario, permisos, relaciones ni rutas públicas completas.
+Una nueva colección debe incorporarse mediante un cambio de código revisado, su esquema de Astro,
+permisos y pruebas correspondientes.
 
 El CRUD automático para colecciones creadas por esta pantalla está **Planeado**: `manage-content` mantiene una allowlist fija y no acepta la nueva colección hasta implementar su modelo y soporte explícito.
 
