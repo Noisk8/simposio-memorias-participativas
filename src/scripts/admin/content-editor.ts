@@ -735,6 +735,8 @@ function fieldElement(def, value) {
     input.type = type === 'list' ? 'text' : type;
   }
   input.dataset.key = key;
+  input.id = 'field-' + key;
+  labelNode.htmlFor = input.id;
   input.required = required === 'required';
   input.className = 'w-full rounded-lg border border-gray-300 px-3 py-2';
   if (!type.startsWith('relation'))
@@ -745,6 +747,22 @@ function fieldElement(def, value) {
           ? JSON.stringify(value || [], null, 2)
           : (value ?? '');
   wrapper.appendChild(input);
+  const errorNode = document.createElement('p');
+  errorNode.id = input.id + '-error';
+  errorNode.className = 'cms-field-error hidden';
+  errorNode.setAttribute('role', 'alert');
+  wrapper.appendChild(errorNode);
+  input.setAttribute('aria-describedby', errorNode.id);
+  const validate = () => {
+    const empty = input.required && !String(input.value || '').trim();
+    input.setCustomValidity(empty ? `${label} es obligatorio.` : '');
+    errorNode.textContent = empty ? `Completa ${label.toLowerCase()} para continuar.` : '';
+    errorNode.classList.toggle('hidden', !empty);
+    input.classList.toggle('border-red-500', empty);
+    return !empty;
+  };
+  input.addEventListener('input', validate);
+  input.addEventListener('change', validate);
   if (key === 'page_id') {
     const help = document.createElement('p');
     help.className = 'cms-field-help';
@@ -908,6 +926,17 @@ function fieldElement(def, value) {
     renderSelectedMedia(input, selectedMedia);
   }
   return wrapper;
+}
+function validateEditor() {
+  const fields = Array.from(fieldsNode.querySelectorAll('[data-key]'));
+  const invalid = fields.filter((field) => !field.checkValidity());
+  if (invalid.length) {
+    invalid[0].reportValidity();
+    invalid[0].focus();
+    setStatus('Revisa los campos marcados antes de continuar.', true);
+    return false;
+  }
+  return true;
 }
 
 function isPublishedReference(item) {
@@ -1246,6 +1275,7 @@ function updatePreview() {
 }
 async function persistDraft(autosave = false) {
   if (saveInFlight || (autosave && !current)) return false;
+  if (!autosave && !validateEditor()) return false;
   saveInFlight = true;
   const generation = changeGeneration;
   const payloadData = formData();
@@ -1442,7 +1472,9 @@ async function pollPublication(attempt) {
     }
     if (state === 'merged') {
       document.getElementById('save-state').textContent = 'Actualizando el sitio…';
-      setStatus('Validación superada. Netlify está actualizando el sitio público.');
+      setStatus(
+        'La versión fue fusionada en GitHub. Netlify todavía está actualizando el sitio público; se mostrará como publicada cuando el deploy sea confirmado.'
+      );
     }
     if (state === 'failed') {
       document.getElementById('save-state').textContent = 'Error de publicación';
