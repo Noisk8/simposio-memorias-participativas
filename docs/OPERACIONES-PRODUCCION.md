@@ -23,6 +23,11 @@ El runtime de Netlify confirma el deploy actual mediante `COMMIT_REF`, `DEPLOY_I
 
 `scheduled-publish` se ejecuta a las 05:05 UTC (00:05 en Bogotá) y hace `POST` a `SCHEDULED_BUILD_HOOK_URL`. El build hook debe estar limitado a la rama `main`; no reutilices un hook de previews. El rebuild hace visibles los Markdown con `publish_date` igual al nuevo día sin crear commits vacíos.
 
+Usa **hooks separados por entorno** y alterna el valor de `SCHEDULED_BUILD_HOOK_URL` según dónde corras:
+
+- Producción (`main`): build hook del sitio `simposio-memorias-participativas`.
+- Staging: build hook del sitio `staging--simposio-memorias-participativas`.
+
 Prueba de activación:
 
 1. crear en staging una entrada con fecha del día siguiente y publicarla;
