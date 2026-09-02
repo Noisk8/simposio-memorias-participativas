@@ -9,6 +9,8 @@ const nodeGlobals = {
   Buffer: 'readonly',
   fetch: 'readonly',
   AbortSignal: 'readonly',
+  AbortController: 'readonly',
+  clearTimeout: 'readonly',
   setTimeout: 'readonly',
   URL: 'readonly',
   global: 'readonly',
