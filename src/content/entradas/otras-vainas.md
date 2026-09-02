@@ -1,18 +1,18 @@
 ---
-id: "c3c9fc9a-e50c-405e-aed5-d0484179dd7f"
-date: "2026-09-02"
+id: 'c3c9fc9a-e50c-405e-aed5-d0484179dd7f'
+date: '2026-09-02'
 tags:
-  - "museo-memorias"
+  - 'museo-memorias'
 draft: false
-image: "https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/217e6bd0be04a6861d06650226619cbf9a0af41852e0ff09a6fd78eaac9d2783-proyecto-21.jpg"
-title: "otras vainas"
-author: "juan"
-page_id: ""
-simposio: "2026"
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/217e6bd0be04a6861d06650226619cbf9a0af41852e0ff09a6fd78eaac9d2783-proyecto-21.jpg'
+title: 'otras vainas'
+author: 'juan'
+page_id: ''
+simposio: '2026'
 categories:
-  - "general"
-description: "una mirada al espejismo"
-publish_date: "2026-09-02"
+  - 'general'
+description: 'una mirada al espejismo'
+publish_date: '2026-09-02'
 ---
 
 una mirada a la paradoja del espejismo
