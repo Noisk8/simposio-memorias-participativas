@@ -187,9 +187,18 @@ export async function deleteOperationalBranch(branch: string) {
   });
 }
 
-export function summarizeCommitVerification(status: any, checks: any) {
-  const runs = checks?.check_runs || [];
-  const statuses = status?.statuses || [];
+type CommitVerificationOptions = {
+  ignoredChecks?: readonly string[];
+};
+
+export function summarizeCommitVerification(
+  status: any,
+  checks: any,
+  options: CommitVerificationOptions = {}
+) {
+  const ignoredChecks = new Set(options.ignoredChecks || []);
+  const runs = (checks?.check_runs || []).filter((run: any) => !ignoredChecks.has(run.name));
+  const statuses = (status?.statuses || []).filter((item: any) => !ignoredChecks.has(item.context));
   const acceptedConclusions = new Set(['success', 'neutral', 'skipped']);
   const failedRuns = runs.filter(
     (run: any) => run.status === 'completed' && !acceptedConclusions.has(run.conclusion)
@@ -215,7 +224,7 @@ export function summarizeCommitVerification(status: any, checks: any) {
   };
 }
 
-export async function getCommitVerification(sha: string) {
+export async function getCommitVerification(sha: string, options: CommitVerificationOptions = {}) {
   const [statusResponse, checksResponse] = await Promise.all([
     githubRequest(repositoryRoute(`/commits/${sha}/status`)),
     githubRequest(repositoryRoute(`/commits/${sha}/check-runs`)),
@@ -227,15 +236,18 @@ export async function getCommitVerification(sha: string) {
   }
   const status: any = await statusResponse.json();
   const checks: any = await checksResponse.json();
-  return summarizeCommitVerification(status, checks);
+  return summarizeCommitVerification(status, checks, options);
 }
 
 export async function mergePullRequest(input: {
   number: number;
   expectedHeadSha: string;
   method?: 'merge' | 'squash' | 'rebase';
+  ignoredChecks?: readonly string[];
 }) {
-  const verification = await getCommitVerification(input.expectedHeadSha);
+  const verification = await getCommitVerification(input.expectedHeadSha, {
+    ignoredChecks: input.ignoredChecks,
+  });
   if (!verification.success) {
     throw new ConflictError(
       'El Pull Request no puede fusionarse hasta que todos los checks pasen.'

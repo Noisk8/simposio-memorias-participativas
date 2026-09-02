@@ -30,7 +30,10 @@ const browserGlobals = {
   CustomEvent: 'readonly',
   Element: 'readonly',
   HTMLElement: 'readonly',
+  HTMLButtonElement: 'readonly',
+  HTMLDivElement: 'readonly',
   HTMLInputElement: 'readonly',
+  HTMLTextAreaElement: 'readonly',
   EventTarget: 'readonly',
   Event: 'readonly',
   FileReader: 'readonly',
@@ -40,14 +43,16 @@ const browserGlobals = {
   location: 'readonly',
   history: 'readonly',
   confirm: 'readonly',
+  alert: 'readonly',
   clearTimeout: 'readonly',
+  structuredClone: 'readonly',
   Window: 'readonly',
 };
 
 export default [
   ...eslintPluginAstro.configs.recommended,
   {
-    files: ['**/*.{js,mjs,cjs,ts}'],
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     plugins: {
       '@typescript-eslint': tsPlugin,
     },
@@ -64,7 +69,7 @@ export default [
     },
   },
   {
-    files: ['src/scripts/**/*.{js,ts}'],
+    files: ['src/scripts/**/*.{js,ts}', 'src/components/admin/**/*.tsx'],
     languageOptions: {
       globals: browserGlobals,
     },
@@ -90,7 +95,7 @@ export default [
     // La configuración recomendada de eslint-plugin-astro activa reglas de
     // @typescript-eslint que no siempre están disponibles. Las desactivamos
     // globalmente para evitar falsos errores de configuración.
-    files: ['**/*.{js,mjs,cjs,ts,astro}'],
+    files: ['**/*.{js,mjs,cjs,ts,tsx,astro}'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },

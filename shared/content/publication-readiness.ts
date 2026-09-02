@@ -1,12 +1,10 @@
 import { ValidationError } from '../observability/errors.ts';
 import { safeContentSlug } from './paths.ts';
 
-const BODY_REQUIRED = new Set(['entradas', 'memorias', 'paginas', 'simposios']);
-
 export function publicationReadinessErrors(
   collection: string,
   data: Record<string, unknown>,
-  body: string
+  _body: string
 ): string[] {
   const errors: string[] = [];
   const title = String(data.title || '').trim();
@@ -18,9 +16,6 @@ export function publicationReadinessErrors(
   if (title.length < 3) errors.push('El título debe tener al menos 3 caracteres.');
   if (description.length < 20) {
     errors.push('La descripción pública debe tener al menos 20 caracteres.');
-  }
-  if (BODY_REQUIRED.has(collection) && String(body || '').trim().length < 40) {
-    errors.push('El contenido público debe tener al menos 40 caracteres.');
   }
   if (collection === 'entradas' && String(data.author || '').trim().length < 2) {
     errors.push('La entrada debe declarar una autoría editorial.');

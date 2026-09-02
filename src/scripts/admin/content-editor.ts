@@ -15,7 +15,6 @@ import {
 import {
   parseCmsEditorBlock,
   renderCmsEditorBlockHtml,
-  serializeCmsEditorBlock,
 } from '../../../shared/content/editor-blocks';
 
 const collection = document.getElementById('collection');
@@ -60,7 +59,6 @@ let mediaPickerTarget = null;
 let mediaPickerLastFocus = null;
 let mediaPickerMode = 'single';
 let mediaPickerSelection = new Map();
-let bodyInsertionRange = null;
 const references = { categorias: [], etiquetas: [], simposios: [], paginas: [] };
 function esc(value) {
   const node = document.createElement('span');
@@ -149,29 +147,8 @@ function mediaAsEditorImage(media) {
     license: String(media?.license || ''),
   };
 }
-function rememberBodyInsertion() {
-  const body = document.getElementById('body');
-  bodyInsertionRange = {
-    start: Number.isInteger(body.selectionStart) ? body.selectionStart : body.value.length,
-    end: Number.isInteger(body.selectionEnd) ? body.selectionEnd : body.value.length,
-  };
-}
-function insertIntoBody(value) {
-  const body = document.getElementById('body');
-  const range = bodyInsertionRange || {
-    start: body.selectionStart || body.value.length,
-    end: body.selectionEnd || body.value.length,
-  };
-  const before = body.value.slice(0, range.start);
-  const after = body.value.slice(range.end);
-  const insertion =
-    (before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '') +
-    value +
-    (after && !after.startsWith('\n\n') ? (after.startsWith('\n') ? '\n' : '\n\n') : '');
-  body.setRangeText(insertion, range.start, range.end, 'end');
-  bodyInsertionRange = null;
-  body.focus();
-  body.dispatchEvent(new Event('input', { bubbles: true }));
+function insertCmsBlock(block) {
+  window.dispatchEvent(new CustomEvent('cms:block-insert', { detail: { block } }));
 }
 function renderSelectedMedia(input, selectedNode, media = null) {
   selectedNode.innerHTML = '';
@@ -358,7 +335,6 @@ document.addEventListener('keydown', (event) => {
   }
 });
 function openEntriesBlockDialog() {
-  rememberBodyInsertion();
   entriesBlockCategory.innerHTML = '';
   references.categorias.forEach((item) => {
     const option = document.createElement('option');
@@ -385,36 +361,30 @@ document.getElementById('entries-block-insert').addEventListener('click', () => 
     setStatus('Primero debes crear o seleccionar una categoría.', true);
     return;
   }
-  insertIntoBody(
-    serializeCmsEditorBlock({
-      type: 'entries',
-      category,
-      limit: Math.min(12, Math.max(1, Number(entriesBlockLimit.value || 6))),
-      layout: entriesBlockLayout.value === 'carousel' ? 'carousel' : 'grid',
-    })
-  );
+  insertCmsBlock({
+    type: 'entries',
+    category,
+    limit: Math.min(12, Math.max(1, Number(entriesBlockLimit.value || 6))),
+    layout: entriesBlockLayout.value === 'carousel' ? 'carousel' : 'grid',
+  });
   closeEntriesBlockDialog();
 });
 document.querySelectorAll('[data-block-action]').forEach((button) => {
   button.addEventListener('click', () => {
     const action = button.dataset.blockAction;
     if (action === 'quote') {
-      rememberBodyInsertion();
-      insertIntoBody('> Escribe aquí la cita destacada.');
+      window.dispatchEvent(new CustomEvent('cms:quote-insert'));
       return;
     }
     if (action === 'entries') {
       openEntriesBlockDialog();
       return;
     }
-    rememberBodyInsertion();
     if (action === 'image') {
       openMediaPicker(
         {
           onChoose(media) {
-            insertIntoBody(
-              serializeCmsEditorBlock({ type: 'image', image: mediaAsEditorImage(media) })
-            );
+            insertCmsBlock({ type: 'image', image: mediaAsEditorImage(media) });
           },
         },
         button
@@ -425,13 +395,11 @@ document.querySelectorAll('[data-block-action]').forEach((button) => {
       {
         mode: 'multiple',
         onChooseMany(media) {
-          insertIntoBody(
-            serializeCmsEditorBlock({
-              type: 'gallery',
-              layout: action === 'carousel' ? 'carousel' : 'grid',
-              images: media.map(mediaAsEditorImage),
-            })
-          );
+          insertCmsBlock({
+            type: 'gallery',
+            layout: action === 'carousel' ? 'carousel' : 'grid',
+            images: media.map(mediaAsEditorImage),
+          });
         },
       },
       button
@@ -1068,6 +1036,9 @@ function openEditor(item) {
   document.getElementById('content-block-tools').classList.toggle('hidden', !blockToolsVisible);
   document.getElementById('content-block-editor').classList.toggle('has-tools', blockToolsVisible);
   document.getElementById('body').value = item ? item.body : '';
+  window.dispatchEvent(
+    new CustomEvent('cms:body-load', { detail: { body: item ? item.body : '' } })
+  );
   document.getElementById('delete-button').classList.toggle('hidden', !item);
   document.getElementById('history-button').classList.toggle('hidden', !item);
   updatePreview();
@@ -1090,6 +1061,9 @@ function openEditor(item) {
         if (pageInput) pageInput.value = savedPageId;
       }
       document.getElementById('body').value = saved.body || '';
+      window.dispatchEvent(
+        new CustomEvent('cms:body-load', { detail: { body: saved.body || '' } })
+      );
       updatePreview();
     } catch {}
   }
@@ -1401,11 +1375,10 @@ async function transition(name) {
 }
 async function pollPublication(attempt) {
   if (!current) return;
-  if (attempt >= 12) {
+  if (attempt >= 36) {
     document.getElementById('save-state').textContent = 'Publicación pendiente';
     setStatus(
-      'La publicación sigue pendiente. Puedes recargar el contenido para consultar su estado.',
-      true
+      'La publicación continúa en segundo plano. Puedes seguir trabajando y volver más tarde; no necesitas mantener esta página abierta.'
     );
     return;
   }
@@ -1437,6 +1410,14 @@ async function pollPublication(attempt) {
       document.getElementById('save-state').textContent = 'Archivado';
       setStatus('Contenido retirado del sitio y confirmado en Netlify.');
       return;
+    }
+    if (state === 'pr_open') {
+      document.getElementById('save-state').textContent = 'Validando publicación…';
+      setStatus('Validando el contenido. Puedes seguir trabajando mientras termina el proceso.');
+    }
+    if (state === 'merged') {
+      document.getElementById('save-state').textContent = 'Actualizando el sitio…';
+      setStatus('Validación superada. Netlify está actualizando el sitio público.');
     }
     if (state === 'failed') {
       document.getElementById('save-state').textContent = 'Error de publicación';

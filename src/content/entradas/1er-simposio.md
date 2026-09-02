@@ -5,7 +5,6 @@ simposio: '2026'
 title: 1er Simposio
 date: '2026-07-02'
 author: 'Red Internacional de Memorias Participativas'
-author_type: 'Organization'
 categories:
   - general
 tags:

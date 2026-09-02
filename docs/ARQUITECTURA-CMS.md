@@ -54,9 +54,23 @@ Netlify Function
 
 El frontend puede usar los permisos devueltos por la API para mostrar u ocultar controles, pero esa decisión es solo de interfaz. Cada Function vuelve a autorizar la operación.
 
-La vista previa editorial interpreta CommonMark y GitHub Flavored Markdown mediante `marked` —incluyendo tablas, listas de tareas, citas y bloques de código— y sanitiza el resultado con `DOMPurify` antes de insertarlo en el DOM. La vista previa no ejecuta HTML activo aportado por el contenido.
+El cuerpo editorial se modifica mediante un WYSIWYG basado en Lexical. El editor ofrece títulos,
+subtítulos, citas, negrita, cursiva, listas y enlaces, además de deshacer y rehacer. Markdown continúa
+siendo el formato canónico que se guarda en Supabase y se publica en GitHub: un campo oculto mantiene
+la conversión sincronizada para no cambiar el contrato del backend ni exigir una migración del corpus.
+La vista previa interpreta CommonMark y GitHub Flavored Markdown mediante `marked` y sanitiza el
+resultado con `DOMPurify` antes de insertarlo en el DOM. La vista previa no ejecuta HTML activo
+aportado por el contenido.
 
-Las entradas disponen además de una barra de bloques controlados para insertar imágenes de la biblioteca, galerías, carruseles, citas y listados de entradas por categoría en la posición del cursor. Estos componentes se guardan como bloques cercados `cms-image`, `cms-gallery` y `cms-entries` con configuración JSON: siguen siendo legibles y versionables dentro del Markdown, pero el backend rechaza tipos desconocidos, JSON inválido y URLs de medios inseguras. El mismo renderizador genera la vista previa y el HTML estático público; los listados por categoría se resuelven durante el build y excluyen borradores y la propia entrada.
+Las entradas disponen además de una barra de bloques controlados para insertar imágenes de la
+biblioteca, galerías, carruseles, citas y listados de entradas por categoría en la posición del
+cursor. En el WYSIWYG, los bloques CMS son tarjetas visuales indivisibles con miniatura, descripción,
+eliminación, movimiento accesible mediante botones y reordenamiento por arrastre. Se guardan como
+bloques cercados `cms-image`, `cms-gallery` y `cms-entries` con configuración JSON: siguen siendo
+legibles y versionables dentro del Markdown, pero el backend rechaza tipos desconocidos, JSON
+inválido y URLs de medios inseguras. El mismo renderizador genera la vista previa y el HTML estático
+público; los listados por categoría se resuelven durante el build y excluyen borradores y la propia
+entrada.
 
 Una entrada puede apuntar opcionalmente a una página mediante `page_id`, que conserva el UUID estable de la página y no su título o slug mutable. El selector del panel limita las opciones a la misma edición del simposio. Una entrada publicada conserva su ruta canónica y aparece además como tarjeta relacionada en la página asignada; el build rechaza referencias inexistentes, páginas no publicadas y relaciones entre ediciones diferentes.
 
@@ -153,6 +167,14 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 - La programación conserva fechas futuras y depende de `scheduled-publish` + `SCHEDULED_BUILD_HOOK_URL`; su precisión es diaria (00:05 America/Bogota).
 - Netlify se confirma por las variables confiables del runtime para el deploy actual y, opcionalmente, por API para despliegues históricos.
 - La importación inicial desde GitHub ocurre al abrir una colección que todavía no tenga copias editables. No se borran los Markdown legacy automáticamente.
+
+Los PR técnicos que modifican únicamente `src/content/` o `public/images/` usan una ruta de CI
+editorial sin instalación de dependencias ni build de Astro. Esta ruta conserva las validaciones de
+taxonomías, preparación para producción, relaciones, assets e identidad UUID. Los cambios de código
+mantienen el CI completo. Netlify omite deliberadamente los deploy previews de ramas `cms/**`; el
+reconciliador ignora solo los checks de preview con los nombres exactos del repositorio y nunca los
+checks de CI o seguridad. Después del merge se ejecuta el único build completo, correspondiente al
+deploy de producción.
 
 ## Arquitectura objetivo aún no completada
 

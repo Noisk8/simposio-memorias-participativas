@@ -90,6 +90,24 @@ test('los checks fallidos se distinguen de los pendientes y no dejan publicació
   assert.equal(pending.pending, true);
 });
 
+test('solo los checks de preview omitidos explícitamente dejan avanzar la publicación', () => {
+  const checks = {
+    check_runs: [
+      { name: 'Header rules - repositorio', status: 'completed', conclusion: 'cancelled' },
+      { name: 'CI / verify', status: 'completed', conclusion: 'success' },
+    ],
+  };
+  const ignoredPreview = summarizeCommitVerification({ statuses: [] }, checks, {
+    ignoredChecks: ['Header rules - repositorio'],
+  });
+  assert.equal(ignoredPreview.success, true);
+  assert.deepEqual(ignoredPreview.failedChecks, []);
+
+  const realFailure = summarizeCommitVerification({ statuses: [] }, checks);
+  assert.equal(realFailure.failed, true);
+  assert.deepEqual(realFailure.failedChecks, ['Header rules - repositorio']);
+});
+
 test('el recorrido minimalista separa borrador y publicación exacta', () => {
   const contentService = fs.readFileSync('shared/cms/content-service.ts', 'utf8');
   const publicationService = fs.readFileSync('shared/cms/publication-service.ts', 'utf8');
