@@ -61,13 +61,13 @@ test('reutilizar un medio no concede permiso implícito para editar metadata', (
   assert.equal(mayUpdateReusedMedia({ permissions: ['media.upload', 'media.update'] }), true);
 });
 
-test('la validación de producción rechaza slugs y resúmenes incompletos sin limitar el cuerpo', () => {
+test('la validación rechaza título y slug inválidos sin limitar descripción ni cuerpo', () => {
   const errors = publicationReadinessErrors(
     'paginas',
     { title: 'ok', slug: 'Slug con espacios', description: 'corta' },
     'breve'
   );
-  assert.equal(errors.length, 3);
+  assert.equal(errors.length, 2);
   assert.deepEqual(
     publicationReadinessErrors(
       'paginas',
@@ -77,6 +77,14 @@ test('la validación de producción rechaza slugs y resúmenes incompletos sin l
         description: 'Una descripción pública suficientemente informativa.',
       },
       'Breve.'
+    ),
+    []
+  );
+  assert.deepEqual(
+    publicationReadinessErrors(
+      'paginas',
+      { title: 'Página editorial', slug: 'pagina-editorial', description: '' },
+      ''
     ),
     []
   );

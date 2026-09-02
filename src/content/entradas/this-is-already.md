@@ -1,18 +1,18 @@
 ---
-id: "8150fb7f-f678-4a59-aca4-d0be96aedf4d"
-date: "2026-09-02"
+id: '8150fb7f-f678-4a59-aca4-d0be96aedf4d'
+date: '2026-09-02'
 tags:
-  - "museo-memorias"
+  - 'museo-memorias'
 draft: false
-image: "https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/dbc1df5ee652786199728807ce228f748dd64dfcae9124201b130220cfaf4db2-proyecto-27.jpg"
-title: "this is already"
-author: "juan"
-page_id: ""
-simposio: "2026"
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/dbc1df5ee652786199728807ce228f748dd64dfcae9124201b130220cfaf4db2-proyecto-27.jpg'
+title: 'this is already'
+author: 'juan'
+page_id: ''
+simposio: '2026'
 categories:
-  - "general"
-description: "this is ok?fgdgdfgdfggdgdg"
-publish_date: "2026-09-02"
+  - 'general'
+description: 'this is ok?fgdgdfgdfggdgdg'
+publish_date: '2026-09-02'
 ---
 
 i think
@@ -43,4 +43,4 @@ i think
 }
 ```
 
- all is ok
+all is ok

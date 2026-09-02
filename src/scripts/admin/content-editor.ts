@@ -608,7 +608,10 @@ function renderItems() {
     button.className = 'cms-entry-card';
     const imageUrl = resolvePreviewUrl(item.data.image);
     const archived = isArchivedContent(item);
-    const published = isPublishedListingContent(item);
+    const unavailableReference =
+      ['categorias', 'etiquetas'].includes(item.collection) &&
+      item.workflow?.reference_available === false;
+    const published = !unavailableReference && isPublishedListingContent(item);
     const pendingChanges = hasPendingPublishedChanges(item);
     const publicUrl = published ? getPublicUrl(item.collection, item.path, item.data) : '';
     button.innerHTML =
@@ -619,13 +622,15 @@ function renderItems() {
         ? '<img src="' + esc(imageUrl) + '" alt="" loading="lazy" decoding="async">'
         : '<div class="cms-card-placeholder"></div>') +
       '<span class="cms-card-meta">' +
-      (archived
-        ? 'Archivada · '
-        : pendingChanges
-          ? 'Cambios sin publicar · '
-          : !published
-            ? 'Borrador · '
-            : '') +
+      (unavailableReference
+        ? 'No publicada en GitHub · '
+        : archived
+          ? 'Archivada · '
+          : pendingChanges
+            ? 'Cambios sin publicar · '
+            : !published
+              ? 'Borrador · '
+              : '') +
       esc(publicUrl || item.path || item.name) +
       '</span>';
     button.onclick = () => {
@@ -906,6 +911,7 @@ function fieldElement(def, value) {
 }
 
 function isPublishedReference(item) {
+  if (item?.workflow?.reference_available === false) return false;
   return Boolean(
     item?.workflow?.published_sha ||
     item?.data?.workflow_state === 'published' ||
@@ -970,7 +976,8 @@ function renderWorkflow(record) {
     document.getElementById('archive-button').classList.add('hidden');
     return;
   }
-  const hasUnpublishedChanges = record.current_sha !== record.published_sha;
+  const hasUnpublishedChanges =
+    record.current_sha !== record.published_sha || record.reference_available === false;
   const publicationLabels = {
     idle: hasUnpublishedChanges ? 'Borrador listo' : 'Publicado',
     validating: 'Validando',
@@ -1001,11 +1008,7 @@ function renderWorkflow(record) {
   const publishing = ['queued', 'validating', 'pr_open', 'merged'].includes(
     String(record.publication_state || '')
   );
-  const mayPublish =
-    can('publish') &&
-    record.current_sha &&
-    record.current_sha !== record.published_sha &&
-    !publishing;
+  const mayPublish = can('publish') && record.current_sha && hasUnpublishedChanges && !publishing;
   document.getElementById('publish-button').classList.toggle('hidden', !mayPublish);
   document.getElementById('publish-button').textContent =
     record.publication_state === 'failed' ? 'Reintentar publicación' : 'Publicar';
