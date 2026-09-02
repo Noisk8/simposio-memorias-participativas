@@ -30,8 +30,27 @@ test('conserva un slug explícito y no altera contenido ordinario', () => {
 test('el editor ofrece solo taxonomías publicadas y refresca al publicar', () => {
   const editor = fs.readFileSync('src/scripts/admin/content-editor.ts', 'utf8');
   assert.match(editor, /references\[source\]\.filter\(isPublishedReference\)/);
+  assert.match(editor, /reference_available === false/);
+  assert.match(editor, /No publicada en GitHub/);
   assert.match(editor, /taxonomyReferenceSlug\(item\.data\.slug \|\| item\.data\.title\)/);
   assert.match(editor, /if \(state === 'live'\)[\s\S]*await loadReferences\(\)/);
+});
+
+test('el servidor contrasta la disponibilidad de taxonomías con GitHub', () => {
+  const contentService = fs.readFileSync('shared/cms/content-service.ts', 'utf8');
+  const publicationService = fs.readFileSync('shared/cms/publication-service.ts', 'utf8');
+  const workflowService = fs.readFileSync('shared/cms/workflow-service.ts', 'utf8');
+  assert.match(contentService, /reference_available: publishedPaths\.has\(item\.path\)/);
+  assert.match(contentService, /export async function taxonomyReferenceAvailable/);
+  assert.match(
+    publicationService,
+    /record\.published_sha === draft\.content_sha[\s\S]*readContent\(record\.path\)/
+  );
+  assert.match(publicationService, /publishedFile\.status !== 404/);
+  assert.match(
+    workflowService,
+    /reference_available = await taxonomyReferenceAvailable\(record\.path\)/
+  );
 });
 
 test('la publicación comprueba taxonomías antes de crear el PR', () => {
