@@ -174,9 +174,11 @@ Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Stora
 - La navegación pública es estática en `src/components/Header.astro`; no forma parte del dominio editorial del CMS.
 - Las colecciones genéricas creadas por `manage-collections` no obtienen automáticamente CRUD en el panel.
 - La escritura GitHub y la auditoría Supabase no forman una transacción distribuida. Si la auditoría no persiste, queda el evento estructurado `audit.persist.failed`.
+- Los fallos transitorios de reconciliación se reintentan hasta cinco veces; al agotarse se marca la publicación como fallida y se conserva el error para intervención.
 - La confirmación ocurre al consultar el workflow y también mediante `cms-operations`; el merge y el deploy son estados separados.
 - La programación conserva fechas futuras y depende de `scheduled-publish` + `SCHEDULED_BUILD_HOOK_URL`; su precisión es diaria (00:05 America/Bogota).
 - Netlify se confirma por las variables confiables del runtime para el deploy actual y, opcionalmente, por API para despliegues históricos.
+- La reconciliación operativa comprueba también que los Markdown marcados como publicados sigan existiendo en GitHub; si faltan, marca el registro como `stale` sin borrar el historial.
 - La importación inicial desde GitHub ocurre al abrir una colección que todavía no tenga copias editables. No se borran los Markdown legacy automáticamente.
 
 Los PR técnicos que modifican únicamente `src/content/` o `public/images/` usan una ruta de CI

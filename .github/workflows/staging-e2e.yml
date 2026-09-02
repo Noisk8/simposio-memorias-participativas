@@ -1,6 +1,8 @@
 name: Staging authenticated E2E
 
 on:
+  push:
+    branches: [staging]
   workflow_dispatch:
 
 concurrency:
@@ -9,6 +11,7 @@ concurrency:
 
 jobs:
   authenticated-workflow:
+    if: vars.STAGING_E2E_ENABLED == 'true'
     name: staging-e2e
     runs-on: ubuntu-latest
     environment: staging

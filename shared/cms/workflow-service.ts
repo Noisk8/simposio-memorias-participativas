@@ -8,6 +8,7 @@ import {
   reconcilePublication,
 } from './publication-service.ts';
 import { taxonomyReferenceAvailable } from './content-service.ts';
+import { getOperationResponse, normalizeOperationKey, saveOperationResponse } from './operation-keys.ts';
 
 export const WORKFLOW_TRANSITIONS = {
   publish: { suffix: 'publish' },
@@ -79,12 +80,30 @@ export async function transitionWorkflow(input: {
   operationKey?: unknown;
   auth: PermissionContext;
 }) {
+  const client = getAdminClient();
+  if (!client) throw new InternalError('Supabase no está configurado.');
+  const operationKey = normalizeOperationKey(input.operationKey);
+  if (operationKey) {
+    const cached = await getOperationResponse(client, operationKey, input.auth.user.id);
+    if (cached) return { ...cached, idempotent: true };
+  }
   const operation = input.transition === 'archive' ? archiveContent : publishContent;
-  return operation({
+  const result = await operation({
     path: input.path,
     auth: input.auth,
-    operationKey: input.operationKey,
+    operationKey: operationKey || undefined,
   });
+  if (operationKey) {
+    await saveOperationResponse(
+      client,
+      operationKey,
+      input.auth.user.id,
+      input.transition,
+      input.path,
+      result
+    );
+  }
+  return result;
 }
 
 export { publicationBranch };

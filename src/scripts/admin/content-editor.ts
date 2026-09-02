@@ -468,7 +468,6 @@ function createNavigation() {
   [
     ['/admin/medios', '▧ Biblioteca de imágenes'],
     ['/admin/gestion-usuarios', '♟ Usuarios y roles'],
-    ['/admin/gestion-colecciones', '⚙ Gestionar colecciones'],
   ].forEach(([href, label]) => {
     const link = document.createElement('a');
     link.href = href;
@@ -735,6 +734,8 @@ function fieldElement(def, value) {
     input.type = type === 'list' ? 'text' : type;
   }
   input.dataset.key = key;
+  input.id = 'field-' + key;
+  labelNode.htmlFor = input.id;
   input.required = required === 'required';
   input.className = 'w-full rounded-lg border border-gray-300 px-3 py-2';
   if (!type.startsWith('relation'))
@@ -745,6 +746,22 @@ function fieldElement(def, value) {
           ? JSON.stringify(value || [], null, 2)
           : (value ?? '');
   wrapper.appendChild(input);
+  const errorNode = document.createElement('p');
+  errorNode.id = input.id + '-error';
+  errorNode.className = 'cms-field-error hidden';
+  errorNode.setAttribute('role', 'alert');
+  wrapper.appendChild(errorNode);
+  input.setAttribute('aria-describedby', errorNode.id);
+  const validate = () => {
+    const empty = input.required && !String(input.value || '').trim();
+    input.setCustomValidity(empty ? `${label} es obligatorio.` : '');
+    errorNode.textContent = empty ? `Completa ${label.toLowerCase()} para continuar.` : '';
+    errorNode.classList.toggle('hidden', !empty);
+    input.classList.toggle('border-red-500', empty);
+    return !empty;
+  };
+  input.addEventListener('input', validate);
+  input.addEventListener('change', validate);
   if (key === 'page_id') {
     const help = document.createElement('p');
     help.className = 'cms-field-help';
@@ -909,6 +926,17 @@ function fieldElement(def, value) {
   }
   return wrapper;
 }
+function validateEditor() {
+  const fields = Array.from(fieldsNode.querySelectorAll('[data-key]'));
+  const invalid = fields.filter((field) => !field.checkValidity());
+  if (invalid.length) {
+    invalid[0].reportValidity();
+    invalid[0].focus();
+    setStatus('Revisa los campos marcados antes de continuar.', true);
+    return false;
+  }
+  return true;
+}
 
 function isPublishedReference(item) {
   if (item?.workflow?.reference_available === false) return false;
@@ -977,7 +1005,9 @@ function renderWorkflow(record) {
     return;
   }
   const hasUnpublishedChanges =
-    record.current_sha !== record.published_sha || record.reference_available === false;
+    record.current_sha !== record.published_sha ||
+    record.reference_available === false ||
+    record.deployment_state === 'stale';
   const publicationLabels = {
     idle: hasUnpublishedChanges ? 'Borrador listo' : 'Publicado',
     validating: 'Validando',
@@ -992,7 +1022,9 @@ function renderWorkflow(record) {
     ? `Programado para ${current.data.publish_date}`
     : record.deployment_state === 'failed'
       ? 'El despliegue falló; se reintentará sin duplicar la publicación'
-      : publicationLabels[record.publication_state] || 'Borrador';
+      : record.deployment_state === 'stale'
+        ? 'El Markdown publicado no está en GitHub; puedes republicarlo'
+        : publicationLabels[record.publication_state] || 'Borrador';
   versionNode.innerHTML =
     '<div class="grid gap-1 sm:grid-cols-2"><span>Versión actual: <code>' +
     esc(shortSha(record.current_sha)) +
@@ -1242,6 +1274,7 @@ function updatePreview() {
 }
 async function persistDraft(autosave = false) {
   if (saveInFlight || (autosave && !current)) return false;
+  if (!autosave && !validateEditor()) return false;
   saveInFlight = true;
   const generation = changeGeneration;
   const payloadData = formData();
@@ -1438,7 +1471,9 @@ async function pollPublication(attempt) {
     }
     if (state === 'merged') {
       document.getElementById('save-state').textContent = 'Actualizando el sitio…';
-      setStatus('Validación superada. Netlify está actualizando el sitio público.');
+      setStatus(
+        'La versión fue fusionada en GitHub. Netlify todavía está actualizando el sitio público; se mostrará como publicada cuando el deploy sea confirmado.'
+      );
     }
     if (state === 'failed') {
       document.getElementById('save-state').textContent = 'Error de publicación';

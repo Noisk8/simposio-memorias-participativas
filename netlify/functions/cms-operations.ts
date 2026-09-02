@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { reconcilePendingPublications } from '../../shared/cms/publication-service.ts';
+import {
+  reconcilePendingPublications,
+  reconcilePublishedDrift,
+} from '../../shared/cms/publication-service.ts';
 import { cleanupOperationalPublications } from '../../shared/cms/operational-cleanup.ts';
 import { getBranchHeadSha } from '../../shared/github/client.ts';
 import { getLatestProductionDeploy } from '../../shared/netlify/deploys.ts';
@@ -17,6 +20,15 @@ export const handler = async () => {
   } catch (error) {
     failures.push('publication_reconciliation');
     checks.publicationsError = error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    const drift = await reconcilePublishedDrift(requestId);
+    checks.publishedDrift = drift;
+    if (drift.stale.length || drift.failures.length) failures.push('published_content_drift');
+  } catch (error) {
+    failures.push('published_content_drift');
+    checks.publishedDriftError = error instanceof Error ? error.message : String(error);
   }
 
   try {

@@ -40,6 +40,7 @@ import {
 } from './content-service.ts';
 
 const ACTIVE_PUBLICATION_STATES = ['queued', 'validating', 'pr_open', 'merged'];
+const MAX_RECONCILIATION_ATTEMPTS = 5;
 
 function skippedCmsPreviewChecks(): string[] {
   const repository = getGitHubConfiguration().repo;
@@ -673,6 +674,7 @@ export async function reconcilePendingPublications(requestId = randomUUID()) {
     try {
       results.push(await reconcilePublication(record, { requestId }));
     } catch (error) {
+      await recordReconciliationRetry(record, error, requestId);
       logEvent('error', 'cms_publication.reconcile_failed', {
         requestId,
         contentId: record.id,
@@ -681,4 +683,76 @@ export async function reconcilePendingPublications(requestId = randomUUID()) {
     }
   }
   return { processed: (records || []).length, results };
+}
+
+async function recordReconciliationRetry(record: any, error: unknown, requestId: string) {
+  const client = getAdminClient();
+  if (!client) return;
+  const { data: publication } = await client
+    .from('cms_publications')
+    .select('id, attempt_count, operation')
+    .eq('content_id', record.id)
+    .in('status', ACTIVE_PUBLICATION_STATES)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!publication) return;
+  const nextAttempt = Number(publication.attempt_count || 1) + 1;
+  const message = error instanceof Error ? error.message.slice(0, 2000) : 'Error desconocido';
+  if (nextAttempt >= MAX_RECONCILIATION_ATTEMPTS) {
+    const terminal = new ConflictError(
+      `La publicación falló después de ${MAX_RECONCILIATION_ATTEMPTS} intentos de reconciliación: ${message}`
+    );
+    await markFailed(publication.id, record.id, terminal, publicationOperation(publication));
+    logEvent('error', 'cms_publication.retry_exhausted', {
+      requestId,
+      contentId: record.id,
+      publicationId: publication.id,
+      attempts: nextAttempt,
+    });
+    return;
+  }
+  await client
+    .from('cms_publications')
+    .update({
+      attempt_count: nextAttempt,
+      error_code: error instanceof AppError ? error.code : 'INTERNAL_ERROR',
+      error_message: message,
+    })
+    .eq('id', publication.id);
+}
+
+export async function reconcilePublishedDrift(requestId = randomUUID()) {
+  const client = getAdminClient();
+  if (!client) throw new InternalError('Supabase no está configurado.');
+  const { data: records, error } = await client
+    .from('cms_content_records')
+    .select('id, path, collection, deployment_state')
+    .eq('publication_state', 'live')
+    .limit(100);
+  if (error) throw new InternalError('No se pudo comprobar el contenido publicado.');
+
+  const stale: string[] = [];
+  const failures: string[] = [];
+  for (const record of records || []) {
+    const response = await readContent(record.path);
+    if (response.status === 404) {
+      stale.push(record.path);
+      await client
+        .from('cms_content_records')
+        .update({ deployment_state: 'stale', updated_at: new Date().toISOString() })
+        .eq('id', record.id);
+    } else if (!response.ok) {
+      failures.push(`${record.path}:${response.status}`);
+    }
+  }
+  if (stale.length || failures.length) {
+    logEvent('warn', 'cms_publication.drift_detected', {
+      requestId,
+      stale,
+      failures,
+      checked: (records || []).length,
+    });
+  }
+  return { checked: (records || []).length, stale, failures };
 }

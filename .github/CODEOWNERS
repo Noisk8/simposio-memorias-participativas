@@ -1,0 +1,8 @@
+# Revisión obligatoria para cambios de aplicación y contenido editorial.
+# Ajusta estos equipos/usuarios si cambia la estructura del repositorio.
+* @Noisk8
+/.github/ @Noisk8
+/netlify/ @Noisk8
+/shared/ @Noisk8
+/src/ @Noisk8
+/supabase/ @Noisk8
