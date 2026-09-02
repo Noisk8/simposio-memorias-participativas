@@ -1,19 +1,19 @@
 ---
-id: "c1e51b10-c498-4cb3-a3ca-7eabe7a6e4fd"
-date: "2026-09-02"
+id: 'c1e51b10-c498-4cb3-a3ca-7eabe7a6e4fd'
+date: '2026-09-02'
 tags:
-  - "ddhh"
-  - "museo-memorias"
+  - 'ddhh'
+  - 'museo-memorias'
 draft: false
-image: "https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/09/2474a84a-733f-4e6d-8f44-d36bd247219c-screenshot-2026-08-23_23-59-54.webp"
-title: "dddddggdgdggs"
-author: "pedro"
-page_id: ""
-simposio: "2026"
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/09/2474a84a-733f-4e6d-8f44-d36bd247219c-screenshot-2026-08-23_23-59-54.webp'
+title: 'dddddggdgdggs'
+author: 'pedro'
+page_id: ''
+simposio: '2026'
 categories:
-  - "arte"
-description: "cvdgdggdggsggsgsdg"
-publish_date: "2026-09-02"
+  - 'arte'
+description: 'cvdgdggdggsggsgsdg'
+publish_date: '2026-09-02'
 ---
 
 ```cms-image
