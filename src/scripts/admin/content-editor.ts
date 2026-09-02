@@ -16,6 +16,7 @@ import {
   parseCmsEditorBlock,
   renderCmsEditorBlockHtml,
 } from '../../../shared/content/editor-blocks';
+import { taxonomyReferenceSlug } from '../../../shared/content/taxonomy-references';
 
 const collection = document.getElementById('collection');
 const itemsNode = document.getElementById('items');
@@ -336,9 +337,9 @@ document.addEventListener('keydown', (event) => {
 });
 function openEntriesBlockDialog() {
   entriesBlockCategory.innerHTML = '';
-  references.categorias.forEach((item) => {
+  references.categorias.filter(isPublishedReference).forEach((item) => {
     const option = document.createElement('option');
-    option.value = item.data.slug || item.data.title;
+    option.value = referenceValue('categorias', item);
     option.textContent = item.data.title;
     entriesBlockCategory.appendChild(option);
   });
@@ -694,14 +695,13 @@ function fieldElement(def, value) {
               isPublishedReference(item) &&
               String(item.data.simposio || defaults.simposio) === String(currentSimposio)
           )
-        : references[source];
+        : source === 'categorias' || source === 'etiquetas'
+          ? references[source].filter(isPublishedReference)
+          : references[source];
     sourceItems.forEach((item) => {
       if (current && item.path === current.path) return;
       const option = document.createElement('option');
-      option.value =
-        key === 'page_id'
-          ? item.data.id
-          : item.data.slug || String(item.data.year || item.data.title || '');
+      option.value = key === 'page_id' ? item.data.id : referenceValue(source, item);
       option.textContent =
         item.data.title +
         (key === 'page_id' && item.data.slug
@@ -713,6 +713,16 @@ function fieldElement(def, value) {
         ? Array.isArray(value) && value.includes(option.value)
         : value === option.value;
       option.selected = selected;
+      input.appendChild(option);
+    });
+    const selectedValues = multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
+    const availableValues = new Set(Array.from(input.options).map((option) => option.value));
+    selectedValues.forEach((selectedValue) => {
+      if (!selectedValue || availableValues.has(selectedValue)) return;
+      const option = document.createElement('option');
+      option.value = selectedValue;
+      option.textContent = `${selectedValue} · no publicada; selecciona otra opción`;
+      option.disabled = true;
       input.appendChild(option);
     });
   } else {
@@ -901,6 +911,13 @@ function isPublishedReference(item) {
     item?.data?.workflow_state === 'published' ||
     item?.data?.draft === false
   );
+}
+
+function referenceValue(source, item) {
+  if (source === 'categorias' || source === 'etiquetas') {
+    return taxonomyReferenceSlug(item.data.slug || item.data.title);
+  }
+  return item.data.slug || String(item.data.year || item.data.title || '');
 }
 
 function syncEntryPageOptions() {
@@ -1403,6 +1420,7 @@ async function pollPublication(attempt) {
           ? `Contenido programado para ${current.data.publish_date}; se activará con el rebuild diario.`
           : 'Contenido publicado y confirmado en Netlify.'
       );
+      await loadReferences();
       checkDeployment();
       return;
     }
