@@ -13,6 +13,7 @@ import { parseMarkdownDocument } from '../content/frontmatter.ts';
 import { cmsEditorBlockErrors } from '../content/editor-blocks.ts';
 import { assignNewContentId, isContentId, preserveContentId } from '../content/identity.ts';
 import { newContentPath, publicUrlForContent } from '../content/paths.ts';
+import { normalizeTaxonomyData } from '../content/taxonomy-references.ts';
 import { contentVersionSha } from '../content/version.ts';
 import { githubContentsRequest } from '../github/contents-client.ts';
 import { recordAudit } from '../observability/audit.ts';
@@ -327,10 +328,11 @@ export async function saveContent(input: {
 }) {
   const { collection, payload, auth } = input;
   const creating = !payload.path;
-  const untrustedData =
+  const rawData =
     payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
       ? payload.data
       : {};
+  const untrustedData = normalizeTaxonomyData(collection, rawData);
   let filePath: string;
   let record: any = null;
   let draft: any = null;
