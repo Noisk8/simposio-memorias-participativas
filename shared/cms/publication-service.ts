@@ -20,6 +20,7 @@ import {
   readContent,
   updateContent,
 } from '../github/client.ts';
+import { getGitHubConfiguration } from '../github/config.ts';
 import { deployPublicUrl, getDeployForCommit, isDeployFailure } from '../netlify/deploys.ts';
 import { recordAudit } from '../observability/audit.ts';
 import { AppError, ConflictError, GitHubError, InternalError } from '../observability/errors.ts';
@@ -32,6 +33,16 @@ import {
 } from './content-service.ts';
 
 const ACTIVE_PUBLICATION_STATES = ['queued', 'validating', 'pr_open', 'merged'];
+
+function skippedCmsPreviewChecks(): string[] {
+  const repository = getGitHubConfiguration().repo;
+  return [
+    `Redirect rules - ${repository}`,
+    `Header rules - ${repository}`,
+    `Pages changed - ${repository}`,
+    `netlify/${repository}/deploy-preview`,
+  ];
+}
 type PublicationOperation = 'publish' | 'archive';
 type ReconciliationContext = Pick<PermissionContext, 'requestId'>;
 
@@ -279,7 +290,8 @@ export async function reconcilePublication(record: any, context: ReconciliationC
   // Si el repositorio no admite auto-merge, esta reconciliación realiza el merge
   // en cuanto los checks técnicos terminan correctamente.
   try {
-    const verification = await getCommitVerification(pull.head.sha);
+    const ignoredChecks = skippedCmsPreviewChecks();
+    const verification = await getCommitVerification(pull.head.sha, { ignoredChecks });
     if (verification.failed) {
       const failedChecks = verification.failedChecks.join(', ') || 'validación técnica';
       const failure = new ConflictError(`Fallaron los checks de publicación: ${failedChecks}.`);
@@ -298,6 +310,7 @@ export async function reconcilePublication(record: any, context: ReconciliationC
         number: Number(publication.github_pr_number),
         expectedHeadSha: pull.head.sha,
         method: 'squash',
+        ignoredChecks,
       });
       if (mergeResponse.ok) {
         const refreshed = await getPullRequest(Number(publication.github_pr_number));
