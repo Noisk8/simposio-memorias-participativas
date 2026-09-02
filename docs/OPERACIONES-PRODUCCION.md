@@ -10,7 +10,7 @@ Hasta que exista ese proyecto aislado, las cuatro variables Supabase de la rama 
 
 ## Publicación y archivo
 
-Una operación solo es terminal cuando el PR está fusionado y la API de Netlify devuelve un deploy de contexto `production`, estado `ready` y `commit_ref` idéntico al SHA del merge. `cms-operations` reconcilia intentos pendientes cada diez minutos. Los reintentos de las RPC de merge y finalización son idempotentes.
+Una operación solo es terminal cuando el PR está fusionado y la API de Netlify devuelve un deploy de contexto `production`, estado `ready` y `commit_ref` idéntico al SHA del merge. `cms-operations` reconcilia intentos pendientes cada diez minutos. Los reintentos de las RPC de merge y finalización son idempotentes; los fallos transitorios de reconciliación se reintentan hasta cinco veces y después pasan a un estado terminal fallido para evitar publicaciones atascadas indefinidamente.
 
 El runtime de Netlify confirma el deploy actual mediante `COMMIT_REF`, `DEPLOY_ID` y `CONTEXT`. Para reconciliar también despliegues históricos pueden configurarse:
 
@@ -23,7 +23,15 @@ El runtime de Netlify confirma el deploy actual mediante `COMMIT_REF`, `DEPLOY_I
 
 En cada push a `main`, el workflow `verify` espera a que el deploy de Netlify del commit quede `ready` (`scripts/wait-netlify-ready.mjs`) y luego comprueba que las rutas publicadas respondan `200` en el sitio real (`scripts/verify-production.mjs`). El script extrae las URL de las páginas emitidas por el build (`dist/`) y filtra por entradas, categorías, etiquetas, páginas, museo y ediciones.
 
-Este paso se publica como status check **informativo** (`continue-on-error: true`): un `404` marca el check en rojo sin detener el deploy ya `ready`. Es intencional para no bloquear una publicación por un falso positivo; una vez constatado estable en varias publicaciones, puede pasarse a bloqueante. `SITE_URL` y el `NETLIFY_SITE_ID` son públicos; no requieren token.
+Este paso es bloqueante: un `404`, error de canonical o ruta pública inaccesible impide considerar válido el release. Si el fallo proviene de una incidencia externa de Netlify, se debe resolver o reintentar el workflow; no se debe fusionar ignorando el check. `SITE_URL` y el `NETLIFY_SITE_ID` son públicos; no requieren token.
+
+## E2E autenticado de staging
+
+El workflow `Staging authenticated E2E` se ejecuta automáticamente después de cada actualización de
+`staging` y también puede iniciarse manualmente. Para evitar ejecuciones destructivas en un entorno no
+preparado, requiere la variable de entorno de GitHub `STAGING_E2E_ENABLED=true` y un proyecto Supabase
+de staging aislado con los secretos descritos arriba. La prueba crea y elimina contenido temporal y
+recorre publicación, deploy y archivo.
 
 ## Programación editorial
 
@@ -79,5 +87,9 @@ La función programada `cms-operations` comprueba cada diez minutos:
 - disponibilidad HTTP del sitio público.
 
 También limpia recursos operacionales terminales: después de siete días cierra PR fallidos/cancelados, elimina exclusivamente ramas que coincidan con `cms/<uuid>/<timestamp>` y registra `operational_cleaned_at`. La poda SQL conserva auditoría 365 días, eventos editoriales 730 días y elimina intentos terminales ya limpiados a los 180 días (fallidos/cancelados) o 730 días (publicados/archivados). Un fallo de GitHub no marca el registro como limpio y genera alerta para reintento.
+
+La misma tarea comprueba hasta 100 documentos marcados como publicados contra la rama de GitHub
+configurada. Si falta un Markdown, conserva el historial, marca el registro como `stale` y envía una
+alerta para que pueda republicarse o restaurarse de forma controlada.
 
 Cualquier fallo envía una alerta por `ALERT_WEBHOOK_URL`. Después de cada despliegue se debe confirmar en Netlify que `cms-operations` aparece programada cada diez minutos y `scheduled-publish` a las 05:05 UTC. Se realiza un simulacro trimestral de restauración y un ensayo mensual de alerta.

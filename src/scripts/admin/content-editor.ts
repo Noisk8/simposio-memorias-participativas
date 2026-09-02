@@ -977,7 +977,9 @@ function renderWorkflow(record) {
     return;
   }
   const hasUnpublishedChanges =
-    record.current_sha !== record.published_sha || record.reference_available === false;
+    record.current_sha !== record.published_sha ||
+    record.reference_available === false ||
+    record.deployment_state === 'stale';
   const publicationLabels = {
     idle: hasUnpublishedChanges ? 'Borrador listo' : 'Publicado',
     validating: 'Validando',
@@ -992,7 +994,9 @@ function renderWorkflow(record) {
     ? `Programado para ${current.data.publish_date}`
     : record.deployment_state === 'failed'
       ? 'El despliegue falló; se reintentará sin duplicar la publicación'
-      : publicationLabels[record.publication_state] || 'Borrador';
+      : record.deployment_state === 'stale'
+        ? 'El Markdown publicado no está en GitHub; puedes republicarlo'
+        : publicationLabels[record.publication_state] || 'Borrador';
   versionNode.innerHTML =
     '<div class="grid gap-1 sm:grid-cols-2"><span>Versión actual: <code>' +
     esc(shortSha(record.current_sha)) +

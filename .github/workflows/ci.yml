@@ -97,7 +97,6 @@ jobs:
           steps.changes.outputs.content_only != 'true' &&
           github.event_name == 'push' &&
           github.ref == 'refs/heads/main'
-        continue-on-error: true
         env:
           SITE_URL: https://simposio-memorias-participativas.netlify.app
         run: node scripts/verify-production.mjs
