@@ -19,6 +19,12 @@ El runtime de Netlify confirma el deploy actual mediante `COMMIT_REF`, `DEPLOY_I
 
 `ALERT_WEBHOOK_URL` sí es obligatorio para que los fallos salgan de los logs de Netlify y lleguen al canal de guardia.
 
+## Verificación de producción (CI)
+
+En cada push a `main`, el workflow `verify` espera a que el deploy de Netlify del commit quede `ready` (`scripts/wait-netlify-ready.mjs`) y luego comprueba que las rutas publicadas respondan `200` en el sitio real (`scripts/verify-production.mjs`). El script extrae las URL de las páginas emitidas por el build (`dist/`) y filtra por entradas, categorías, etiquetas, páginas, museo y ediciones.
+
+Este paso se publica como status check **informativo** (`continue-on-error: true`): un `404` marca el check en rojo sin detener el deploy ya `ready`. Es intencional para no bloquear una publicación por un falso positivo; una vez constatado estable en varias publicaciones, puede pasarse a bloqueante. `SITE_URL` y el `NETLIFY_SITE_ID` son públicos; no requieren token.
+
 ## Programación editorial
 
 `scheduled-publish` se ejecuta a las 05:05 UTC (00:05 en Bogotá) y hace `POST` a `SCHEDULED_BUILD_HOOK_URL`. El build hook debe estar limitado a la rama `main`; no reutilices un hook de previews. El rebuild hace visibles los Markdown con `publish_date` igual al nuevo día sin crear commits vacíos.
