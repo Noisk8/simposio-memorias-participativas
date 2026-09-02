@@ -74,6 +74,13 @@ entrada.
 
 Una entrada puede apuntar opcionalmente a una página mediante `page_id`, que conserva el UUID estable de la página y no su título o slug mutable. El selector del panel limita las opciones a la misma edición del simposio. Una entrada publicada conserva su ruta canónica y aparece además como tarjeta relacionada en la página asignada; el build rechaza referencias inexistentes, páginas no publicadas y relaciones entre ediciones diferentes.
 
+Las categorías y etiquetas usan un slug normalizado y estable como valor de relación. Si el editor
+deja el slug vacío al crear una taxonomía, el servidor lo genera desde el título antes de guardar el
+borrador. Los selectores de entradas, memorias y bloques muestran únicamente taxonomías publicadas y
+se actualizan al confirmarse el despliegue. Antes de abrir un PR de contenido, el servidor comprueba
+en la rama configurada que todas sus taxonomías ya existen; así una referencia pendiente se explica
+directamente en el panel y no se convierte en un fallo tardío de CI.
+
 ## Funciones activas
 
 | Function               | Responsabilidad                                                                               |

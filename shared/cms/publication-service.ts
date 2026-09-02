@@ -5,6 +5,7 @@ import { serializeMarkdownDocument } from '../content/frontmatter.ts';
 import { normalizePublishedContent } from '../content/publication.ts';
 import { assertPublicationReady, publicDocumentData } from '../content/publication-readiness.ts';
 import { contentVersionSha } from '../content/version.ts';
+import { taxonomyReferencePath, type TaxonomyCollection } from '../content/taxonomy-references.ts';
 import {
   createBranch,
   closePullRequest,
@@ -23,7 +24,13 @@ import {
 import { getGitHubConfiguration } from '../github/config.ts';
 import { deployPublicUrl, getDeployForCommit, isDeployFailure } from '../netlify/deploys.ts';
 import { recordAudit } from '../observability/audit.ts';
-import { AppError, ConflictError, GitHubError, InternalError } from '../observability/errors.ts';
+import {
+  AppError,
+  ConflictError,
+  GitHubError,
+  InternalError,
+  ValidationError,
+} from '../observability/errors.ts';
 import { logEvent } from '../observability/logger.ts';
 import { getAdminClient } from '../supabase/admin-client.ts';
 import {
@@ -54,6 +61,44 @@ export function publicationBranch(contentId: string, now = new Date()): string {
 function draftFromRecord(record: any) {
   const relation = record?.cms_content_drafts;
   return Array.isArray(relation) ? relation[0] || null : relation || null;
+}
+
+async function assertPublishedTaxonomyReferences(
+  collection: ContentCollection,
+  data: Record<string, any>
+) {
+  const references: Array<{ collection: TaxonomyCollection; value: unknown; label: string }> = [];
+  if (['entradas', 'memorias'].includes(collection)) {
+    for (const value of data.categories || []) {
+      references.push({ collection: 'categorias', value, label: 'categoría' });
+    }
+    for (const value of data.tags || []) {
+      references.push({ collection: 'etiquetas', value, label: 'etiqueta' });
+    }
+  }
+  if (collection === 'categorias' && data.parent) {
+    references.push({ collection: 'categorias', value: data.parent, label: 'categoría superior' });
+  }
+  const unique = new Map(
+    references.map((reference) => [
+      `${reference.collection}:${taxonomyReferencePath(reference.collection, reference.value)}`,
+      reference,
+    ])
+  );
+  const unavailable: string[] = [];
+  await Promise.all(
+    [...unique.values()].map(async (reference) => {
+      const response = await readContent(
+        taxonomyReferencePath(reference.collection, reference.value)
+      );
+      if (!response.ok) unavailable.push(`${reference.label} “${String(reference.value)}”`);
+    })
+  );
+  if (unavailable.length) {
+    throw new ValidationError(
+      `Publica primero ${unavailable.join(', ')} o selecciona una opción ya publicada.`
+    );
+  }
 }
 
 async function recordEvent(input: {
@@ -429,6 +474,7 @@ async function startPublication(input: {
     if (input.operation === 'publish') {
       validateContentDocument(collection, publicationData, version.body);
       assertPublicationReady(collection, publicationData, version.body);
+      await assertPublishedTaxonomyReferences(collection, publicationData);
     }
     const baseSha = await getBranchHeadSha();
     const branchResponse = await createBranch(branch, baseSha);
