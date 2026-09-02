@@ -4,7 +4,9 @@ import path from 'node:path';
 const root = process.cwd();
 const dist = path.join(root, 'dist');
 const baseUrl = String(process.env.SITE_URL || process.argv[2] || '').replace(/\/$/, '');
-const concurrency = Number(process.env.CONCURRENCY || 8);
+const concurrency = Number(process.env.CONCURRENCY || 4);
+const requestTimeoutMs = Number(process.env.REQUEST_TIMEOUT_MS || 30000);
+const retries = Number(process.env.RETRIES || 2);
 
 function walk(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -25,12 +27,24 @@ function routeFor(file) {
 const IDENTIFIABLE =
   /^\/(?:entradas|categorias|etiquetas|paginas|noticias|museo-memorias|ediciones)/;
 
-async function headStatus(url) {
+async function headStatus(url, attempt = 0) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
   try {
-    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+    });
     return response.status;
   } catch {
+    if (attempt < retries) {
+      await new Promise((r) => setTimeout(r, 1000));
+      return headStatus(url, attempt + 1);
+    }
     return 0;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -70,7 +84,8 @@ async function main() {
       console.log(`✓ ${route} -> 200`);
     } else {
       failures++;
-      console.error(`✖ ${route} -> HTTP ${status}`);
+      const cause = status === 0 ? 'fallo de red o timeout' : `HTTP ${status}`;
+      console.error(`✖ ${route} -> ${cause}`);
     }
   });
 
