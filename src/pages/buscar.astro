@@ -9,20 +9,47 @@ import Layout from '../layouts/Layout.astro';
     >
       Buscar contenidos
     </h1>
-    <div id="pagefind-ui" class="w-full"></div>
+    <div id="pagefind-ui" class="w-full" aria-live="polite" aria-busy="true">
+      <div id="pagefind-skeleton" class="space-y-5" aria-label="Cargando buscador">
+        <span class="cms-skeleton h-12 w-full"></span>
+        <span class="cms-skeleton h-5 w-48"></span>
+        <div class="space-y-3">
+          <span class="cms-skeleton h-24 w-full"></span>
+          <span class="cms-skeleton h-24 w-full"></span>
+        </div>
+      </div>
+    </div>
   </section>
 </Layout>
 
-<link href="/pagefind/pagefind-ui.css" rel="stylesheet" />
-<script src="/pagefind/pagefind-ui.js" is:inline></script>
 <script>
-  const PagefindUI = (
-    window as typeof window & {
-      PagefindUI?: new (_options: Record<string, unknown>) => unknown;
+  const target = document.getElementById('pagefind-ui');
+  const skeleton = document.getElementById('pagefind-skeleton');
+  let loaded = false;
+
+  function finishLoading(message?: string) {
+    skeleton?.remove();
+    if (target) {
+      target.removeAttribute('aria-busy');
+      if (message) target.textContent = message;
     }
-  ).PagefindUI;
-  window.addEventListener('DOMContentLoaded', function () {
-    if (PagefindUI) {
+  }
+
+  function loadSearch() {
+    if (loaded || !target) return;
+    loaded = true;
+    const style = document.createElement('link');
+    style.rel = 'stylesheet';
+    style.href = '/pagefind/pagefind-ui.css';
+    document.head.appendChild(style);
+    const script = document.createElement('script');
+    script.src = '/pagefind/pagefind-ui.js';
+    script.onload = function () {
+      const PagefindUI = (window as typeof window & {
+        PagefindUI?: new (_options: Record<string, unknown>) => unknown;
+      }).PagefindUI;
+      if (!PagefindUI) return finishLoading('No se pudo iniciar el buscador.');
+      skeleton?.remove();
       new PagefindUI({
         element: '#pagefind-ui',
         showSubResults: true,
@@ -36,8 +63,25 @@ import Layout from '../layouts/Layout.astro';
           results_title: 'Resultados para "{query}"',
         },
       });
-    }
-  });
+      target.removeAttribute('aria-busy');
+    };
+    script.onerror = () => finishLoading('No se pudo cargar el buscador. Inténtalo de nuevo.');
+    document.body.appendChild(script);
+  }
+
+  if (!target) {
+    // La página no incluye el contenedor de búsqueda.
+  } else if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        loadSearch();
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(target);
+  } else {
+    window.addEventListener('DOMContentLoaded', loadSearch, { once: true });
+  }
 </script>
 
 <style is:global>
