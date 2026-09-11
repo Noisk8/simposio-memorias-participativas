@@ -73,7 +73,7 @@ import Layout from '../layouts/Layout.astro';
 
   if (!target) {
     // La página no incluye el contenedor de búsqueda.
-  } else if ('IntersectionObserver' in window) {
+  } else if (typeof IntersectionObserver !== 'undefined') {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
@@ -85,7 +85,7 @@ import Layout from '../layouts/Layout.astro';
     );
     observer.observe(target);
   } else {
-    window.addEventListener('DOMContentLoaded', loadSearch, { once: true });
+    document.addEventListener('DOMContentLoaded', loadSearch, { once: true });
   }
 </script>
 
