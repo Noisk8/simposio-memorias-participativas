@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import SupabaseAuth from '../../components/SupabaseAuth.astro';
+import VisualContentEditor from '../../components/admin/VisualContentEditor';
 ---
 
 <AdminLayout title="Gestión de contenidos - Admin">
@@ -190,17 +191,18 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
                     >
                   </aside>
                   <div class="cms-markdown-editor">
-                    <label for="body" class="mb-1 block text-sm font-semibold"
-                      >Contenido (Markdown)</label
-                    >
+                    <p class="mb-1 text-sm font-semibold">Contenido</p>
+                    <VisualContentEditor client:only="react" />
                     <textarea
                       id="body"
                       rows="18"
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+                      class="sr-only"
+                      aria-hidden="true"
+                      tabindex="-1"
                       placeholder="Escribe aquí el contenido…"></textarea>
                     <p class="cms-editor-help">
-                      También puedes escribir Markdown directamente. Los bloques se pueden mover
-                      junto con el texto.
+                      Escribe y aplica formato como en un procesador de texto. Arrastra cualquier
+                      bloque con el control ⋮⋮ o usa sus botones para moverlo.
                     </p>
                   </div>
                 </div>
@@ -653,6 +655,184 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   }
   .cms-markdown-editor {
     min-width: 0;
+  }
+  .cms-wysiwyg-shell {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--cms-border);
+    border-radius: 12px;
+    background: var(--cms-panel);
+  }
+  .cms-wysiwyg-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    border-bottom: 1px solid var(--cms-border);
+    background: color-mix(in srgb, var(--cms-blue) 4%, var(--cms-panel));
+    padding: 8px;
+  }
+  .cms-wysiwyg-toolbar > span {
+    width: 1px;
+    height: 24px;
+    margin: 0 3px;
+    background: var(--cms-border) !important;
+  }
+  .cms-wysiwyg-toolbar button,
+  .cms-wysiwyg-toolbar select {
+    min-height: 34px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--cms-text);
+    padding: 5px 9px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .cms-wysiwyg-toolbar button:hover,
+  .cms-wysiwyg-toolbar button:focus-visible,
+  .cms-wysiwyg-toolbar select:focus-visible {
+    border-color: var(--cms-blue);
+    background: var(--cms-panel);
+  }
+  .cms-wysiwyg-toolbar button:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+  .cms-wysiwyg-canvas {
+    position: relative;
+    min-height: 360px;
+  }
+  .cms-wysiwyg-input {
+    min-height: 360px;
+    padding: 22px 24px 40px 42px;
+    color: var(--cms-text);
+    font-size: 15px;
+    line-height: 1.7;
+    outline: none;
+  }
+  .cms-wysiwyg-input > :first-child {
+    margin-top: 0;
+  }
+  .cms-wysiwyg-placeholder {
+    position: absolute;
+    top: 22px;
+    left: 42px;
+    margin: 0;
+    color: var(--cms-muted);
+    pointer-events: none;
+  }
+  .cms-wysiwyg-h2,
+  .cms-wysiwyg-h3 {
+    margin: 1em 0 0.4em;
+    color: var(--cms-text);
+    font-weight: 750;
+    line-height: 1.25;
+  }
+  .cms-wysiwyg-h2 {
+    font-size: 1.55em;
+  }
+  .cms-wysiwyg-h3 {
+    font-size: 1.25em;
+  }
+  .cms-wysiwyg-list {
+    margin: 0.8em 0;
+    padding-left: 1.8em;
+  }
+  .cms-wysiwyg-quote {
+    margin: 1em 0;
+    border-left: 4px solid var(--cms-blue);
+    background: color-mix(in srgb, var(--cms-blue) 6%, transparent);
+    padding: 10px 14px;
+    color: var(--cms-muted);
+  }
+  .cms-wysiwyg-link {
+    color: var(--cms-blue);
+    text-decoration: underline;
+  }
+  .cms-visual-block-node {
+    margin: 14px 0;
+  }
+  .cms-visual-block {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--cms-blue) 35%, var(--cms-border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--cms-blue) 5%, var(--cms-panel));
+    padding: 9px;
+  }
+  .cms-visual-block-preview {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    width: 108px;
+    height: 68px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--cms-blue) 12%, var(--cms-panel));
+  }
+  .cms-visual-block-preview img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+  }
+  .cms-visual-block-preview img:only-child {
+    grid-column: 1 / -1;
+  }
+  .cms-visual-block-preview > span {
+    grid-column: 1 / -1;
+    place-self: center;
+    background: transparent !important;
+    color: var(--cms-blue) !important;
+    font-size: 30px;
+  }
+  .cms-visual-block-copy strong,
+  .cms-visual-block-copy span {
+    display: block;
+  }
+  .cms-visual-block-copy span {
+    margin-top: 4px;
+    color: var(--cms-muted);
+    font-size: 12px;
+  }
+  .cms-visual-block-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .cms-visual-block-actions button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--cms-border);
+    border-radius: 7px;
+    background: var(--cms-panel);
+    color: var(--cms-text);
+    cursor: pointer;
+  }
+  .cms-wysiwyg-drag {
+    position: absolute;
+    z-index: 4;
+    width: 28px;
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--cms-blue) 9%, var(--cms-panel));
+    color: var(--cms-muted);
+    cursor: grab;
+  }
+  .cms-wysiwyg-drag:active {
+    cursor: grabbing;
+  }
+  .cms-wysiwyg-drop-line {
+    position: absolute;
+    z-index: 5;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--cms-blue);
+    pointer-events: none;
   }
   .cms-editor-help {
     margin: 6px 0 0;

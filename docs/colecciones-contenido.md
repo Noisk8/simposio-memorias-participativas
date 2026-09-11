@@ -43,7 +43,9 @@ description: 'Descripción breve'
 Contenido en Markdown.
 ```
 
-Antes de publicar, una entrada debe declarar `author` y seleccionar `author_type` (`Person` u `Organization`); una memoria debe declarar `author` o `collective`. Ambas requieren descripción, imagen y cuerpo suficientes. Slugs, relaciones, taxonomías y colisiones de ruta se validan en CI.
+Antes de publicar, una entrada debe declarar `author`; una memoria debe declarar `author` o
+`collective`. Ambas requieren descripción e imagen. Slugs, relaciones, taxonomías y colisiones de
+ruta se validan en CI.
 
 Todos los modelos actuales exigen `id` como UUID v4. El CMS genera ese identificador para documentos nuevos y preserva el existente en actualizaciones. El ejemplo usa un valor ilustrativo; no lo reutilices. El CMS añade además `owner_id` y `workflow_state` al guardar. No copies un ID de usuario desde el cliente: la Function lo obtiene de la sesión verificada.
 

@@ -48,7 +48,9 @@ if (allowSupabase) {
 <!doctype html>
 <html lang="es">
   <head>
-    <script is:inline>document.documentElement.classList.add('image-loading-enabled');</script>
+    <script is:inline>
+      document.documentElement.classList.add('image-loading-enabled');
+    </script>
     <Font cssVariable="--font-montserrat" />
     <Seo
       title={title}
@@ -86,11 +88,13 @@ if (allowSupabase) {
         };
         document.querySelectorAll('img').forEach(observeImage);
         new MutationObserver((records) => {
-          records.forEach((record) => record.addedNodes.forEach((node) => {
-            if (!(node instanceof Element)) return;
-            if (node.matches('img')) observeImage(node);
-            node.querySelectorAll?.('img').forEach(observeImage);
-          }));
+          records.forEach((record) =>
+            record.addedNodes.forEach((node) => {
+              if (!(node instanceof Element)) return;
+              if (node.matches('img')) observeImage(node);
+              node.querySelectorAll?.('img').forEach(observeImage);
+            })
+          );
         }).observe(document.body, { childList: true, subtree: true });
       })();
     </script>

@@ -16,8 +16,8 @@ import {
 import {
   parseCmsEditorBlock,
   renderCmsEditorBlockHtml,
-  serializeCmsEditorBlock,
 } from '../../../shared/content/editor-blocks';
+import { taxonomyReferenceSlug } from '../../../shared/content/taxonomy-references';
 
 const collection = document.getElementById('collection');
 const itemsNode = document.getElementById('items');
@@ -61,7 +61,6 @@ let mediaPickerTarget = null;
 let mediaPickerLastFocus = null;
 let mediaPickerMode = 'single';
 let mediaPickerSelection = new Map();
-let bodyInsertionRange = null;
 const references = { categorias: [], etiquetas: [], simposios: [], paginas: [] };
 function esc(value) {
   const node = document.createElement('span');
@@ -150,29 +149,8 @@ function mediaAsEditorImage(media) {
     license: String(media?.license || ''),
   };
 }
-function rememberBodyInsertion() {
-  const body = document.getElementById('body');
-  bodyInsertionRange = {
-    start: Number.isInteger(body.selectionStart) ? body.selectionStart : body.value.length,
-    end: Number.isInteger(body.selectionEnd) ? body.selectionEnd : body.value.length,
-  };
-}
-function insertIntoBody(value) {
-  const body = document.getElementById('body');
-  const range = bodyInsertionRange || {
-    start: body.selectionStart || body.value.length,
-    end: body.selectionEnd || body.value.length,
-  };
-  const before = body.value.slice(0, range.start);
-  const after = body.value.slice(range.end);
-  const insertion =
-    (before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '') +
-    value +
-    (after && !after.startsWith('\n\n') ? (after.startsWith('\n') ? '\n' : '\n\n') : '');
-  body.setRangeText(insertion, range.start, range.end, 'end');
-  bodyInsertionRange = null;
-  body.focus();
-  body.dispatchEvent(new Event('input', { bubbles: true }));
+function insertCmsBlock(block) {
+  window.dispatchEvent(new CustomEvent('cms:block-insert', { detail: { block } }));
 }
 function renderSelectedMedia(input, selectedNode, media = null) {
   selectedNode.innerHTML = '';
@@ -362,11 +340,10 @@ document.addEventListener('keydown', (event) => {
   }
 });
 function openEntriesBlockDialog() {
-  rememberBodyInsertion();
   entriesBlockCategory.innerHTML = '';
-  references.categorias.forEach((item) => {
+  references.categorias.filter(isPublishedReference).forEach((item) => {
     const option = document.createElement('option');
-    option.value = item.data.slug || item.data.title;
+    option.value = referenceValue('categorias', item);
     option.textContent = item.data.title;
     entriesBlockCategory.appendChild(option);
   });
@@ -389,36 +366,30 @@ document.getElementById('entries-block-insert').addEventListener('click', () => 
     setStatus('Primero debes crear o seleccionar una categoría.', true);
     return;
   }
-  insertIntoBody(
-    serializeCmsEditorBlock({
-      type: 'entries',
-      category,
-      limit: Math.min(12, Math.max(1, Number(entriesBlockLimit.value || 6))),
-      layout: entriesBlockLayout.value === 'carousel' ? 'carousel' : 'grid',
-    })
-  );
+  insertCmsBlock({
+    type: 'entries',
+    category,
+    limit: Math.min(12, Math.max(1, Number(entriesBlockLimit.value || 6))),
+    layout: entriesBlockLayout.value === 'carousel' ? 'carousel' : 'grid',
+  });
   closeEntriesBlockDialog();
 });
 document.querySelectorAll('[data-block-action]').forEach((button) => {
   button.addEventListener('click', () => {
     const action = button.dataset.blockAction;
     if (action === 'quote') {
-      rememberBodyInsertion();
-      insertIntoBody('> Escribe aquí la cita destacada.');
+      window.dispatchEvent(new CustomEvent('cms:quote-insert'));
       return;
     }
     if (action === 'entries') {
       openEntriesBlockDialog();
       return;
     }
-    rememberBodyInsertion();
     if (action === 'image') {
       openMediaPicker(
         {
           onChoose(media) {
-            insertIntoBody(
-              serializeCmsEditorBlock({ type: 'image', image: mediaAsEditorImage(media) })
-            );
+            insertCmsBlock({ type: 'image', image: mediaAsEditorImage(media) });
           },
         },
         button
@@ -429,13 +400,11 @@ document.querySelectorAll('[data-block-action]').forEach((button) => {
       {
         mode: 'multiple',
         onChooseMany(media) {
-          insertIntoBody(
-            serializeCmsEditorBlock({
-              type: 'gallery',
-              layout: action === 'carousel' ? 'carousel' : 'grid',
-              images: media.map(mediaAsEditorImage),
-            })
-          );
+          insertCmsBlock({
+            type: 'gallery',
+            layout: action === 'carousel' ? 'carousel' : 'grid',
+            images: media.map(mediaAsEditorImage),
+          });
         },
       },
       button
@@ -646,7 +615,10 @@ function renderItems() {
     button.className = 'cms-entry-card';
     const imageUrl = resolvePreviewUrl(item.data.image);
     const archived = isArchivedContent(item);
-    const published = isPublishedListingContent(item);
+    const unavailableReference =
+      ['categorias', 'etiquetas'].includes(item.collection) &&
+      item.workflow?.reference_available === false;
+    const published = !unavailableReference && isPublishedListingContent(item);
     const pendingChanges = hasPendingPublishedChanges(item);
     const publicUrl = published ? getPublicUrl(item.collection, item.path, item.data) : '';
     button.innerHTML =
@@ -657,13 +629,15 @@ function renderItems() {
         ? '<img src="' + esc(imageUrl) + '" alt="" loading="lazy" decoding="async">'
         : '<div class="cms-card-placeholder"></div>') +
       '<span class="cms-card-meta">' +
-      (archived
-        ? 'Archivada · '
-        : pendingChanges
-          ? 'Cambios sin publicar · '
-          : !published
-            ? 'Borrador · '
-            : '') +
+      (unavailableReference
+        ? 'No publicada en GitHub · '
+        : archived
+          ? 'Archivada · '
+          : pendingChanges
+            ? 'Cambios sin publicar · '
+            : !published
+              ? 'Borrador · '
+              : '') +
       esc(publicUrl || item.path || item.name) +
       '</span>';
     button.onclick = () => {
@@ -733,14 +707,13 @@ function fieldElement(def, value) {
               isPublishedReference(item) &&
               String(item.data.simposio || defaults.simposio) === String(currentSimposio)
           )
-        : references[source];
+        : source === 'categorias' || source === 'etiquetas'
+          ? references[source].filter(isPublishedReference)
+          : references[source];
     sourceItems.forEach((item) => {
       if (current && item.path === current.path) return;
       const option = document.createElement('option');
-      option.value =
-        key === 'page_id'
-          ? item.data.id
-          : item.data.slug || String(item.data.year || item.data.title || '');
+      option.value = key === 'page_id' ? item.data.id : referenceValue(source, item);
       option.textContent =
         item.data.title +
         (key === 'page_id' && item.data.slug
@@ -752,6 +725,16 @@ function fieldElement(def, value) {
         ? Array.isArray(value) && value.includes(option.value)
         : value === option.value;
       option.selected = selected;
+      input.appendChild(option);
+    });
+    const selectedValues = multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
+    const availableValues = new Set(Array.from(input.options).map((option) => option.value));
+    selectedValues.forEach((selectedValue) => {
+      if (!selectedValue || availableValues.has(selectedValue)) return;
+      const option = document.createElement('option');
+      option.value = selectedValue;
+      option.textContent = `${selectedValue} · no publicada; selecciona otra opción`;
+      option.disabled = true;
       input.appendChild(option);
     });
   } else {
@@ -935,11 +918,19 @@ function fieldElement(def, value) {
 }
 
 function isPublishedReference(item) {
+  if (item?.workflow?.reference_available === false) return false;
   return Boolean(
     item?.workflow?.published_sha ||
     item?.data?.workflow_state === 'published' ||
     item?.data?.draft === false
   );
+}
+
+function referenceValue(source, item) {
+  if (source === 'categorias' || source === 'etiquetas') {
+    return taxonomyReferenceSlug(item.data.slug || item.data.title);
+  }
+  return item.data.slug || String(item.data.year || item.data.title || '');
 }
 
 function syncEntryPageOptions() {
@@ -992,7 +983,8 @@ function renderWorkflow(record) {
     document.getElementById('archive-button').classList.add('hidden');
     return;
   }
-  const hasUnpublishedChanges = record.current_sha !== record.published_sha;
+  const hasUnpublishedChanges =
+    record.current_sha !== record.published_sha || record.reference_available === false;
   const publicationLabels = {
     idle: hasUnpublishedChanges ? 'Borrador listo' : 'Publicado',
     validating: 'Validando',
@@ -1023,11 +1015,7 @@ function renderWorkflow(record) {
   const publishing = ['queued', 'validating', 'pr_open', 'merged'].includes(
     String(record.publication_state || '')
   );
-  const mayPublish =
-    can('publish') &&
-    record.current_sha &&
-    record.current_sha !== record.published_sha &&
-    !publishing;
+  const mayPublish = can('publish') && record.current_sha && hasUnpublishedChanges && !publishing;
   document.getElementById('publish-button').classList.toggle('hidden', !mayPublish);
   document.getElementById('publish-button').textContent =
     record.publication_state === 'failed' ? 'Reintentar publicación' : 'Publicar';
@@ -1075,6 +1063,9 @@ function openEditor(item) {
   document.getElementById('content-block-tools').classList.toggle('hidden', !blockToolsVisible);
   document.getElementById('content-block-editor').classList.toggle('has-tools', blockToolsVisible);
   document.getElementById('body').value = item ? item.body : '';
+  window.dispatchEvent(
+    new CustomEvent('cms:body-load', { detail: { body: item ? item.body : '' } })
+  );
   document.getElementById('delete-button').classList.toggle('hidden', !item);
   document.getElementById('history-button').classList.toggle('hidden', !item);
   updatePreview();
@@ -1097,6 +1088,9 @@ function openEditor(item) {
         if (pageInput) pageInput.value = savedPageId;
       }
       document.getElementById('body').value = saved.body || '';
+      window.dispatchEvent(
+        new CustomEvent('cms:body-load', { detail: { body: saved.body || '' } })
+      );
       updatePreview();
     } catch {}
   }
@@ -1408,11 +1402,10 @@ async function transition(name) {
 }
 async function pollPublication(attempt) {
   if (!current) return;
-  if (attempt >= 12) {
+  if (attempt >= 36) {
     document.getElementById('save-state').textContent = 'Publicación pendiente';
     setStatus(
-      'La publicación sigue pendiente. Puedes recargar el contenido para consultar su estado.',
-      true
+      'La publicación continúa en segundo plano. Puedes seguir trabajando y volver más tarde; no necesitas mantener esta página abierta.'
     );
     return;
   }
@@ -1437,6 +1430,7 @@ async function pollPublication(attempt) {
           ? `Contenido programado para ${current.data.publish_date}; se activará con el rebuild diario.`
           : 'Contenido publicado y confirmado en Netlify.'
       );
+      await loadReferences();
       checkDeployment();
       return;
     }
@@ -1444,6 +1438,14 @@ async function pollPublication(attempt) {
       document.getElementById('save-state').textContent = 'Archivado';
       setStatus('Contenido retirado del sitio y confirmado en Netlify.');
       return;
+    }
+    if (state === 'pr_open') {
+      document.getElementById('save-state').textContent = 'Validando publicación…';
+      setStatus('Validando el contenido. Puedes seguir trabajando mientras termina el proceso.');
+    }
+    if (state === 'merged') {
+      document.getElementById('save-state').textContent = 'Actualizando el sitio…';
+      setStatus('Validación superada. Netlify está actualizando el sitio público.');
     }
     if (state === 'failed') {
       document.getElementById('save-state').textContent = 'Error de publicación';

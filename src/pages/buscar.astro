@@ -45,9 +45,11 @@ import Layout from '../layouts/Layout.astro';
     const script = document.createElement('script');
     script.src = '/pagefind/pagefind-ui.js';
     script.onload = function () {
-      const PagefindUI = (window as typeof window & {
-        PagefindUI?: new (_options: Record<string, unknown>) => unknown;
-      }).PagefindUI;
+      const PagefindUI = (
+        window as typeof window & {
+          PagefindUI?: new (_options: Record<string, unknown>) => unknown;
+        }
+      ).PagefindUI;
       if (!PagefindUI) return finishLoading('No se pudo iniciar el buscador.');
       skeleton?.remove();
       new PagefindUI({
@@ -72,12 +74,15 @@ import Layout from '../layouts/Layout.astro';
   if (!target) {
     // La página no incluye el contenedor de búsqueda.
   } else if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        observer.disconnect();
-        loadSearch();
-      }
-    }, { rootMargin: '200px' });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          loadSearch();
+        }
+      },
+      { rootMargin: '200px' }
+    );
     observer.observe(target);
   } else {
     window.addEventListener('DOMContentLoaded', loadSearch, { once: true });

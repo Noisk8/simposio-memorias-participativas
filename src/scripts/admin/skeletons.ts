@@ -1,4 +1,5 @@
-const line = (className = '') => `<span class="cms-skeleton cms-skeleton-line ${className}"></span>`;
+const line = (className = '') =>
+  `<span class="cms-skeleton cms-skeleton-line ${className}"></span>`;
 
 export function cardSkeletons(count = 6) {
   return Array.from(

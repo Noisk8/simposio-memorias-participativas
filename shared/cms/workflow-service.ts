@@ -7,6 +7,7 @@ import {
   publishContent,
   reconcilePublication,
 } from './publication-service.ts';
+import { taxonomyReferenceAvailable } from './content-service.ts';
 
 export const WORKFLOW_TRANSITIONS = {
   publish: { suffix: 'publish' },
@@ -64,7 +65,11 @@ export async function getWorkflowState(path: string, auth?: PermissionContext) {
     .maybeSingle();
   if (error) throw new InternalError('No se pudo consultar el estado editorial.');
   if (!data || !auth) return data;
-  return reconcilePublication(data, auth);
+  const record = await reconcilePublication(data, auth);
+  if (['categorias', 'etiquetas'].includes(String(record?.collection))) {
+    record.reference_available = await taxonomyReferenceAvailable(record.path);
+  }
+  return record;
 }
 
 export async function transitionWorkflow(input: {

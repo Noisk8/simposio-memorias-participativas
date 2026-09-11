@@ -86,21 +86,21 @@ function main() {
     }
   }
 
-  // 2. Documentos de taxonomía sin uso
+  // 2. Documentos de taxonomía sin uso.
+  // Nota: las taxonomías planificadas (creadas para futuras entradas) son válidas;
+  // solo se informa sin bloquear el CI.
   for (const [slug, c] of catBySlug) {
     if (!usedCatSlugs.has(slug)) {
       console.warn(
-        `⚠ Categoría "${c.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`
+        `ℹ Categoría "${c.data.title}" (slug: ${slug}) aún sin entradas o memorias asociadas (puede usarse en entradas futuras).`
       );
-      warnings++;
     }
   }
   for (const [slug, t] of tagBySlug) {
     if (!usedTagSlugs.has(slug)) {
       console.warn(
-        `⚠ Etiqueta "${t.data.title}" (slug: ${slug}) no tiene ninguna entrada o memoria asociado`
+        `ℹ Etiqueta "${t.data.title}" (slug: ${slug}) aún sin entradas o memorias asociadas (puede usarse en entradas futuras).`
       );
-      warnings++;
     }
   }
 
