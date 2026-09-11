@@ -73,6 +73,81 @@ img {
   height: auto;
 }
 
+@keyframes cms-skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.cms-skeleton {
+  display: block;
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
+  background-size: 200% 100%;
+  animation: cms-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.cms-skeleton-line {
+  height: 0.82rem;
+  margin-bottom: 0.62rem;
+}
+
+.cms-skeleton-line-long {
+  width: 84%;
+}
+.cms-skeleton-line-medium {
+  width: 61%;
+}
+.cms-skeleton-line-short {
+  width: 38%;
+}
+
+.cms-skeleton-media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.cms-skeleton-card {
+  overflow: hidden;
+  border: 1px solid var(--cms-border, #e5e7eb);
+  border-radius: 0.75rem;
+  background: var(--cms-panel, #fff);
+}
+
+.cms-skeleton-card-copy {
+  display: block;
+  padding: 1rem;
+}
+
+.cms-skeleton-row td {
+  padding: 1rem;
+}
+.cms-skeleton-row .cms-skeleton-line {
+  margin: 0;
+}
+
+.image-loading-enabled :is(a, div, figure, picture):has(> img:not([data-image-ready])) {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
+  background-size: 200% 100%;
+  animation: cms-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.image-loading-enabled img:not([data-image-ready]) {
+  min-height: 2rem;
+  opacity: 0;
+}
+
+.image-loading-enabled img[data-image-ready] {
+  transition: opacity 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cms-skeleton,
+  .image-loading-enabled :is(a, div, figure, picture):has(> img:not([data-image-ready])) {
+    animation: none;
+  }
+}
+
 .card-shadow {
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.1),

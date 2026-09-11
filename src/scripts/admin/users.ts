@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { getAdminToken, waitForAdminAuth } from './client.ts';
+import { clearSkeleton, rowSkeletons, setSkeleton } from './skeletons.ts';
 const notAllowed = document.getElementById('not-allowed');
 const loading = document.getElementById('loading');
 const adminPanel = document.getElementById('admin-panel');
@@ -103,6 +104,8 @@ async function loadUsers() {
   usersTable.classList.add('hidden');
   usersEmpty.classList.add('hidden');
   refreshBtn.disabled = true;
+  usersTable.classList.remove('hidden');
+  setSkeleton(usersBody, rowSkeletons());
 
   const token = await getToken();
   if (!token) {
@@ -131,6 +134,7 @@ async function loadUsers() {
     allUsers = data.users || [];
     updateStats(allUsers);
     renderFilteredUsers();
+    clearSkeleton(usersBody);
     usersLoading.classList.add('hidden');
     refreshBtn.disabled = false;
   } catch (error) {
@@ -139,6 +143,8 @@ async function loadUsers() {
 }
 
 function showLoadError(message) {
+  clearSkeleton(usersBody);
+  usersBody.innerHTML = '';
   usersLoading.classList.add('hidden');
   usersError.textContent = message;
   usersError.classList.remove('hidden');

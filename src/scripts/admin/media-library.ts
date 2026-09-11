@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { adminApi, waitForAdminAuth } from './client.ts';
+import { cardSkeletons, clearSkeleton, setSkeleton } from './skeletons.ts';
 const panel = document.getElementById('media-panel');
 const statusNode = document.getElementById('status');
 const imagesNode = document.getElementById('images');
@@ -150,6 +151,9 @@ function createImageCard(image) {
 async function loadImages() {
   refreshMedia.disabled = true;
   setStatus('Cargando biblioteca de medios…', 'loading');
+  imagesNode.classList.remove('hidden');
+  mediaEmpty.classList.add('hidden');
+  setSkeleton(imagesNode, cardSkeletons());
   try {
     const data = await api('/.netlify/functions/manage-media');
     allImages = data.media || [];
@@ -159,11 +163,14 @@ async function loadImages() {
     }
     updateStats(allImages);
     renderImages();
+    clearSkeleton(imagesNode);
     setStatus(
       allImages.length + (allImages.length === 1 ? ' medio cargado.' : ' medios cargados.'),
       'success'
     );
   } catch (error) {
+    clearSkeleton(imagesNode);
+    imagesNode.innerHTML = '';
     setStatus(error.message, 'error');
   } finally {
     refreshMedia.disabled = false;

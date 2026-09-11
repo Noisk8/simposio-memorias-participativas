@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { getAdminToken, waitForAdminAuth } from './client.ts';
+import { cardSkeletons, clearSkeleton, setSkeleton } from './skeletons.ts';
 import { defaults, descriptions, groupFields, labels, schemas } from './editor-config.ts';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
@@ -224,6 +225,7 @@ function renderMediaLibrary() {
         .includes(query)
   );
   mediaLibraryGrid.innerHTML = '';
+  clearSkeleton(mediaLibraryGrid);
   mediaLibraryStatus.dataset.kind = images.length ? 'success' : 'empty';
   mediaLibraryStatus.textContent = images.length
     ? images.length + (images.length === 1 ? ' imagen disponible.' : ' imágenes disponibles.')
@@ -284,12 +286,14 @@ async function loadMediaLibrary(force = false) {
   mediaLibraryRefresh.disabled = true;
   mediaLibraryStatus.dataset.kind = 'loading';
   mediaLibraryStatus.textContent = 'Cargando biblioteca…';
-  mediaLibraryGrid.innerHTML = '';
+  setSkeleton(mediaLibraryGrid, cardSkeletons(4));
   try {
     const result = await api('/.netlify/functions/manage-media');
     mediaLibrary = result.media || [];
     renderMediaLibrary();
   } catch (error) {
+    clearSkeleton(mediaLibraryGrid);
+    mediaLibraryGrid.innerHTML = '';
     mediaLibraryStatus.dataset.kind = 'error';
     mediaLibraryStatus.textContent = error.message;
   } finally {
@@ -522,7 +526,8 @@ async function loadItems() {
     option.textContent = 'Agrupar · ' + label;
     group.appendChild(option);
   });
-  itemsNode.innerHTML = '<p class="text-sm text-gray-500">Cargando…</p>';
+  itemsNode.className = 'cms-cards grid-view';
+  setSkeleton(itemsNode, cardSkeletons());
   try {
     const result = await api(
       '/.netlify/functions/manage-content?collection=' + encodeURIComponent(collection.value)
@@ -531,8 +536,10 @@ async function loadItems() {
     permissions = result.permissions || [];
     applyPermissions();
     renderItems();
+    clearSkeleton(itemsNode);
     setStatus(items.length + ' contenidos cargados.');
   } catch (error) {
+    clearSkeleton(itemsNode);
     itemsNode.innerHTML = '';
     setStatus(error.message, true);
   }

@@ -48,6 +48,9 @@ if (allowSupabase) {
 <!doctype html>
 <html lang="es">
   <head>
+    <script is:inline>
+      document.documentElement.classList.add('image-loading-enabled');
+    </script>
     <Font cssVariable="--font-montserrat" />
     <Seo
       title={title}
@@ -71,5 +74,29 @@ if (allowSupabase) {
       <slot />
     </main>
     <Footer />
+    <script is:inline>
+      (() => {
+        const markReady = (image) => {
+          image.dataset.imageReady = 'true';
+        };
+        const observeImage = (image) => {
+          if (image.dataset.imageObserved) return;
+          image.dataset.imageObserved = 'true';
+          if (image.complete) return markReady(image);
+          image.addEventListener('load', () => markReady(image), { once: true });
+          image.addEventListener('error', () => markReady(image), { once: true });
+        };
+        document.querySelectorAll('img').forEach(observeImage);
+        new MutationObserver((records) => {
+          records.forEach((record) =>
+            record.addedNodes.forEach((node) => {
+              if (!(node instanceof Element)) return;
+              if (node.matches('img')) observeImage(node);
+              node.querySelectorAll?.('img').forEach(observeImage);
+            })
+          );
+        }).observe(document.body, { childList: true, subtree: true });
+      })();
+    </script>
   </body>
 </html>

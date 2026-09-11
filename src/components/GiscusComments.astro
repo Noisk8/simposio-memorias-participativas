@@ -34,7 +34,12 @@ const {
     Los comentarios se gestionan a través de GitHub Discussions. Necesitas una cuenta de GitHub para
     participar.
   </p>
-  <div id="giscus-container">
+  <div id="giscus-container" aria-busy="true" aria-live="polite">
+    <div id="giscus-skeleton" class="space-y-4" aria-label="Cargando comentarios">
+      <span class="cms-skeleton h-5 w-2/5"></span>
+      <span class="cms-skeleton h-24 w-full"></span>
+      <span class="cms-skeleton h-10 w-1/4"></span>
+    </div>
     <script
       is:inline
       src="https://giscus.app/client.js"
@@ -52,6 +57,21 @@ const {
       crossorigin="anonymous"
       async></script>
   </div>
+  <script is:inline>
+    const container = document.getElementById('giscus-container');
+    const skeleton = document.getElementById('giscus-skeleton');
+    const finishGiscusLoading = () => {
+      skeleton?.remove();
+      container?.removeAttribute('aria-busy');
+    };
+    const observeGiscus = new MutationObserver(() => {
+      const frame = container?.querySelector('iframe');
+      if (!frame) return;
+      frame.addEventListener('load', finishGiscusLoading, { once: true });
+      observeGiscus.disconnect();
+    });
+    if (container) observeGiscus.observe(container, { childList: true });
+  </script>
   <noscript>
     <p class="text-sm text-[var(--ugr-text-light)]">
       Los comentarios requieren JavaScript. Por favor, habilita JavaScript en tu navegador para ver

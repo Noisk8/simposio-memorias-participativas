@@ -13,7 +13,20 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       </header>
 
       <SupabaseAuth redirectUnauthenticated />
-      <p id="admin-loading" class="text-ugr-text-light">Verificando sesión de Supabase...</p>
+      <div id="admin-loading" class="cms-auth-skeleton" aria-label="Verificando sesión">
+        <span class="cms-skeleton cms-skeleton-line cms-skeleton-line-medium"></span>
+        <div class="cms-skeleton-dashboard-grid" aria-hidden="true">
+          <span class="cms-skeleton-card"
+            ><span class="cms-skeleton cms-skeleton-media"></span></span
+          >
+          <span class="cms-skeleton-card"
+            ><span class="cms-skeleton cms-skeleton-media"></span></span
+          >
+          <span class="cms-skeleton-card"
+            ><span class="cms-skeleton cms-skeleton-media"></span></span
+          >
+        </div>
+      </div>
 
       <div id="admin-dashboard" class="hidden cms-welcome-dashboard">
         <h2>Acciones frecuentes</h2><div class="cms-welcome-grid">
@@ -144,6 +157,18 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   .cms-welcome-dashboard h2 {
     margin: 28px 0 12px;
     color: var(--cms-text);
+  }
+  .cms-auth-skeleton {
+    margin-top: 28px;
+  }
+  .cms-skeleton-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .cms-skeleton-dashboard-grid .cms-skeleton-media {
+    aspect-ratio: 2 / 1;
   }
   .cms-welcome-grid {
     display: grid;
