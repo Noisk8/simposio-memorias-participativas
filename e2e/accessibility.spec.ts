@@ -8,6 +8,7 @@ const routes = [
   '/museo-memorias/',
   '/museo-memorias/1/',
   '/buscar/',
+  '/contacto/',
   '/admin/login/',
 ];
 

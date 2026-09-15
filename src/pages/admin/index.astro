@@ -29,62 +29,127 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
       </div>
 
       <div id="admin-dashboard" class="hidden cms-welcome-dashboard">
-        <h2>Acciones frecuentes</h2><div class="cms-welcome-grid">
-          <a href="/admin/contenidos?collection=entradas&new=1"
-            ><h3>＋ Crear entrada</h3><p>Publicar una noticia, artículo o novedad.</p></a
-          >
-          <a href="/admin/contenidos?collection=memorias&new=1"
-            ><h3>＋ Añadir memoria</h3><p>Incorporar una pieza al Museo de Memorias Vivas.</p></a
-          >
-          <a href="/admin/contenidos?collection=entradas&drafts=1"
-            ><h3>Ver borradores</h3><p>Revisar contenidos antes de publicar.</p></a
-          >
-        </div>
-        <h2>Contenido del sitio</h2><div class="cms-welcome-grid">
-          <a href="/admin/contenidos" class="cms-wide">
-            <h2 class="text-xl font-semibold text-ugr-green-dark mb-2">Gestionar contenidos</h2>
-            <p class="text-sm text-ugr-text-light">
-              Crear y editar entradas, memorias, páginas, simposios, categorías y etiquetas.
-            </p>
+        <section class="cms-dashboard-section" aria-labelledby="quick-actions-title">
+          <div class="cms-section-heading">
+            <div>
+              <p class="cms-section-kicker">Empieza aquí</p>
+              <h2 id="quick-actions-title">Acciones frecuentes</h2>
+            </div>
+            <p>Atajos para crear y revisar contenido editorial.</p>
+          </div>
+          <ul class="cms-action-grid" aria-label="Acciones frecuentes">
+            <li>
+              <a href="/admin/contenidos?collection=entradas&new=1" class="cms-action-card primary">
+                <span class="cms-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 5v14M5 12h14"></path>
+                  </svg>
+                </span>
+                <span class="cms-card-copy">
+                  <strong>Crear entrada</strong>
+                  <small>Publica una noticia, artículo o novedad.</small>
+                </span>
+                <span class="cms-card-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            {/* “Añadir memoria” queda oculto temporalmente a petición editorial. */}
+            <li>
+              <a href="/admin/contenidos?collection=entradas&drafts=1" class="cms-action-card">
+                <span class="cms-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M4 5h16v14H4zM8 9h8M8 13h5"></path>
+                  </svg>
+                </span>
+                <span class="cms-card-copy">
+                  <strong>Ver borradores</strong>
+                  <small>Continúa el trabajo antes de publicar.</small>
+                </span>
+                <span class="cms-card-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <section class="cms-dashboard-section" aria-labelledby="site-content-title">
+          <div class="cms-section-heading">
+            <div>
+              <p class="cms-section-kicker">Área editorial</p>
+              <h2 id="site-content-title">Contenido del sitio</h2>
+            </div>
+            <p>Controla publicaciones, páginas y la estructura visible de la Red.</p>
+          </div>
+          <a href="/admin/contenidos" class="cms-content-feature">
+            <span class="cms-feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M4 6h16M4 12h16M4 18h10"></path>
+              </svg>
+            </span>
+            <span class="cms-card-copy">
+              <strong>Gestionar contenidos</strong>
+              <small>Edita entradas, memorias, páginas, simposios, categorías y etiquetas.</small>
+            </span>
+            <span class="cms-feature-cta">Abrir gestor <span aria-hidden="true">→</span></span>
           </a>
-        </div><h2>Administración</h2><div class="cms-welcome-grid">
-          <a
-            href="/admin/crear-memoria"
-            class="block border border-gray-200 rounded-xl p-6 hover:border-ugr-green hover:shadow-md transition-all"
-          >
-            <h2 class="text-xl font-semibold text-ugr-green-dark mb-2">Crear memoria</h2>
-            <p class="text-sm text-ugr-text-light">
-              Crear una memoria mediante la API administrativa protegida.
-            </p>
-          </a>
-          <a
-            href="/admin/gestion-usuarios"
-            class="block border border-gray-200 rounded-xl p-6 hover:border-ugr-green hover:shadow-md transition-all"
-          >
-            <h2 class="text-xl font-semibold text-ugr-green-dark mb-2">Usuarios y roles</h2>
-            <p class="text-sm text-ugr-text-light">
-              Gestionar cuentas y permisos RBAC de Supabase.
-            </p>
-          </a>
-          <a
-            href="/admin/medios"
-            class="block border border-gray-200 rounded-xl p-6 hover:border-ugr-green hover:shadow-md transition-all"
-          >
-            <h2 class="text-xl font-semibold text-ugr-green-dark mb-2">Biblioteca de imágenes</h2>
-            <p class="text-sm text-ugr-text-light">
-              Subir, consultar y eliminar imágenes del sitio.
-            </p>
-          </a>
-          <a
-            href="/admin/gestion-colecciones"
-            class="block border border-gray-200 rounded-xl p-6 hover:border-ugr-green hover:shadow-md transition-all"
-          >
-            <h2 class="text-xl font-semibold text-ugr-green-dark mb-2">Colecciones</h2>
-            <p class="text-sm text-ugr-text-light">
-              Administrar colecciones desde una función autenticada.
-            </p>
-          </a>
-        </div>
+        </section>
+
+        <section class="cms-dashboard-section" aria-labelledby="admin-tools-title">
+          <div class="cms-section-heading">
+            <div>
+              <p class="cms-section-kicker">Configuración</p>
+              <h2 id="admin-tools-title">Administración</h2>
+            </div>
+            <p>Herramientas para gestionar el equipo y los recursos del sitio.</p>
+          </div>
+          <ul class="cms-tool-grid" aria-label="Herramientas de administración">
+            <li>
+              <a href="/admin/crear-memoria" class="cms-tool-card">
+                <span class="cms-card-icon violet" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 6v12M6 12h12"></path>
+                  </svg>
+                </span>
+                <span class="cms-card-copy">
+                  <strong>Crear memoria</strong>
+                  <small>Crea una memoria mediante la API administrativa protegida.</small>
+                </span>
+                <span class="cms-card-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin/gestion-usuarios" class="cms-tool-card">
+                <span class="cms-card-icon amber" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="9" cy="8" r="3"></circle><path
+                      d="M3 19c0-3 2.5-5 6-5s6 2 6 5M16 8h5M18.5 5.5v5"></path>
+                  </svg>
+                </span>
+                <span class="cms-card-copy">
+                  <strong>Usuarios y roles</strong>
+                  <small>Gestiona cuentas y permisos del equipo editorial.</small>
+                </span>
+                <span class="cms-card-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin/medios" class="cms-tool-card">
+                <span class="cms-card-icon teal" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect><circle
+                      cx="9"
+                      cy="9"
+                      r="2"></circle><path d="m4 17 5-5 4 4 2-2 5 4"></path>
+                  </svg>
+                </span>
+                <span class="cms-card-copy">
+                  <strong>Biblioteca de imágenes</strong>
+                  <small>Sube, consulta y organiza los recursos visuales.</small>
+                </span>
+                <span class="cms-card-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            {/* “Colecciones” queda oculto temporalmente a petición editorial. */}
+          </ul>
+        </section>
       </div>
       <div
         id="cms-tour"
@@ -119,47 +184,80 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
 <style is:global>
   .cms-welcome-page {
     min-height: calc(100vh - 54px);
-    padding: 30px;
+    padding: 40px 30px 64px;
     background: var(--cms-bg);
   }
   .cms-welcome-wrap {
-    max-width: 1080px;
+    max-width: 1180px;
     margin: auto;
   }
   .cms-welcome-hero {
-    padding: 34px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #287bb8, #1d5d91);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 44px 46px;
+    border: 1px solid #ffffff2e;
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 86% 18%, #6cc7ff55 0 12%, transparent 36%),
+      linear-gradient(125deg, #123c61 0%, #176f9b 58%, #2286a3 100%);
     color: #fff;
-    box-shadow: 0 18px 45px #10182820;
+    box-shadow: 0 24px 60px #102a4329;
+  }
+  .cms-welcome-hero::after {
+    position: absolute;
+    z-index: -1;
+    right: -42px;
+    bottom: -105px;
+    width: 300px;
+    height: 300px;
+    border: 48px solid #ffffff0f;
+    border-radius: 50%;
+    content: '';
   }
   .cms-welcome-hero > p {
-    margin: 0 0 8px;
+    margin: 0 0 12px;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 13px;
-    font-weight: 700;
+    letter-spacing: 0.16em;
+    font-size: 12px;
+    font-weight: 800;
+    opacity: 0.78;
   }
   .cms-welcome-hero h1 {
     font-family: var(--font-montserrat), sans-serif;
-    font-size: 40px;
-    margin: 0 0 8px;
+    font-size: clamp(34px, 5vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin: 0 0 14px;
+  }
+  .cms-welcome-hero > div {
+    max-width: 650px;
+    color: #e8f6ff;
+    font-size: 17px;
+    line-height: 1.6;
   }
   .cms-welcome-hero button {
-    margin-top: 20px;
-    border: 1px solid #ffffff80;
-    border-radius: 8px;
-    padding: 10px 14px;
-    background: #fff;
-    color: #175486;
-    font-weight: 700;
+    margin-top: 24px;
+    border: 1px solid #ffffff73;
+    border-radius: 999px;
+    padding: 11px 18px;
+    background: #ffffff17;
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition:
+      background 0.2s ease,
+      transform 0.2s ease;
   }
-  .cms-welcome-dashboard h2 {
-    margin: 28px 0 12px;
-    color: var(--cms-text);
+  .cms-welcome-hero button:hover {
+    background: #ffffff29;
+    transform: translateY(-1px);
   }
   .cms-auth-skeleton {
-    margin-top: 28px;
+    margin-top: 34px;
   }
   .cms-skeleton-dashboard-grid {
     display: grid;
@@ -170,33 +268,207 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   .cms-skeleton-dashboard-grid .cms-skeleton-media {
     aspect-ratio: 2 / 1;
   }
-  .cms-welcome-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px;
+  .cms-welcome-dashboard {
+    padding-top: 8px;
   }
-  .cms-welcome-grid a {
-    display: block;
-    padding: 20px;
+  .cms-dashboard-section {
+    margin-top: 42px;
+  }
+  .cms-section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 16px;
+  }
+  .cms-section-heading h2 {
+    margin: 3px 0 0;
+    color: var(--cms-text);
+    font-family: var(--font-montserrat), sans-serif;
+    font-size: clamp(24px, 3vw, 30px);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  }
+  .cms-section-heading > p {
+    max-width: 470px;
+    margin: 0 0 2px;
+    color: var(--cms-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: right;
+  }
+  .cms-section-kicker {
+    margin: 0;
+    color: var(--cms-blue);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .cms-action-grid,
+  .cms-tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cms-tool-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cms-action-card,
+  .cms-tool-card,
+  .cms-content-feature {
+    position: relative;
+    display: flex;
+    box-sizing: border-box;
+    min-height: 138px;
+    align-items: center;
+    gap: 18px;
+    padding: 24px;
     border: 1px solid var(--cms-border);
-    border-radius: 14px;
+    border-radius: 18px;
     background: var(--cms-panel);
     color: var(--cms-text) !important;
-    box-shadow: 0 8px 20px #1018280a;
+    text-decoration: none;
+    box-shadow: 0 10px 32px #1018280b;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
-  .cms-welcome-grid a:hover {
-    transform: translateY(-2px);
+  .cms-action-card:hover,
+  .cms-tool-card:hover,
+  .cms-content-feature:hover {
+    transform: translateY(-3px);
     border-color: var(--cms-blue);
+    box-shadow: 0 18px 42px #102a431a;
   }
-  .cms-welcome-grid h2,
-  .cms-welcome-grid h3 {
+  .cms-action-card:focus-visible,
+  .cms-tool-card:focus-visible,
+  .cms-content-feature:focus-visible,
+  .cms-welcome-hero button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--cms-blue) 42%, transparent);
+    outline-offset: 3px;
+  }
+  .cms-action-card.primary {
+    border-color: #2179ae4a;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--cms-panel) 92%, #dff3ff),
+      var(--cms-panel)
+    );
+  }
+  .cms-card-icon,
+  .cms-feature-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    place-items: center;
+    border-radius: 14px;
+    background: #e8f4fb;
+    color: #176b9d;
+  }
+  .cms-card-icon.violet {
+    background: #f0eafd;
+    color: #7047b7;
+  }
+  .cms-card-icon.amber {
+    background: #fff2d8;
+    color: #a35b08;
+  }
+  .cms-card-icon.teal {
+    background: #ddf6f1;
+    color: #087667;
+  }
+  .cms-card-icon svg,
+  .cms-feature-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+  .cms-card-copy {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+  }
+  .cms-card-copy strong {
     font-family: var(--font-montserrat), sans-serif;
-    margin: 0 0 6px;
     color: var(--cms-text);
+    font-size: 19px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
   }
-  .cms-welcome-grid p {
-    margin: 0;
+  .cms-card-copy small {
     color: var(--cms-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .cms-card-arrow {
+    margin-left: auto;
+    color: var(--cms-muted);
+    font-size: 22px;
+    transition: transform 0.2s ease;
+  }
+  a:hover > .cms-card-arrow {
+    color: var(--cms-blue);
+    transform: translateX(4px);
+  }
+  .cms-content-feature {
+    min-height: 154px;
+    padding: 28px 30px;
+    border-color: #1c709f45;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--cms-panel) 89%, #d9f1ff),
+      var(--cms-panel) 60%
+    );
+  }
+  .cms-feature-icon {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    border-radius: 17px;
+    background: #176f9b;
+    color: #fff;
+    box-shadow: 0 10px 24px #176f9b38;
+  }
+  .cms-feature-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  .cms-content-feature .cms-card-copy strong {
+    font-size: 23px;
+  }
+  .cms-feature-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: var(--cms-text);
+    color: var(--cms-panel);
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .cms-tool-card {
+    min-height: 190px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .cms-tool-card .cms-card-copy {
+    width: calc(100% - 66px);
+  }
+  .cms-tool-card .cms-card-arrow {
+    position: absolute;
+    right: 22px;
+    bottom: 18px;
   }
   .cms-tour {
     position: fixed;
@@ -283,7 +555,11 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
   }
   @media (max-width: 650px) {
     .cms-welcome-page {
-      padding: 14px;
+      padding: 18px 14px 42px;
+    }
+    .cms-welcome-hero {
+      padding: 30px 24px;
+      border-radius: 20px;
     }
     .cms-tour-card footer {
       align-items: flex-start;
@@ -291,6 +567,39 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
     }
     .cms-welcome-hero h1 {
       font-size: 32px;
+    }
+    .cms-dashboard-section {
+      margin-top: 34px;
+    }
+    .cms-section-heading {
+      display: block;
+    }
+    .cms-section-heading > p {
+      margin-top: 9px;
+      text-align: left;
+    }
+    .cms-action-grid,
+    .cms-tool-grid {
+      grid-template-columns: 1fr;
+    }
+    .cms-action-card,
+    .cms-tool-card,
+    .cms-content-feature {
+      min-height: 0;
+      padding: 20px;
+    }
+    .cms-content-feature {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .cms-feature-cta {
+      width: 100%;
+      justify-content: center;
+      margin: 2px 0 0;
+    }
+    .cms-tool-card .cms-card-copy {
+      width: calc(100% - 66px);
+      padding-right: 18px;
     }
   }
 </style>

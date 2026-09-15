@@ -80,6 +80,11 @@ jobs:
 
       - name: Build
         if: steps.changes.outputs.content_only != 'true'
+        env:
+          # Valores exclusivos del build E2E. Playwright intercepta la petición de
+          # acceso, por lo que ninguna credencial ni servicio real se utiliza.
+          PUBLIC_SUPABASE_URL: https://e2e.supabase.co
+          PUBLIC_SUPABASE_ANON_KEY: e2e-anon-key
         run: npm run build
 
       - name: Esperar deploy de producción ready
