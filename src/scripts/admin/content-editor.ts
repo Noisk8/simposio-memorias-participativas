@@ -5,6 +5,7 @@ import { defaults, descriptions, groupFields, labels, schemas } from './editor-c
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import {
+  contentPublicationStatus,
   hasPendingPublishedChanges,
   hasPublishedVersion,
   isArchivedContent,
@@ -620,8 +621,19 @@ function renderItems() {
       item.workflow?.reference_available === false;
     const published = !unavailableReference && isPublishedListingContent(item);
     const pendingChanges = hasPendingPublishedChanges(item);
+    const publicationStatus = unavailableReference ? 'draft' : contentPublicationStatus(item);
+    const publicationStatusLabel = {
+      published: 'Publicado',
+      draft: 'Borrador',
+      archived: 'Archivado',
+    }[publicationStatus];
     const publicUrl = published ? getPublicUrl(item.collection, item.path, item.data) : '';
     button.innerHTML =
+      '<span class="cms-status-chip ' +
+      publicationStatus +
+      '"><span aria-hidden="true"></span>' +
+      publicationStatusLabel +
+      '</span>' +
       '<span class="cms-card-title">' +
       esc(item.data.title || item.name) +
       '</span>' +
