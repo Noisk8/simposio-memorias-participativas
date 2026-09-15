@@ -1,5 +1,3 @@
-document.documentElement.classList.add('image-loading-enabled');
-
 const markReady = (image: HTMLImageElement) => {
   image.dataset.imageReady = 'true';
 };
@@ -18,6 +16,10 @@ const observeImage = (image: HTMLImageElement) => {
 };
 
 document.querySelectorAll<HTMLImageElement>('img').forEach(observeImage);
+
+// El skeleton se activa únicamente después de instalar los observadores. Si este
+// módulo no carga o la CSP lo bloquea, las imágenes conservan su estado visible.
+document.documentElement.classList.add('image-loading-active');
 
 new MutationObserver((records) => {
   records.forEach((record) =>

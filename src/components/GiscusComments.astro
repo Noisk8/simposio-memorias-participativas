@@ -57,21 +57,7 @@ const {
       crossorigin="anonymous"
       async></script>
   </div>
-  <script is:inline>
-    const container = document.getElementById('giscus-container');
-    const skeleton = document.getElementById('giscus-skeleton');
-    const finishGiscusLoading = () => {
-      skeleton?.remove();
-      container?.removeAttribute('aria-busy');
-    };
-    const observeGiscus = new MutationObserver(() => {
-      const frame = container?.querySelector('iframe');
-      if (!frame) return;
-      frame.addEventListener('load', finishGiscusLoading, { once: true });
-      observeGiscus.disconnect();
-    });
-    if (container) observeGiscus.observe(container, { childList: true });
-  </script>
+  <script src="../scripts/giscus.ts"></script>
   <noscript>
     <p class="text-sm text-[var(--ugr-text-light)]">
       Los comentarios requieren JavaScript. Por favor, habilita JavaScript en tu navegador para ver
