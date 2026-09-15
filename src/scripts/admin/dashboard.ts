@@ -31,7 +31,7 @@ const steps = [
   ],
   [
     'La pantalla de bienvenida',
-    'Después de iniciar sesión llegarás siempre a Inicio. Aquí encontrarás accesos para crear una entrada, añadir una memoria, revisar borradores, gestionar contenidos y abrir las herramientas administrativas. Pulsa el logotipo o “Inicio” para regresar.',
+    'Después de iniciar sesión llegarás siempre a Inicio. Aquí encontrarás accesos para crear una entrada, revisar borradores, gestionar contenidos y abrir las herramientas administrativas. Pulsa el logotipo o “Inicio” para regresar.',
   ],
   [
     'Navegación superior',
