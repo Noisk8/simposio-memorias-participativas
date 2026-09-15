@@ -75,11 +75,28 @@ test('404: una ruta inexistente devuelve la página personalizada', async ({ pag
 });
 
 test('admin: la pantalla de login muestra el formulario sin sesión', async ({ page }) => {
+  await page.route('**/auth/v1/token**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Invalid login credentials' }),
+    });
+  });
   const response = await page.goto('/admin/login');
   expect(response?.status()).toBe(200);
   await expect(page.locator('#supabase-login-form')).toBeVisible();
   await expect(page.locator('#supabase-email')).toBeVisible();
   await expect(page.locator('#supabase-password')).toBeVisible();
+
+  await page.locator('#supabase-email').fill('prueba@example.com');
+  await page.locator('#supabase-password').fill('credencial-invalida');
+  await page.locator('#supabase-login-submit').click();
+  await expect(page.locator('#supabase-login-submit')).toBeDisabled();
+  await expect(page.locator('#supabase-login-submit')).toHaveText('Ingresando…');
+  await expect(page.locator('#supabase-login-error')).toBeVisible();
+  await expect(page.locator('#supabase-login-submit')).toBeEnabled();
+  await expect(page.locator('#supabase-login-submit')).toHaveText('Entrar');
 });
 
 test('admin: el formulario de login es visible aunque JavaScript falle', async ({ browser }) => {

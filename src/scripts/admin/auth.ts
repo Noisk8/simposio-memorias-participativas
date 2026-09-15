@@ -4,6 +4,7 @@ import type { SupabaseAuthApi } from './client.ts';
 const root = document.getElementById('supabase-auth');
 const form = document.getElementById('supabase-login-form');
 const errorBox = document.getElementById('supabase-login-error');
+const submitButton = document.getElementById('supabase-login-submit') as HTMLButtonElement | null;
 const userInfo = document.getElementById('supabase-user-info');
 const signOutButton = document.getElementById('supabase-signout');
 
@@ -83,11 +84,31 @@ async function init() {
     const password =
       (document.getElementById('supabase-password') as HTMLInputElement | null)?.value ?? '';
     errorBox?.classList.add('hidden');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error && errorBox) {
-      errorBox.textContent =
-        'No se pudo iniciar sesión: ' + (error.message || 'revisa email y contraseña.');
-      errorBox.classList.remove('hidden');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Ingresando…';
+      submitButton.setAttribute('aria-busy', 'true');
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error && errorBox) {
+        errorBox.textContent =
+          'No se pudo iniciar sesión: ' + (error.message || 'revisa email y contraseña.');
+        errorBox.classList.remove('hidden');
+      }
+    } catch {
+      if (errorBox) {
+        errorBox.textContent =
+          'No se pudo conectar con el servicio de acceso. Comprueba tu conexión e inténtalo de nuevo.';
+        errorBox.classList.remove('hidden');
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Entrar';
+        submitButton.removeAttribute('aria-busy');
+      }
     }
   });
 
