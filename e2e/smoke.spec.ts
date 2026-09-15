@@ -48,6 +48,26 @@ test('taxonomías: los archivos de categorías y etiquetas responden', async ({ 
   }
 });
 
+test('contacto: está disponible desde el menú y muestra los canales de contacto', async ({
+  page,
+}) => {
+  const response = await page.goto('/');
+  expect(response?.status()).toBe(200);
+
+  const menuLink = page.locator('header a[href="/contacto"]').first();
+  await expect(menuLink).toHaveText('Contacto');
+  await menuLink.click();
+
+  await expect(page).toHaveURL(/\/contacto\/?$/);
+  await expect(page.locator('main h1')).toHaveText('Contacto');
+  await expect(page.locator('header a[href="/contacto"]').first()).toHaveAttribute(
+    'aria-current',
+    'page'
+  );
+  await expect(page.locator('main a[href^="mailto:"]')).toBeVisible();
+  await expect(page.locator('main a[href*="instagram.com"]')).toBeVisible();
+});
+
 test('404: una ruta inexistente devuelve la página personalizada', async ({ page }) => {
   const response = await page.goto('/ruta-que-no-existe');
   expect(response?.status()).toBe(404);
