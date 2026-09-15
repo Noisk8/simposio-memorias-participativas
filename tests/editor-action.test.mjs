@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  contentPublicationStatus,
   hasPendingPublishedChanges,
   hasPublishedVersion,
   isArchivedContent,
@@ -9,6 +10,25 @@ import {
   isUnpublishedDraft,
   saveActionLabel,
 } from '../shared/content/editor-action.ts';
+
+test('el estado visual distingue contenido publicado, borrador y archivado', () => {
+  assert.equal(contentPublicationStatus({ data: { draft: false } }), 'published');
+  assert.equal(contentPublicationStatus({ data: { draft: true } }), 'draft');
+  assert.equal(
+    contentPublicationStatus({
+      data: { draft: true },
+      workflow: { workflow_state: 'archived' },
+    }),
+    'archived'
+  );
+  assert.equal(
+    contentPublicationStatus({
+      data: { draft: true },
+      workflow: { current_sha: 'cambio', published_sha: 'publicado' },
+    }),
+    'published'
+  );
+});
 
 test('una entrada nueva o nunca publicada conserva la acción de borrador', () => {
   assert.equal(saveActionLabel(null), 'Guardar borrador');
