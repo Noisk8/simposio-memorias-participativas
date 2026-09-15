@@ -1207,25 +1207,26 @@ function updatePreview() {
   const publishedUrl = isPublishedListingContent(current)
     ? getPublicUrl(collection.value, current?.path || '', data)
     : '';
+  const status = isArchivedContent(current)
+    ? '<p class="mb-2 text-xs font-bold uppercase text-white/80">Archivada</p>'
+    : hasPendingPublishedChanges(current)
+      ? '<p class="mb-2 text-xs font-bold uppercase text-amber-100">Cambios sin publicar</p>'
+      : !publishedUrl && data.draft
+        ? '<p class="mb-2 text-xs font-bold uppercase text-amber-100">Borrador</p>'
+        : '';
   previewNode.innerHTML =
     (image
       ? '<img src="' + esc(resolvePreviewUrl(image)) + '" alt="" class="h-56 w-full object-cover">'
-      : '<div class="h-24 bg-gradient-to-r from-ugr-green to-ugr-green-dark"></div>') +
-    '<div class="p-6">' +
-    (isArchivedContent(current)
-      ? '<p class="mb-2 text-xs font-bold uppercase text-gray-600">Archivada</p>'
-      : hasPendingPublishedChanges(current)
-        ? '<p class="mb-2 text-xs font-bold uppercase text-amber-700">Cambios sin publicar</p>'
-        : !publishedUrl && data.draft
-          ? '<p class="mb-2 text-xs font-bold uppercase text-amber-700">Borrador</p>'
-          : '') +
-    '<h1 class="text-3xl font-bold text-ugr-green-dark">' +
+      : '') +
+    '<header class="bg-gradient-to-r from-ugr-green to-ugr-green-dark p-6 text-white">' +
+    status +
+    '<h1 class="text-3xl font-bold text-white">' +
     esc(data.title || 'Título del contenido') +
     '</h1>' +
-    (meta ? '<p class="mt-2 text-sm text-gray-500">' + meta + '</p>' : '') +
-    (data.description
-      ? '<p class="mt-4 text-lg text-gray-700">' + esc(data.description) + '</p>'
-      : '') +
+    (meta ? '<p class="mt-2 text-sm text-white/80">' + meta + '</p>' : '') +
+    '</header>' +
+    '<div class="p-6">' +
+    (data.description ? '<p class="text-lg text-gray-700">' + esc(data.description) + '</p>' : '') +
     (publishedUrl
       ? '<div class="mt-5 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">' +
         '<strong class="block mb-1">Publicado</strong>' +
@@ -1238,7 +1239,7 @@ function updatePreview() {
       : '') +
     (badges ? '<div class="mt-4 flex flex-wrap gap-2">' + badges + '</div>' : '') +
     '<div class="cms-markdown-preview">' +
-    markdown(body || 'El contenido escrito en Markdown aparecerá aquí en tiempo real.') +
+    markdown(body || 'El contenido aparecerá aquí mientras escribes.') +
     '</div></div>';
 
   previewNode.querySelectorAll('.cms-markdown-preview a').forEach((link) => {
