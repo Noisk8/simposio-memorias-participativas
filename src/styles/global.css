@@ -126,24 +126,24 @@ img {
   margin: 0;
 }
 
-.image-loading-enabled :is(a, div, figure, picture):has(> img:not([data-image-ready])) {
+.image-loading-active :is(a, div, figure, picture):has(> img:not([data-image-ready])) {
   background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
   background-size: 200% 100%;
   animation: cms-skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
-.image-loading-enabled img:not([data-image-ready]) {
+.image-loading-active img:not([data-image-ready]) {
   min-height: 2rem;
   opacity: 0;
 }
 
-.image-loading-enabled img[data-image-ready] {
+.image-loading-active img[data-image-ready] {
   transition: opacity 180ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cms-skeleton,
-  .image-loading-enabled :is(a, div, figure, picture):has(> img:not([data-image-ready])) {
+  .image-loading-active :is(a, div, figure, picture):has(> img:not([data-image-ready])) {
     animation: none;
   }
 }

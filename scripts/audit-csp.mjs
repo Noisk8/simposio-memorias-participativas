@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 const root = path.resolve(process.argv[2] || 'dist');
 const failures = [];
@@ -9,6 +10,18 @@ function htmlFiles(directory) {
     const target = path.join(directory, entry.name);
     return entry.isDirectory() ? htmlFiles(target) : entry.name.endsWith('.html') ? [target] : [];
   });
+}
+
+function inlineScriptHashes(html) {
+  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+    .filter(([, attributes]) => !/\bsrc\s*=/i.test(attributes))
+    .filter(([, attributes]) => {
+      const type = attributes.match(/\btype\s*=\s*["']([^"']+)["']/i)?.[1]?.toLowerCase();
+      return !type || /^(?:module|importmap|(?:text|application)\/(?:java|ecma)script)$/.test(type);
+    })
+    .map(
+      ([, , content]) => `sha256-${crypto.createHash('sha256').update(content).digest('base64')}`
+    );
 }
 
 for (const file of htmlFiles(root)) {
@@ -23,6 +36,11 @@ for (const file of htmlFiles(root)) {
   }
   const policy = match[1];
   if (/unsafe-inline|unsafe-eval/i.test(policy)) failures.push(`${relative}: CSP insegura`);
+  for (const hash of inlineScriptHashes(html)) {
+    if (!policy.includes(`'${hash}'`)) {
+      failures.push(`${relative}: script inline sin hash CSP (${hash})`);
+    }
+  }
   for (const directive of ["object-src 'none'", 'base-uri', 'form-action']) {
     if (!policy.includes(directive)) failures.push(`${relative}: falta ${directive}`);
   }
@@ -37,6 +55,9 @@ for (const file of htmlFiles(root)) {
 
 if (failures.length) {
   console.error(`Auditoría CSP fallida:\n- ${failures.join('\n- ')}`);
-  process.exit(1);
+  process.exitCode = 1;
+} else {
+  console.log(
+    `CSP segura y todos los scripts inline autorizados por hash en ${htmlFiles(root).length} páginas.`
+  );
 }
-console.log(`CSP sin unsafe-inline/unsafe-eval en ${htmlFiles(root).length} páginas.`);

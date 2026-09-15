@@ -35,6 +35,7 @@ const browserGlobals = {
   HTMLButtonElement: 'readonly',
   HTMLDivElement: 'readonly',
   HTMLInputElement: 'readonly',
+  HTMLImageElement: 'readonly',
   HTMLTextAreaElement: 'readonly',
   EventTarget: 'readonly',
   Event: 'readonly',
@@ -49,6 +50,8 @@ const browserGlobals = {
   clearTimeout: 'readonly',
   structuredClone: 'readonly',
   Window: 'readonly',
+  MutationObserver: 'readonly',
+  getComputedStyle: 'readonly',
 };
 
 export default [
@@ -72,6 +75,12 @@ export default [
   },
   {
     files: ['src/scripts/**/*.{js,ts}', 'src/components/admin/**/*.tsx'],
+    languageOptions: {
+      globals: browserGlobals,
+    },
+  },
+  {
+    files: ['e2e/**/*.ts'],
     languageOptions: {
       globals: browserGlobals,
     },
