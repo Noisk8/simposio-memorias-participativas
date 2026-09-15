@@ -14,7 +14,7 @@ const {
 
 <div
   id="supabase-auth"
-  class="hidden"
+  class:list={{ hidden: redirectUnauthenticated }}
   data-redirect-unauthenticated={String(redirectUnauthenticated)}
   data-redirect-after-login={redirectAfterLogin}
 >

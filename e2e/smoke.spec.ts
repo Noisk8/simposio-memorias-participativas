@@ -74,8 +74,19 @@ test('404: una ruta inexistente devuelve la página personalizada', async ({ pag
   await expect(page.locator('main h1')).toContainText('Página no encontrada');
 });
 
-test('admin: la pantalla de login carga sin sesión', async ({ page }) => {
+test('admin: la pantalla de login muestra el formulario sin sesión', async ({ page }) => {
   const response = await page.goto('/admin/login');
   expect(response?.status()).toBe(200);
-  await expect(page.locator('body')).toBeVisible();
+  await expect(page.locator('#supabase-login-form')).toBeVisible();
+  await expect(page.locator('#supabase-email')).toBeVisible();
+  await expect(page.locator('#supabase-password')).toBeVisible();
+});
+
+test('admin: el formulario de login es visible aunque JavaScript falle', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  const response = await page.goto('/admin/login');
+  expect(response?.status()).toBe(200);
+  await expect(page.locator('#supabase-login-form')).toBeVisible();
+  await context.close();
 });
