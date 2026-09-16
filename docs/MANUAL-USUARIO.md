@@ -57,7 +57,7 @@ Estado actual:
 - lista medios registrados en `cms_media` y almacenados en Supabase Storage;
 - acepta únicamente JPEG, PNG, WebP y PDF, con un máximo de 2 MiB;
 - valida MIME, extensión, contenido real, peso y dimensiones antes de almacenar;
-- exige crédito, licencia y texto alternativo, o que la imagen se marque explícitamente como decorativa;
+- exige texto alternativo, o que la imagen se marque explícitamente como decorativa; crédito y licencia son opcionales;
 - reutiliza un archivo idéntico y rechaza una colisión con contenido diferente;
 - impide eliminar una imagen cuando GitHub Code Search o un borrador de Supabase contiene referencias;
 - al reutilizar un archivo idéntico solo permite cambiar su metadata a perfiles con `media.update`.

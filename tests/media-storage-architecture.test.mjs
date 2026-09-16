@@ -36,7 +36,7 @@ test('cms_media queda bajo RLS y las escrituras solo se conceden a service_role'
 });
 
 test('manage-media usa Storage y metadata, no GitHub Contents para binarios', () => {
-  assert.match(uploadService, /\.storage[\s\S]*\.upload\(/);
+  assert.match(uploadService, /ensureStoredMedia\(/);
   assert.match(uploadService, /\.from\('cms_media'\)/);
   assert.match(uploadService, /createHash\('sha256'\)/);
   assert.match(uploadService, /randomUUID\(\)/);

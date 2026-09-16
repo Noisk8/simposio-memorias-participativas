@@ -114,23 +114,16 @@ test('rechaza alt faltante salvo declaración decorativa explícita', () => {
   );
 });
 
-test('rechaza licencia o crédito faltantes', () => {
-  assert.throws(
-    () =>
-      validateEditorialMetadata(
-        { decorative: false, altText: 'Una plaza', credit: 'Archivo', license: '' },
-        'image'
-      ),
-    /licencia.*obligatorio/i
+test('crédito y licencia son opcionales, normalizan vacíos y conservan límites', () => {
+  const input = { decorative: false, altText: 'Una plaza' };
+  assert.equal(validateEditorialMetadata(input, 'image').credit, null);
+  assert.equal(validateEditorialMetadata(input, 'image').license, null);
+  assert.equal(
+    validateEditorialMetadata({ ...input, credit: '  ', license: '' }, 'image').credit,
+    null
   );
-  assert.throws(
-    () =>
-      validateEditorialMetadata(
-        { decorative: false, altText: 'Una plaza', credit: '', license: 'CC0' },
-        'image'
-      ),
-    /crédito.*obligatorio/i
-  );
+  assert.throws(() => validateEditorialMetadata({ ...input, credit: 'a'.repeat(501) }, 'image'));
+  assert.throws(() => validateEditorialMetadata({ ...input, license: 'a'.repeat(256) }, 'image'));
 });
 
 test('rechaza filename peligroso y conserva un slug seguro separado del original', () => {
