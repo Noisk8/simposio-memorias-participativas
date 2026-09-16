@@ -132,7 +132,7 @@ CMS_IMAGE_MAX_HEIGHT=8000
 CMS_IMAGE_MAX_PIXELS=40000000
 ```
 
-Todo archivo está limitado a 2 MiB. Solo se reciben JPEG, PNG, WebP y PDF. Las imágenes requieren `credit`, `license` y `alt_text`, salvo que `is_decorative` se marque explícitamente. El backend obtiene MIME, formato y dimensiones reales mediante `sharp` antes de subir.
+Todo archivo está limitado a 2 MiB. Solo se reciben JPEG, PNG, WebP y PDF. Las imágenes requieren `alt_text`, salvo que `is_decorative` se marque explícitamente. `credit` y `license` son opcionales; cuando llegan vacíos se guardan como `null`. El backend obtiene MIME, formato y dimensiones reales mediante `sharp` antes de subir.
 
 Migración controlada:
 

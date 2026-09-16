@@ -190,10 +190,6 @@ uploadForm.addEventListener('submit', async function (event) {
     setStatus('Escribe el texto alternativo o marca la imagen como decorativa.', 'error');
     return;
   }
-  if (isImage && (!creditInput.value.trim() || !licenseInput.value.trim())) {
-    setStatus('El crédito y la licencia son obligatorios para imágenes.', 'error');
-    return;
-  }
 
   uploadButton.disabled = true;
   setStatus('Subiendo ' + file.name + '…', 'loading');
@@ -239,8 +235,8 @@ fileInput.addEventListener('change', function () {
   const isImage = Boolean(file?.type.startsWith('image/'));
   imageMetadata.classList.toggle('hidden', !isImage);
   altTextInput.required = isImage && !decorativeInput.checked;
-  creditInput.required = isImage;
-  licenseInput.required = isImage;
+  creditInput.required = false;
+  licenseInput.required = false;
 });
 
 decorativeInput.addEventListener('change', function () {

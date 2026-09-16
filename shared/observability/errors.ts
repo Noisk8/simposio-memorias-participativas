@@ -85,7 +85,7 @@ export class GitHubError extends AppError {
 
 export class StorageError extends AppError {
   constructor(
-    message = 'No se pudo completar la operación en Supabase Storage.',
+    message = 'No se pudo completar la operación en el almacenamiento de medios.',
     details?: Record<string, unknown>
   ) {
     super('STORAGE_ERROR', message, 502, { details });

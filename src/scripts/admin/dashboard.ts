@@ -75,7 +75,7 @@ const steps = [
   ],
   [
     'Biblioteca de medios',
-    'Puedes subir únicamente JPEG, PNG, WebP o PDF, con un máximo de 2 MiB. Para imágenes debes indicar crédito, licencia y texto alternativo, o marcarlas como decorativas. La biblioteca copia la URL estable de Storage y solo permite eliminar con media.delete.',
+    'Puedes subir únicamente JPEG, PNG, WebP o PDF, con un máximo de 2 MiB. Para imágenes debes indicar texto alternativo o marcarlas como decorativas; crédito y licencia son opcionales. La biblioteca copia la URL estable de Storage y solo permite eliminar con media.delete.',
   ],
   [
     'Guardar como borrador',

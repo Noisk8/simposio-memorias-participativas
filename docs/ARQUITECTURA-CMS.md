@@ -13,7 +13,8 @@ Este documento es la fuente de verdad técnica del CMS. Describe lo que está im
 | Panel propio        | Interfaz administrativa bajo `/admin/`                                      |
 | Supabase Auth       | Identidad y sesiones del CMS                                                |
 | Supabase PostgreSQL | RBAC, workflow, rate limiting, metadata de medios, idempotencia y auditoría |
-| Supabase Storage    | Binarios públicos del CMS; escritura exclusiva desde Functions              |
+| Garage (S3)         | Binarios públicos nuevos; escritura exclusiva desde Functions               |
+| Supabase Storage    | Compatibilidad con medios anteriores y originales conservados               |
 | Netlify Functions   | Límite de confianza para validación, autorización y operaciones externas    |
 | GitHub              | Fuente versionada del Markdown; conserva medios legacy durante la migración |
 | Netlify             | Functions, build y hosting del sitio                                        |
@@ -42,7 +43,7 @@ Netlify Function
   └─ emite auditoría y logs con requestId
        │
        ├─► Supabase: RBAC, borrador, versiones, publicación y auditoría
-       ├─► Supabase Storage: binario de medios
+       ├─► Garage S3: binario de medios (Supabase Storage para ubicaciones anteriores)
        └─► GitHub: commit de Markdown
                     │
                     ▼
@@ -91,7 +92,7 @@ longitud mínima; el cuerpo tampoco impone un mínimo de caracteres.
 | ---------------------- | --------------------------------------------------------------------------------------------- |
 | `manage-content`       | CRUD de borradores Supabase, UUID canónico, validación, autosave y concurrencia por revisión  |
 | `manage-workflow`      | Publicación/archivo y reconciliación idempotente de GitHub y Netlify                          |
-| `manage-media`         | Lista, actualiza metadata y elimina medios en Supabase Storage                                |
+| `manage-media`         | Lista, actualiza metadata y elimina medios según su almacenamiento                            |
 | `upload-media`         | Valida, redimensiona, convierte a WebP y sube imágenes; conserva PDF sin transformación       |
 | `manage-users`         | Lista/crea usuarios de Supabase Auth y reemplaza su rol efectivo                              |
 | `get-revision-history` | Hasta 30 snapshots editoriales inmutables almacenados en Supabase                             |
@@ -151,11 +152,37 @@ El inicio de sesión del navegador llama directamente a Supabase Auth y conserva
 
 `upload-media` acepta únicamente JPEG, PNG, WebP y PDF, con un máximo absoluto de 2 MiB. Para imágenes contrasta extensión, MIME declarado, firma y formato decodificado por `sharp`; fuerza la decodificación completa, limita ancho/alto/píxeles, aplica orientación, reduce a un máximo predeterminado de 2560×2560 y almacena WebP con calidad 82. Cualquier otro tipo, imágenes animadas, nombres peligrosos y archivos corruptos se rechazan antes de consultar Storage. Los límites de salida pueden ajustarse con `CMS_IMAGE_OUTPUT_MAX_WIDTH`, `CMS_IMAGE_OUTPUT_MAX_HEIGHT` y `CMS_IMAGE_WEBP_QUALITY`.
 
-Las imágenes nuevas requieren crédito, licencia y una decisión explícita entre texto alternativo no vacío o `is_decorative=true`. El original se conserva en `original_filename`, pero nunca se usa como key: las cargas nuevas emplean `images|documents/YYYY/MM/<uuid>-<slug-seguro>.<ext>`. Los paths históricos por SHA-256 siguen siendo válidos. El SHA-256 permanece en `checksum_sha256` para deduplicación, integridad y trazabilidad.
+Crédito y licencia son opcionales para todos los medios; vacíos se normalizan a `null` y se conservan sus límites de longitud. Las imágenes nuevas requieren una decisión explícita entre texto alternativo no vacío o `is_decorative=true`. El original se conserva en `original_filename`, pero nunca se usa como key: las cargas nuevas emplean `images|documents/YYYY/MM/<uuid>-<slug-seguro>.<ext>`. Los paths históricos por SHA-256 siguen siendo válidos. El SHA-256 permanece en `checksum_sha256` para deduplicación, integridad y trazabilidad.
 
 Los campos de imagen del editor permiten elegir un recurso existente mediante un selector autenticado que consulta `manage-media`, además de subir una imagen nueva. La URL manual se conserva únicamente para compatibilidad con referencias legacy; seleccionar o subir un medio actualiza el borrador y su vista previa sin exponer credenciales de Storage al navegador.
 
 No se generan variantes `thumbnail`, `medium` y `large`: el Markdown consume una única URL ya optimizada. `sharp` solo forma parte del endpoint `upload-media`; listar, editar metadata o eliminar medios no carga su binario nativo.
+
+### Almacenamiento Garage y transición
+
+`shared/media/storage.ts` encapsula S3 y Supabase Storage. `CMS_MEDIA_STORAGE_PROVIDER=garage`
+activa Garage para cargas nuevas; la ausencia de la variable conserva Supabase. Las filas existentes
+se resuelven por su `public_url`, validada contra las bases configuradas y su `storage_path` exacta.
+No se infiere el proveedor de datos enviados por el navegador ni se cambia el esquema del catálogo.
+No se hace fallback de escritura a otro proveedor ante fallos de Garage.
+
+El cliente S3 exige HTTPS válido, región, bucket `cms-media`, clave dedicada y `forcePathStyle=true`.
+Comprueba existencia y SHA-256 antes de escribir, genera rutas UUID nuevas y limita las reparaciones
+a objetos del mismo checksum. Envía `If-None-Match: *` como protección adicional, pero Garage 2.3
+puede ignorarlo: no se asume creación atómica de S3. Los tiempos de espera son acotados. Solo un 404 se considera objeto ausente; errores de red o autorización no disparan reparaciones.
+Las restauraciones conservan UUID y URL; ante una carrera no eliminan un objeto potencialmente compartido.
+
+`scripts/migrate-media-to-garage.mjs --dry-run` comprueba origen, destino y lectura HTTPS pública.
+`--apply` exige `MEDIA_MIGRATION_REPORT`, guarda el registro anterior, copia únicamente objetos ausentes
+y actualiza `public_url` mediante comparación de revisión. Los originales de Supabase, el Markdown,
+los borradores y sus versiones se conservan. La comprobación previa al borrado busca las URLs de ambos
+proveedores para no perder las referencias anteriores. La biblioteca y el selector mantienen su contrato.
+
+Ejecutar el script con `node --env-file=.env --experimental-strip-types`. Activar el código compatible
+antes de actualizar el catálogo. Para volver a subir a Supabase basta cambiar el proveedor de cargas;
+los registros ya migrados siguen necesitando la configuración de Garage. No desplegar código anterior
+sobre un catálogo migrado. El respaldo utiliza el proveedor de cada fila y verifica SHA-256; el workflow
+`production-backup` requiere las variables `S3_*` como secretos del entorno correspondiente.
 
 ## Límite navegador/administración
 
@@ -163,7 +190,7 @@ El sitio público no consulta sesiones ni incluye `@supabase/supabase-js`. El en
 
 Las pantallas administrativas usan módulos compartidos para autenticación, llamadas HTTP, layout y configuración del editor. Astro procesa estos scripts como módulos versionados; las páginas públicas no descargan los chunks administrativos.
 
-El bucket permite lectura pública para el sitio estático. Políticas RLS restrictivas bloquean `INSERT`, `UPDATE` y `DELETE` desde clientes incluso si hubiera otra política permisiva; la Function usa `service_role` únicamente server-side después de RBAC. La tabla permite lectura directa solo a usuarios con `media.read`, pero las mutaciones se hacen por la Function.
+Garage sirve el bucket por un endpoint HTTPS público y sus credenciales S3 solo existen en el servidor. El bucket anterior de Supabase permite lectura pública para conservar las URLs históricas. Políticas RLS restrictivas bloquean `INSERT`, `UPDATE` y `DELETE` desde clientes incluso si hubiera otra política permisiva; la Function usa `service_role` únicamente server-side después de RBAC. La tabla permite lectura directa solo a usuarios con `media.read`, pero las mutaciones se hacen por la Function.
 
 Durante la transición, Astro admite tanto `/images/…` como URLs HTTP de Storage. `scripts/migrate-media-to-storage.mjs` detecta referencias Markdown, verifica archivos, deduplica por checksum, sube y registra idempotentemente, y opcionalmente reescribe Markdown. Nunca elimina originales: solo informa cuáles quedan sin referencias en `src/`.
 
@@ -192,7 +219,7 @@ deploy de producción.
 ```text
 Implementado                              Planeado
 ────────────                              ────────
-Supabase Auth + Storage                   Webhook inmediato de GitHub/Netlify (la tarea programada ya reconcilia)
+Supabase Auth + Garage S3                 Webhook inmediato de GitHub/Netlify (la tarea programada ya reconcilia)
 RBAC, borradores y versiones Supabase     Restauración de snapshots desde la interfaz
 Autosave y concurrencia por revisión      Idempotencia genérica para operaciones no editoriales
 Publicación exacta e idempotente

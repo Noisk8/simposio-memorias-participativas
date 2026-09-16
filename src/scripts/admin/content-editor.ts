@@ -818,8 +818,8 @@ function fieldElement(def, value) {
       return field;
     }
     const mediaAlt = metadataField('Texto alternativo de la imagen');
-    const mediaCredit = metadataField('Crédito (obligatorio)');
-    const mediaLicense = metadataField('Licencia (obligatoria, ej. CC BY-SA 4.0)');
+    const mediaCredit = metadataField('Crédito (opcional)');
+    const mediaLicense = metadataField('Licencia (opcional, ej. CC BY-SA 4.0)');
     decorative.onchange = () => {
       mediaAlt.disabled = decorative.checked;
       if (decorative.checked) mediaAlt.value = '';
@@ -858,11 +858,6 @@ function fieldElement(def, value) {
       if (!decorative.checked && !mediaAlt.value.trim()) {
         uploadStatus.dataset.kind = 'error';
         uploadStatus.textContent = 'Añade texto alternativo o marca la imagen como decorativa.';
-        return;
-      }
-      if (!mediaCredit.value.trim() || !mediaLicense.value.trim()) {
-        uploadStatus.dataset.kind = 'error';
-        uploadStatus.textContent = 'El crédito y la licencia son obligatorios.';
         return;
       }
       uploadStatus.dataset.kind = 'loading';

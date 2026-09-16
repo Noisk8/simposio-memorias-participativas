@@ -1,18 +1,18 @@
 ---
-id: "93bfa85b-7436-4004-aefd-c9c5b99a07c9"
-date: "2026-09-02"
+id: '93bfa85b-7436-4004-aefd-c9c5b99a07c9'
+date: '2026-09-02'
 tags:
-  - "museo-memorias"
+  - 'museo-memorias'
 draft: false
-image: "https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/eb4f5ae463b8875269ace94951bdce46ce69054e5ed30c1b75990c4161ca7670-proyecto-19.jpg"
-title: "hsghhsghsshkhshsks"
-author: "juan"
-page_id: ""
-simposio: "2026"
+image: 'https://qthibpqyguhxlihhzacs.supabase.co/storage/v1/object/public/cms-media/images/2026/06/eb4f5ae463b8875269ace94951bdce46ce69054e5ed30c1b75990c4161ca7670-proyecto-19.jpg'
+title: 'hsghhsghsshkhshsks'
+author: 'juan'
+page_id: ''
+simposio: '2026'
 categories:
-  - "general"
-description: "ggyyyyuiiiiiiii"
-publish_date: "2026-09-02"
+  - 'general'
+description: 'ggyyyyuiiiiiiii'
+publish_date: '2026-09-02'
 ---
 
 ggggggfhfhfh

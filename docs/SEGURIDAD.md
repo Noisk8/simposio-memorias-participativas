@@ -50,7 +50,7 @@ Netlify Function
 - Las ediciones usan una revisión optimista de Supabase; GitHub solo interviene al publicar o archivar.
 - `upload-media` rechaza nombres peligrosos y genera una key UUID-slug independiente del original.
 - Solo admite JPEG, PNG, WebP y PDF, con máximo absoluto de 2 MiB. Para imágenes contrasta MIME, extensión, firma y decodificación `sharp`, y limita dimensiones y píxeles antes de Storage.
-- Las imágenes exigen crédito, licencia y texto alternativo o declaración decorativa explícita.
+- Las imágenes exigen texto alternativo o declaración decorativa explícita. Crédito y licencia son opcionales y conservan límites de longitud.
 - CORS acepta `SITE_URL`, `URL`, `ALLOWED_ORIGINS` y los orígenes locales definidos.
 
 ## Propiedad
