@@ -48,45 +48,42 @@ jobs:
           S3_BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
         run: |
           set -euo pipefail
+          required_secrets=(
+            SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
+            SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_ENCRYPTION_KEY
+            S3_ENDPOINT S3_REGION S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY
+            S3_FORCE_PATH_STYLE S3_BACKUP_BUCKET
+          )
+          missing=0
+          for name in "${required_secrets[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Falta el secreto ${name} en el entorno production-backup."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
           backup_dir="$(mktemp -d)"
           trap 'rm -rf "$backup_dir"' EXIT
           export BACKUP_OUTPUT_DIR="$backup_dir/export"
           mkdir -p "$BACKUP_OUTPUT_DIR"
-          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -n "${SUPABASE_DB_PASSWORD:-}" ] && [ -n "${SUPABASE_PROJECT_ID:-}" ]; then
-            mkdir -p "$BACKUP_OUTPUT_DIR/database"
-            supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
-            supabase db dump --linked --file "$BACKUP_OUTPUT_DIR/database/schema.sql"
-            supabase db dump --linked --data-only --use-copy --file "$BACKUP_OUTPUT_DIR/database/data.sql"
-          else
-            echo "SQL no incluido: faltan credenciales administrativas de Supabase."
-          fi
-          if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
-            node --experimental-strip-types scripts/backup-supabase-media.mjs
-          else
-            echo "Catálogo editorial no incluido: faltan credenciales de Supabase."
-          fi
+          mkdir -p "$BACKUP_OUTPUT_DIR/database"
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+          supabase db dump --linked --file "$BACKUP_OUTPUT_DIR/database/schema.sql"
+          supabase db dump --linked --data-only --use-copy --file "$BACKUP_OUTPUT_DIR/database/data.sql"
+          node --experimental-strip-types scripts/backup-supabase-media.mjs
           node scripts/backup-garage-media.mjs
           cp -R src/content "$BACKUP_OUTPUT_DIR/published-content"
           tar -C "$BACKUP_OUTPUT_DIR" -czf "$backup_dir/backup.tar.gz" .
           openssl enc -aes-256-cbc -pbkdf2 -salt \
             -in "$backup_dir/backup.tar.gz" \
-            -out "production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
+            -out "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
             -pass env:BACKUP_ENCRYPTION_KEY
-          test -s "production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
+          test -s "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
           openssl enc -d -aes-256-cbc -pbkdf2 \
-            -in "production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
+            -in "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
             -out "$backup_dir/verify.tar.gz" \
             -pass env:BACKUP_ENCRYPTION_KEY
           tar -tzf "$backup_dir/verify.tar.gz" >/dev/null
-          if [ -n "${S3_BACKUP_BUCKET:-}" ]; then
-            node scripts/upload-backup-to-garage.mjs "production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
-          fi
-
-      - name: Store encrypted backup
-        if: ${{ !cancelled() && hashFiles('production-backup-*.tar.gz.enc') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: production-backup-${{ github.run_id }}
-          path: production-backup-${{ github.run_id }}.tar.gz.enc
-          retention-days: 30
-          if-no-files-found: error
+          node scripts/upload-backup-to-garage.mjs "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
