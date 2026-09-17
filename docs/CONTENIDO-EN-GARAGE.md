@@ -64,7 +64,7 @@ La migración existente `scripts/migrate-media-to-garage.mjs` sigue encargándos
 
 ## Respaldo y recuperación
 
-Configurar `S3_CONTENT_BUCKET` también en los secretos del entorno GitHub `production-backup`. El workflow exporta medios y el bucket editorial completo antes de cifrar el respaldo. `S3_BACKUP_BUCKET` continúa siendo el destino del archivo cifrado, no el almacén de trabajo.
+Configurar `S3_CONTENT_BUCKET` también en los secretos del entorno GitHub `production-backup`. El workflow exporta medios y el bucket editorial completo antes de cifrar el respaldo. `S3_BACKUP_BUCKET` es el único destino del archivo cifrado: no se conserva una segunda copia como artefacto de GitHub Actions. El workflow valida los secretos necesarios antes de empezar y falla si no puede generar un respaldo completo.
 
 Los objetos editoriales son inmutables por dirección: `content/<uuid>/<sha256-de-los-bytes>.json`. Dos escrituras concurrentes a una misma dirección tienen exactamente los mismos bytes. La revisión optimista en PostgreSQL decide qué versión queda activa; los objetos subidos por una operación fallida se conservan para no eliminar contenido que otra operación podría usar. La poda de objetos huérfanos no está implementada.
 
