@@ -1,3 +1,4 @@
+import { hydratedContent, storedContent } from '../content/garage-store.ts';
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
 import type { PermissionContext } from '../auth/require-permission.ts';
@@ -106,8 +107,8 @@ function draftFromRecord(record: any) {
   return Array.isArray(relation) ? relation[0] || null : relation || null;
 }
 
-function itemFromRecord(record: any) {
-  const draft = draftFromRecord(record);
+async function itemFromRecord(record: any) {
+  const draft = await hydratedContent(draftFromRecord(record));
   if (!draft) return null;
   const data = { ...draft.data, workflow_state: record.workflow_state };
   data.draft = record.workflow_state !== 'published' || record.current_sha !== record.published_sha;
@@ -172,14 +173,15 @@ async function saveImportedFile(
   if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
   const data = validateContentDocument(collection, decoded.data, decoded.body);
   const currentSha = contentVersionSha(data, decoded.body);
+  const stored = await storedContent(String(data.id), data, decoded.body, currentSha);
   const { data: saved, error } = await client.rpc('cms_save_content_draft', {
     p_content_id: data.id,
     p_collection: collection,
     p_path: decoded.file.path,
     p_owner_id: existing?.owner_id || auth.user.id,
     p_actor_id: auth.user.id,
-    p_data: data,
-    p_body: decoded.body,
+    p_data: stored.data,
+    p_body: stored.body,
     p_content_sha: currentSha,
     p_expected_revision: null,
     p_create_version: true,
@@ -311,14 +313,14 @@ export async function getContent(input: {
     }
     if (error || !record)
       throw new AppError('INTERNAL_ERROR', 'No se pudo leer el contenido.', 500);
-    const item = itemFromRecord(record);
+    const item = await itemFromRecord(record);
     await annotateTaxonomyAvailability(input.collection, item ? [item] : []);
     return { items: null, item, cached: false };
   }
 
   const initial = await recordsForCollection(input.collection);
   const rows = await ensureLegacyContentImported(input.collection, input.auth, initial);
-  const items = rows.map(itemFromRecord).filter(Boolean);
+  const items = (await Promise.all(rows.map(itemFromRecord))).filter(Boolean);
   await annotateTaxonomyAvailability(input.collection, items);
   items.sort((left: any, right: any) =>
     String(right.data.date || right.data.year || right.data.number || '').localeCompare(
@@ -383,11 +385,16 @@ export async function saveContent(input: {
     record = await recordForPath(filePath);
     if (!record) throw new AppError('NOT_FOUND', 'Contenido no encontrado.', 404);
     assertOwnership(auth, record);
-    draft = draftFromRecord(record);
+    draft = await hydratedContent(draftFromRecord(record));
     if (!draft) throw new ConflictError('El borrador todavía no fue importado. Recarga la lista.');
     const expectedRevision = Number(payload.revision);
     const compatibleSha = typeof payload.sha === 'string' && payload.sha === draft.content_sha;
-    if ((!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) && !compatibleSha) {
+    const hasRevision = payload.revision !== undefined && payload.revision !== null;
+    if (
+      hasRevision
+        ? !Number.isSafeInteger(expectedRevision) || expectedRevision !== Number(draft.revision)
+        : !compatibleSha
+    ) {
       throw new ConflictError('La versión del borrador no es válida. Recarga antes de guardar.');
     }
     identifiedData = preserveContentId(draft.data, untrustedData, record.id);
@@ -412,14 +419,15 @@ export async function saveContent(input: {
   if (!client) throw new AppError('INTERNAL_ERROR', 'Supabase no está configurado.', 500);
   const expectedRevision = creating ? null : Number(draft.revision);
   const autosave = payload.autosave === true;
+  const stored = await storedContent(String(data.id), data, payload.body, currentSha);
   const { data: saved, error } = await client.rpc('cms_save_content_draft', {
     p_content_id: data.id,
     p_collection: collection,
     p_path: filePath,
     p_owner_id: ownerId,
     p_actor_id: auth.user.id,
-    p_data: data,
-    p_body: payload.body,
+    p_data: stored.data,
+    p_body: stored.body,
     p_content_sha: currentSha,
     p_expected_revision: expectedRevision,
     p_create_version: !autosave,
@@ -432,7 +440,7 @@ export async function saveContent(input: {
     throw new ConflictError('El UUID o la ruta editorial ya pertenecen a otro contenido.');
   }
   if (error) {
-    throw new AppError('INTERNAL_ERROR', 'No se pudo guardar el borrador en Supabase.', 500, {
+    throw new AppError('INTERNAL_ERROR', 'No se pudo registrar la revisión del borrador.', 500, {
       details: { code: error.code },
     });
   }
@@ -477,7 +485,7 @@ export async function deleteContent(input: {
   const record = await recordForPath(input.filePath);
   if (!record) throw new AppError('NOT_FOUND', 'Contenido no encontrado.', 404);
   assertOwnership(input.auth, record);
-  const draft = draftFromRecord(record);
+  const draft = await hydratedContent(draftFromRecord(record));
   if (Number(input.revision) !== Number(draft?.revision)) {
     throw new ConflictError('El borrador cambió. Recarga antes de eliminarlo.');
   }

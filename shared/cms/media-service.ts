@@ -1,3 +1,4 @@
+import { hydratedContent } from '../content/garage-store.ts';
 import type { PermissionContext } from '../auth/require-permission.ts';
 import { getGitHubConfiguration } from '../github/config.ts';
 import { githubSearchCode } from '../github/contents-client.ts';
@@ -95,11 +96,12 @@ async function referencesForMedia(row: any) {
   for (let offset = 0; ; offset += pageSize) {
     const { data: drafts, error } = await adminClient()
       .from('cms_content_drafts')
-      .select('content_id, data, body')
+      .select('content_id, data, body, content_sha')
       .range(offset, offset + pageSize - 1);
     if (error)
       throw new InternalError('No se pudieron comprobar los borradores que usan el medio.');
-    for (const draft of drafts || []) {
+    for (const storedDraft of drafts || []) {
+      const draft = await hydratedContent(storedDraft);
       const serialized = `${JSON.stringify(draft.data || {})}\n${String(draft.body || '')}`;
       if (candidates.some((reference) => reference && serialized.includes(reference))) {
         draftIds.add(draft.content_id);

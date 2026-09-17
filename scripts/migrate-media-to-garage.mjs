@@ -11,14 +11,15 @@ import {
 } from '../shared/media/storage.ts';
 
 const apply = process.argv.includes('--apply');
-if (process.argv.slice(2).some((arg) => !['--apply', '--dry-run'].includes(arg))) {
+const copy = apply || process.argv.includes('--copy');
+if (process.argv.slice(2).some((arg) => !['--apply', '--copy', '--dry-run'].includes(arg))) {
   throw new Error(
-    'Uso: node --env-file=.env --experimental-strip-types scripts/migrate-media-to-garage.mjs [--dry-run|--apply]'
+    'Uso: node --env-file=.env --experimental-strip-types scripts/migrate-media-to-garage.mjs [--dry-run|--copy|--apply]'
   );
 }
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)
   throw new Error('Falta configurar Supabase.');
-if (apply && !process.env.MEDIA_MIGRATION_REPORT)
+if (copy && !process.env.MEDIA_MIGRATION_REPORT)
   throw new Error('Define MEDIA_MIGRATION_REPORT para conservar el respaldo y resultado.');
 const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -55,52 +56,67 @@ try {
     };
     report.rows.push(entry);
     await save();
-    if (mediaProvider(row) === 'supabase') {
-      const bytes = await source.read(row.storage_path);
-      if (
-        !bytes ||
-        bytes.length !== Number(row.size_bytes) ||
-        checksum(bytes) !== row.checksum_sha256
-      )
-        throw new Error(`Integridad de origen inválida: ${row.id}`);
-      if (!(await verifyStoredMedia(target, row.storage_path, row.checksum_sha256))) {
-        if (!apply) {
-          entry.status = 'needs-copy';
-          console.log(row.id, entry.status);
-          continue;
+    try {
+      if (mediaProvider(row) === 'supabase') {
+        const bytes = await source.read(row.storage_path);
+        if (
+          !bytes ||
+          bytes.length !== Number(row.size_bytes) ||
+          checksum(bytes) !== row.checksum_sha256
+        )
+          throw new Error(`Integridad de origen inválida: ${row.id}`);
+        if (!(await verifyStoredMedia(target, row.storage_path, row.checksum_sha256))) {
+          if (!copy) {
+            entry.status = 'needs-copy';
+            console.log(row.id, entry.status);
+            continue;
+          }
+          await ensureStoredMedia(target, row.storage_path, bytes, row.mime_type);
         }
-        await ensureStoredMedia(target, row.storage_path, bytes, row.mime_type);
       }
+      if (!(await verifyStoredMedia(target, row.storage_path, row.checksum_sha256)))
+        throw new Error(`Falta el objeto: ${row.id}`);
+      const response = await fetch(entry.targetUrl, {
+        signal: AbortSignal.timeout(20_000),
+        redirect: 'error',
+      });
+      if (!response.ok) throw new Error(`Lectura pública fallida: ${row.id}`);
+      const publicBytes = Buffer.from(await response.arrayBuffer());
+      if (
+        checksum(publicBytes) !== row.checksum_sha256 ||
+        response.headers.get('content-type')?.split(';')[0] !== row.mime_type
+      )
+        throw new Error(`Verificación pública fallida: ${row.id}`);
+      if (apply && row.public_url !== entry.targetUrl) {
+        const { data, error } = await client
+          .from('cms_media')
+          .update({ public_url: entry.targetUrl })
+          .eq('id', row.id)
+          .eq('public_url', row.public_url)
+          .eq('updated_at', row.updated_at)
+          .is('deleted_at', null)
+          .select('id')
+          .maybeSingle();
+        if (error || !data)
+          throw new Error(`El registro cambió o no se pudo actualizar: ${row.id}`);
+      }
+      entry.status = apply
+        ? 'verified-and-active'
+        : copy
+          ? 'copied-and-verified'
+          : 'verified-ready';
+      await save();
+      console.log(row.id, entry.status);
+    } catch (error) {
+      entry.status = 'failed';
+      entry.error = error.message;
+      await save();
+      if (apply) throw error;
+      console.error(row.id, entry.error);
     }
-    if (!(await verifyStoredMedia(target, row.storage_path, row.checksum_sha256)))
-      throw new Error(`Falta el objeto: ${row.id}`);
-    const response = await fetch(entry.targetUrl, {
-      signal: AbortSignal.timeout(20_000),
-      redirect: 'error',
-    });
-    if (!response.ok) throw new Error(`Lectura pública fallida: ${row.id}`);
-    const publicBytes = Buffer.from(await response.arrayBuffer());
-    if (
-      checksum(publicBytes) !== row.checksum_sha256 ||
-      response.headers.get('content-type')?.split(';')[0] !== row.mime_type
-    )
-      throw new Error(`Verificación pública fallida: ${row.id}`);
-    if (apply && row.public_url !== entry.targetUrl) {
-      const { data, error } = await client
-        .from('cms_media')
-        .update({ public_url: entry.targetUrl })
-        .eq('id', row.id)
-        .eq('public_url', row.public_url)
-        .eq('updated_at', row.updated_at)
-        .is('deleted_at', null)
-        .select('id')
-        .maybeSingle();
-      if (error || !data) throw new Error(`El registro cambió o no se pudo actualizar: ${row.id}`);
-    }
-    entry.status = apply ? 'verified-and-active' : 'verified-ready';
-    await save();
-    console.log(row.id, entry.status);
   }
+  report.failures = report.rows.filter((row) => row.status === 'failed').length;
+  if (report.failures) process.exitCode = 1;
   report.completedAt = new Date().toISOString();
   await save();
   console.log(

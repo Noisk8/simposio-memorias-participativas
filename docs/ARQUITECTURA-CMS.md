@@ -2,6 +2,15 @@
 
 Este documento es la fuente de verdad técnica del CMS. Describe lo que está implementado en el repositorio; cualquier capacidad futura se etiqueta como **Planeado**.
 
+## Textos en Garage: transición disponible
+
+La integración editorial se describe en [CONTENIDO-EN-GARAGE.md](CONTENIDO-EN-GARAGE.md).
+Con `CMS_CONTENT_STORAGE_PROVIDER=garage` y `S3_CONTENT_BUCKET` privado, los guardados nuevos
+persisten frontmatter y cuerpo en Garage. Supabase conserva referencias y revisiones;
+las lecturas, publicaciones y comprobaciones de uso de medios resuelven el documento desde Garage.
+Sin esa variable se conserva el comportamiento previo descrito abajo. La migración de datos y
+el SQL final se ejecutan por fases después de desplegar el backend compatible.
+
 ## Componentes y autoridad
 
 | Componente          | Responsabilidad actual                                                      |

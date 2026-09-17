@@ -1,3 +1,4 @@
+import { hydratedContent, storedContent } from '../content/garage-store.ts';
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import type { PermissionContext } from '../auth/require-permission.ts';
@@ -144,13 +145,14 @@ async function immutableVersion(record: any, draft: any, actorId: string) {
     .limit(1)
     .maybeSingle();
   if (latestError) throw new InternalError('No se pudo numerar la versión publicable.');
+  const stored = await storedContent(record.id, draft.data, draft.body, draft.content_sha);
   const { data: created, error } = await client
     .from('cms_content_versions')
     .insert({
       content_id: record.id,
       version_number: Number(latest?.version_number || 0) + 1,
-      data: draft.data,
-      body: draft.body,
+      data: stored.data,
+      body: stored.body,
       content_sha: draft.content_sha,
       reason: 'publication',
       created_by: actorId,
@@ -385,7 +387,7 @@ async function startPublication(input: {
     .eq('path', input.path)
     .maybeSingle();
   if (error || !record) throw new AppError('NOT_FOUND', 'Contenido no encontrado.', 404);
-  const draft = draftFromRecord(record);
+  const draft = await hydratedContent(draftFromRecord(record));
   const collection = contentCollection(record.collection) as ContentCollection;
   let version: any;
 
@@ -425,6 +427,8 @@ async function startPublication(input: {
     }
     version = publishedVersion;
   }
+
+  version = await hydratedContent(version);
 
   const { data: active } = await client
     .from('cms_publications')
