@@ -20,7 +20,12 @@ test('el selector conserva carga nueva, URL manual y controles accesibles', () =
   assert.match(editor, /aria-modal="true"/);
   assert.match(editor, /Buscar por nombre, crédito o licencia/);
   assert.match(editor, /Subir nueva/);
+  assert.match(editor, /Subir imagen/);
   assert.match(editor, /\/\.netlify\/functions\/upload-media/);
   assert.match(editor, /method: 'POST'/);
+  assert.match(editor, /decorative: true/);
+  assert.doesNotMatch(editor, /Crédito \(opcional\)/);
+  assert.doesNotMatch(editor, /Licencia \(opcional/);
+  assert.doesNotMatch(editor, /Añade texto alternativo o marca la imagen como decorativa/);
   assert.match(editor, /input\.dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\)/);
 });

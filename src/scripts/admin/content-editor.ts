@@ -799,49 +799,28 @@ function fieldElement(def, value) {
     const uploadTitle = document.createElement('strong');
     uploadTitle.textContent = 'Nueva imagen';
     const uploadHelp = document.createElement('p');
-    uploadHelp.textContent = 'JPEG, PNG o WebP. Máximo 2 MiB.';
-
-    const mediaMetadata = document.createElement('div');
-    mediaMetadata.className = 'cms-image-metadata';
-
-    const decorativeLabel = document.createElement('label');
-    decorativeLabel.className = 'flex items-center gap-2';
-    const decorative = document.createElement('input');
-    decorative.type = 'checkbox';
-    decorativeLabel.append(decorative, document.createTextNode(' Imagen decorativa'));
-
-    function metadataField(placeholder) {
-      const field = document.createElement('input');
-      field.type = 'text';
-      field.placeholder = placeholder;
-      field.className = 'w-full rounded-lg border border-gray-300 px-3 py-2';
-      return field;
-    }
-    const mediaAlt = metadataField('Texto alternativo de la imagen');
-    const mediaCredit = metadataField('Crédito (opcional)');
-    const mediaLicense = metadataField('Licencia (opcional, ej. CC BY-SA 4.0)');
-    decorative.onchange = () => {
-      mediaAlt.disabled = decorative.checked;
-      if (decorative.checked) mediaAlt.value = '';
-    };
-    mediaMetadata.append(decorativeLabel, mediaAlt, mediaCredit, mediaLicense);
+    uploadHelp.textContent =
+      'JPEG, PNG o WebP. Máximo 2 MiB. La imagen quedará marcada como decorativa.';
 
     const picker = document.createElement('input');
     picker.type = 'file';
     picker.accept = 'image/jpeg,image/png,image/webp';
     picker.className = 'cms-image-file';
+    picker.id = 'cms-image-upload-' + Math.random().toString(36).slice(2);
     const uploadStatus = document.createElement('p');
     uploadStatus.className = 'cms-image-upload-status';
     uploadStatus.setAttribute('aria-live', 'polite');
-    const pickerLabel = document.createElement('label');
+    const pickerLabel = document.createElement('button');
+    pickerLabel.type = 'button';
     pickerLabel.className = 'cms-image-file-label';
-    pickerLabel.append(document.createTextNode('Seleccionar archivo'), picker);
+    pickerLabel.textContent = '↑ Subir imagen';
+    pickerLabel.onclick = () => picker.click();
 
     libraryButton.onclick = () =>
       openMediaPicker({ input, selectedNode: selectedMedia, uploadPanel }, libraryButton);
     uploadToggle.onclick = () => {
       uploadPanel.classList.toggle('hidden');
-      if (!uploadPanel.classList.contains('hidden')) mediaAlt.focus();
+      if (!uploadPanel.classList.contains('hidden')) pickerLabel.focus();
     };
     input.addEventListener('input', () => {
       const knownMedia = mediaLibrary.find((media) => mediaValue(media) === input.value);
@@ -853,11 +832,6 @@ function fieldElement(def, value) {
       if (file.size > 2 * 1024 * 1024) {
         uploadStatus.dataset.kind = 'error';
         uploadStatus.textContent = 'La imagen supera el máximo de 2 MiB.';
-        return;
-      }
-      if (!decorative.checked && !mediaAlt.value.trim()) {
-        uploadStatus.dataset.kind = 'error';
-        uploadStatus.textContent = 'Añade texto alternativo o marca la imagen como decorativa.';
         return;
       }
       uploadStatus.dataset.kind = 'loading';
@@ -877,10 +851,10 @@ function fieldElement(def, value) {
               name: file.name,
               mimeType: file.type,
               content,
-              altText: mediaAlt.value.trim(),
-              credit: mediaCredit.value.trim(),
-              license: mediaLicense.value.trim(),
-              decorative: decorative.checked,
+              altText: '',
+              credit: '',
+              license: '',
+              decorative: true,
             }),
           });
           const uploaded = result.image;
@@ -917,7 +891,7 @@ function fieldElement(def, value) {
       };
       reader.readAsDataURL(file);
     };
-    uploadPanel.append(uploadTitle, uploadHelp, mediaMetadata, pickerLabel, uploadStatus);
+    uploadPanel.append(uploadTitle, uploadHelp, picker, pickerLabel, uploadStatus);
     wrapper.append(help, selectedMedia, mediaActions, uploadPanel);
     renderSelectedMedia(input, selectedMedia);
   }
