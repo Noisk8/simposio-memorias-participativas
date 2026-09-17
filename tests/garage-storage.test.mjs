@@ -109,3 +109,14 @@ test('deduplicación concurrente comprueba SHA-256 y nunca sobrescribe un objeto
     ConflictError
   );
 });
+
+test('reconoce solo aliases legacy configurados en servidor y conserva las referencias antiguas', () => {
+  const configured = { ...env, S3_LEGACY_PUBLIC_BASE_URLS: 'https://old-media.example.org' };
+  const row = {
+    storage_bucket: 'cms-media',
+    storage_path: path,
+    public_url: `https://old-media.example.org/${path}`,
+  };
+  assert.equal(mediaProvider(row, configured), 'garage');
+  assert.throws(() => mediaProvider(row, env));
+});

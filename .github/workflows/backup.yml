@@ -41,6 +41,7 @@ jobs:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
           S3_REGION: ${{ secrets.S3_REGION }}
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_CONTENT_BUCKET: ${{ secrets.S3_CONTENT_BUCKET }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE }}
@@ -66,6 +67,9 @@ jobs:
             echo "Catálogo editorial no incluido: faltan credenciales de Supabase."
           fi
           node scripts/backup-garage-media.mjs
+          if [ -n "${S3_CONTENT_BUCKET:-}" ]; then
+            node scripts/backup-garage-media.mjs --content
+          fi
           cp -R src/content "$BACKUP_OUTPUT_DIR/published-content"
           tar -C "$BACKUP_OUTPUT_DIR" -czf "$backup_dir/backup.tar.gz" .
           openssl enc -aes-256-cbc -pbkdf2 -salt \

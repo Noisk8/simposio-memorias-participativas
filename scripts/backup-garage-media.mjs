@@ -7,8 +7,14 @@ import path from 'node:path';
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 
 const root = process.env.BACKUP_OUTPUT_DIR;
-const bucket = process.env.S3_BUCKET;
-if (!root || bucket !== 'cms-media')
+const editorial = process.argv.includes('--content');
+const bucket = editorial ? process.env.S3_CONTENT_BUCKET : process.env.S3_BUCKET;
+if (
+  !root ||
+  !bucket ||
+  (!editorial && bucket !== 'cms-media') ||
+  (editorial && bucket === 'cms-media')
+)
   throw new Error('Configura BACKUP_OUTPUT_DIR y S3_BUCKET=cms-media.');
 const endpoint = new URL(process.env.S3_ENDPOINT || '');
 if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password)
@@ -72,7 +78,7 @@ do {
 } while (token);
 await mkdir(root, { recursive: true });
 await writeFile(
-  path.join(root, 'garage-manifest.json'),
+  path.join(root, editorial ? 'garage-content-manifest.json' : 'garage-manifest.json'),
   JSON.stringify(
     {
       createdAt: new Date().toISOString(),

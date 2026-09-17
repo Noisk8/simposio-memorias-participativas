@@ -40,6 +40,14 @@ export function garagePublicUrl(path: string, env: Env = process.env) {
   return `${httpsBase(env.S3_PUBLIC_BASE_URL, 'S3_PUBLIC_BASE_URL')}/${encodedPath(path)}`;
 }
 
+// Orígenes anteriores configurados exclusivamente en servidor durante un cambio de dominio.
+export function garageReferenceUrls(path: string, env: Env = process.env) {
+  const bases = [env.S3_PUBLIC_BASE_URL, ...(env.S3_LEGACY_PUBLIC_BASE_URLS || '').split(',')]
+    .map((value) => value?.trim())
+    .filter(Boolean);
+  return bases.map((base) => `${httpsBase(base, 'S3_PUBLIC_BASE_URL')}/${encodedPath(path)}`);
+}
+
 export function supabasePublicUrl(path: string, env: Env = process.env) {
   return `${httpsBase(env.SUPABASE_URL, 'SUPABASE_URL')}/storage/v1/object/public/${CMS_MEDIA_BUCKET}/${encodedPath(path)}`;
 }
@@ -50,7 +58,7 @@ export function mediaProvider(row: StoredMedia, env: Env = process.env): 'garage
   if (row.storage_bucket !== CMS_MEDIA_BUCKET)
     throw new ConfigurationError('Bucket de medios desconocido.');
   if (row.public_url === supabasePublicUrl(row.storage_path, env)) return 'supabase';
-  if (env.S3_PUBLIC_BASE_URL && row.public_url === garagePublicUrl(row.storage_path, env))
+  if (env.S3_PUBLIC_BASE_URL && garageReferenceUrls(row.storage_path, env).includes(row.public_url))
     return 'garage';
   throw new ConfigurationError('El medio no pertenece a un almacenamiento configurado.');
 }
@@ -61,7 +69,7 @@ export function mediaReferenceUrls(row: StoredMedia, env: Env = process.env) {
     ...new Set([
       row.public_url,
       supabasePublicUrl(row.storage_path, env),
-      ...(env.S3_PUBLIC_BASE_URL ? [garagePublicUrl(row.storage_path, env)] : []),
+      ...(env.S3_PUBLIC_BASE_URL ? garageReferenceUrls(row.storage_path, env) : []),
     ]),
   ];
 }
