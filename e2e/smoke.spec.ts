@@ -48,14 +48,62 @@ test('taxonomías: los archivos de categorías y etiquetas responden', async ({ 
   }
 });
 
+test('contacto: está disponible desde el menú y muestra los canales de contacto', async ({
+  page,
+}) => {
+  const response = await page.goto('/');
+  expect(response?.status()).toBe(200);
+
+  const menuLink = page.locator('header a[href="/contacto"]').first();
+  await expect(menuLink).toHaveText('Contacto');
+  await menuLink.click();
+
+  await expect(page).toHaveURL(/\/contacto\/?$/);
+  await expect(page.locator('main h1')).toHaveText('Contacto');
+  await expect(page.locator('header a[href="/contacto"]').first()).toHaveAttribute(
+    'aria-current',
+    'page'
+  );
+  await expect(page.locator('main a[href^="mailto:"]')).toBeVisible();
+  await expect(page.locator('main a[href*="instagram.com"]')).toBeVisible();
+});
+
 test('404: una ruta inexistente devuelve la página personalizada', async ({ page }) => {
   const response = await page.goto('/ruta-que-no-existe');
   expect(response?.status()).toBe(404);
   await expect(page.locator('main h1')).toContainText('Página no encontrada');
 });
 
-test('admin: la pantalla de login carga sin sesión', async ({ page }) => {
+test('admin: la pantalla de login muestra el formulario sin sesión', async ({ page }) => {
+  await page.route('**/auth/v1/token**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Invalid login credentials' }),
+    });
+  });
   const response = await page.goto('/admin/login');
   expect(response?.status()).toBe(200);
-  await expect(page.locator('body')).toBeVisible();
+  await expect(page.locator('#supabase-login-form')).toBeVisible();
+  await expect(page.locator('#supabase-email')).toBeVisible();
+  await expect(page.locator('#supabase-password')).toBeVisible();
+
+  await page.locator('#supabase-email').fill('prueba@example.com');
+  await page.locator('#supabase-password').fill('credencial-invalida');
+  await page.locator('#supabase-login-submit').click();
+  await expect(page.locator('#supabase-login-submit')).toBeDisabled();
+  await expect(page.locator('#supabase-login-submit')).toHaveText('Ingresando…');
+  await expect(page.locator('#supabase-login-error')).toBeVisible();
+  await expect(page.locator('#supabase-login-submit')).toBeEnabled();
+  await expect(page.locator('#supabase-login-submit')).toHaveText('Entrar');
+});
+
+test('admin: el formulario de login es visible aunque JavaScript falle', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  const response = await page.goto('/admin/login');
+  expect(response?.status()).toBe(200);
+  await expect(page.locator('#supabase-login-form')).toBeVisible();
+  await context.close();
 });

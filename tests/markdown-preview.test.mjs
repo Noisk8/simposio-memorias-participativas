@@ -48,3 +48,13 @@ test('la vista previa sanitiza el HTML antes de insertarlo', () => {
   assert.match(editor, /USE_PROFILES: \{ html: true \}/);
   assert.doesNotMatch(editor, /\.replace\(\/\^###/);
 });
+
+test('la vista previa reserva la cabecera verde para el título y el panel blanco para el cuerpo', () => {
+  assert.match(
+    editor,
+    /<header class="bg-gradient-to-r from-ugr-green to-ugr-green-dark p-6 text-white">/
+  );
+  assert.match(editor, /<h1 class="text-3xl font-bold text-white">/);
+  assert.match(editor, /El contenido aparecerá aquí mientras escribes\./);
+  assert.doesNotMatch(editor, /El contenido escrito en Markdown aparecerá aquí/);
+});

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { mediaStorage, checksum } from '../shared/media/storage.ts';
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -27,11 +28,12 @@ for (let offset = 0; ; offset += pageSize) {
 }
 
 for (const row of rows) {
-  const { data, error } = await client.storage.from(row.storage_bucket).download(row.storage_path);
-  if (error || !data) throw new Error(`No se pudo descargar ${row.storage_path}.`);
+  const data = await mediaStorage(client, row).read(row.storage_path);
+  if (!data || checksum(data) !== row.checksum_sha256)
+    throw new Error(`No se pudo verificar ${row.storage_path}.`);
   const destination = path.join(outputRoot, 'storage', row.storage_bucket, row.storage_path);
   await mkdir(path.dirname(destination), { recursive: true });
-  await writeFile(destination, Buffer.from(await data.arrayBuffer()));
+  await writeFile(destination, data);
 }
 
 await mkdir(outputRoot, { recursive: true });

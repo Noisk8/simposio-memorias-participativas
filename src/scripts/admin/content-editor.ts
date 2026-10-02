@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { getAdminToken, waitForAdminAuth } from './client.ts';
+import { cardSkeletons, clearSkeleton, setSkeleton } from './skeletons.ts';
 import { defaults, descriptions, groupFields, labels, schemas } from './editor-config.ts';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import {
+  contentPublicationStatus,
   hasPendingPublishedChanges,
   hasPublishedVersion,
   isArchivedContent,
@@ -224,6 +226,7 @@ function renderMediaLibrary() {
         .includes(query)
   );
   mediaLibraryGrid.innerHTML = '';
+  clearSkeleton(mediaLibraryGrid);
   mediaLibraryStatus.dataset.kind = images.length ? 'success' : 'empty';
   mediaLibraryStatus.textContent = images.length
     ? images.length + (images.length === 1 ? ' imagen disponible.' : ' imágenes disponibles.')
@@ -284,12 +287,14 @@ async function loadMediaLibrary(force = false) {
   mediaLibraryRefresh.disabled = true;
   mediaLibraryStatus.dataset.kind = 'loading';
   mediaLibraryStatus.textContent = 'Cargando biblioteca…';
-  mediaLibraryGrid.innerHTML = '';
+  setSkeleton(mediaLibraryGrid, cardSkeletons(4));
   try {
     const result = await api('/.netlify/functions/manage-media');
     mediaLibrary = result.media || [];
     renderMediaLibrary();
   } catch (error) {
+    clearSkeleton(mediaLibraryGrid);
+    mediaLibraryGrid.innerHTML = '';
     mediaLibraryStatus.dataset.kind = 'error';
     mediaLibraryStatus.textContent = error.message;
   } finally {
@@ -522,7 +527,8 @@ async function loadItems() {
     option.textContent = 'Agrupar · ' + label;
     group.appendChild(option);
   });
-  itemsNode.innerHTML = '<p class="text-sm text-gray-500">Cargando…</p>';
+  itemsNode.className = 'cms-cards grid-view';
+  setSkeleton(itemsNode, cardSkeletons());
   try {
     const result = await api(
       '/.netlify/functions/manage-content?collection=' + encodeURIComponent(collection.value)
@@ -531,8 +537,10 @@ async function loadItems() {
     permissions = result.permissions || [];
     applyPermissions();
     renderItems();
+    clearSkeleton(itemsNode);
     setStatus(items.length + ' contenidos cargados.');
   } catch (error) {
+    clearSkeleton(itemsNode);
     itemsNode.innerHTML = '';
     setStatus(error.message, true);
   }
@@ -613,8 +621,19 @@ function renderItems() {
       item.workflow?.reference_available === false;
     const published = !unavailableReference && isPublishedListingContent(item);
     const pendingChanges = hasPendingPublishedChanges(item);
+    const publicationStatus = unavailableReference ? 'draft' : contentPublicationStatus(item);
+    const publicationStatusLabel = {
+      published: 'Publicado',
+      draft: 'Borrador',
+      archived: 'Archivado',
+    }[publicationStatus];
     const publicUrl = published ? getPublicUrl(item.collection, item.path, item.data) : '';
     button.innerHTML =
+      '<span class="cms-status-chip ' +
+      publicationStatus +
+      '"><span aria-hidden="true"></span>' +
+      publicationStatusLabel +
+      '</span>' +
       '<span class="cms-card-title">' +
       esc(item.data.title || item.name) +
       '</span>' +
@@ -780,49 +799,28 @@ function fieldElement(def, value) {
     const uploadTitle = document.createElement('strong');
     uploadTitle.textContent = 'Nueva imagen';
     const uploadHelp = document.createElement('p');
-    uploadHelp.textContent = 'JPEG, PNG o WebP. Máximo 2 MiB.';
-
-    const mediaMetadata = document.createElement('div');
-    mediaMetadata.className = 'cms-image-metadata';
-
-    const decorativeLabel = document.createElement('label');
-    decorativeLabel.className = 'flex items-center gap-2';
-    const decorative = document.createElement('input');
-    decorative.type = 'checkbox';
-    decorativeLabel.append(decorative, document.createTextNode(' Imagen decorativa'));
-
-    function metadataField(placeholder) {
-      const field = document.createElement('input');
-      field.type = 'text';
-      field.placeholder = placeholder;
-      field.className = 'w-full rounded-lg border border-gray-300 px-3 py-2';
-      return field;
-    }
-    const mediaAlt = metadataField('Texto alternativo de la imagen');
-    const mediaCredit = metadataField('Crédito (obligatorio)');
-    const mediaLicense = metadataField('Licencia (obligatoria, ej. CC BY-SA 4.0)');
-    decorative.onchange = () => {
-      mediaAlt.disabled = decorative.checked;
-      if (decorative.checked) mediaAlt.value = '';
-    };
-    mediaMetadata.append(decorativeLabel, mediaAlt, mediaCredit, mediaLicense);
+    uploadHelp.textContent =
+      'JPEG, PNG o WebP. Máximo 2 MiB. La imagen quedará marcada como decorativa.';
 
     const picker = document.createElement('input');
     picker.type = 'file';
     picker.accept = 'image/jpeg,image/png,image/webp';
     picker.className = 'cms-image-file';
+    picker.id = 'cms-image-upload-' + Math.random().toString(36).slice(2);
     const uploadStatus = document.createElement('p');
     uploadStatus.className = 'cms-image-upload-status';
     uploadStatus.setAttribute('aria-live', 'polite');
-    const pickerLabel = document.createElement('label');
+    const pickerLabel = document.createElement('button');
+    pickerLabel.type = 'button';
     pickerLabel.className = 'cms-image-file-label';
-    pickerLabel.append(document.createTextNode('Seleccionar archivo'), picker);
+    pickerLabel.textContent = '↑ Subir imagen';
+    pickerLabel.onclick = () => picker.click();
 
     libraryButton.onclick = () =>
       openMediaPicker({ input, selectedNode: selectedMedia, uploadPanel }, libraryButton);
     uploadToggle.onclick = () => {
       uploadPanel.classList.toggle('hidden');
-      if (!uploadPanel.classList.contains('hidden')) mediaAlt.focus();
+      if (!uploadPanel.classList.contains('hidden')) pickerLabel.focus();
     };
     input.addEventListener('input', () => {
       const knownMedia = mediaLibrary.find((media) => mediaValue(media) === input.value);
@@ -834,16 +832,6 @@ function fieldElement(def, value) {
       if (file.size > 2 * 1024 * 1024) {
         uploadStatus.dataset.kind = 'error';
         uploadStatus.textContent = 'La imagen supera el máximo de 2 MiB.';
-        return;
-      }
-      if (!decorative.checked && !mediaAlt.value.trim()) {
-        uploadStatus.dataset.kind = 'error';
-        uploadStatus.textContent = 'Añade texto alternativo o marca la imagen como decorativa.';
-        return;
-      }
-      if (!mediaCredit.value.trim() || !mediaLicense.value.trim()) {
-        uploadStatus.dataset.kind = 'error';
-        uploadStatus.textContent = 'El crédito y la licencia son obligatorios.';
         return;
       }
       uploadStatus.dataset.kind = 'loading';
@@ -863,10 +851,10 @@ function fieldElement(def, value) {
               name: file.name,
               mimeType: file.type,
               content,
-              altText: mediaAlt.value.trim(),
-              credit: mediaCredit.value.trim(),
-              license: mediaLicense.value.trim(),
-              decorative: decorative.checked,
+              altText: '',
+              credit: '',
+              license: '',
+              decorative: true,
             }),
           });
           const uploaded = result.image;
@@ -903,7 +891,7 @@ function fieldElement(def, value) {
       };
       reader.readAsDataURL(file);
     };
-    uploadPanel.append(uploadTitle, uploadHelp, mediaMetadata, pickerLabel, uploadStatus);
+    uploadPanel.append(uploadTitle, uploadHelp, picker, pickerLabel, uploadStatus);
     wrapper.append(help, selectedMedia, mediaActions, uploadPanel);
     renderSelectedMedia(input, selectedMedia);
   }
@@ -1200,25 +1188,26 @@ function updatePreview() {
   const publishedUrl = isPublishedListingContent(current)
     ? getPublicUrl(collection.value, current?.path || '', data)
     : '';
+  const status = isArchivedContent(current)
+    ? '<p class="mb-2 text-xs font-bold uppercase text-white/80">Archivada</p>'
+    : hasPendingPublishedChanges(current)
+      ? '<p class="mb-2 text-xs font-bold uppercase text-amber-100">Cambios sin publicar</p>'
+      : !publishedUrl && data.draft
+        ? '<p class="mb-2 text-xs font-bold uppercase text-amber-100">Borrador</p>'
+        : '';
   previewNode.innerHTML =
     (image
       ? '<img src="' + esc(resolvePreviewUrl(image)) + '" alt="" class="h-56 w-full object-cover">'
-      : '<div class="h-24 bg-gradient-to-r from-ugr-green to-ugr-green-dark"></div>') +
-    '<div class="p-6">' +
-    (isArchivedContent(current)
-      ? '<p class="mb-2 text-xs font-bold uppercase text-gray-600">Archivada</p>'
-      : hasPendingPublishedChanges(current)
-        ? '<p class="mb-2 text-xs font-bold uppercase text-amber-700">Cambios sin publicar</p>'
-        : !publishedUrl && data.draft
-          ? '<p class="mb-2 text-xs font-bold uppercase text-amber-700">Borrador</p>'
-          : '') +
-    '<h1 class="text-3xl font-bold text-ugr-green-dark">' +
+      : '') +
+    '<header class="bg-gradient-to-r from-ugr-green to-ugr-green-dark p-6 text-white">' +
+    status +
+    '<h1 class="text-3xl font-bold text-white">' +
     esc(data.title || 'Título del contenido') +
     '</h1>' +
-    (meta ? '<p class="mt-2 text-sm text-gray-500">' + meta + '</p>' : '') +
-    (data.description
-      ? '<p class="mt-4 text-lg text-gray-700">' + esc(data.description) + '</p>'
-      : '') +
+    (meta ? '<p class="mt-2 text-sm text-white/80">' + meta + '</p>' : '') +
+    '</header>' +
+    '<div class="p-6">' +
+    (data.description ? '<p class="text-lg text-gray-700">' + esc(data.description) + '</p>' : '') +
     (publishedUrl
       ? '<div class="mt-5 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">' +
         '<strong class="block mb-1">Publicado</strong>' +
@@ -1231,7 +1220,7 @@ function updatePreview() {
       : '') +
     (badges ? '<div class="mt-4 flex flex-wrap gap-2">' + badges + '</div>' : '') +
     '<div class="cms-markdown-preview">' +
-    markdown(body || 'El contenido escrito en Markdown aparecerá aquí en tiempo real.') +
+    markdown(body || 'El contenido aparecerá aquí mientras escribes.') +
     '</div></div>';
 
   previewNode.querySelectorAll('.cms-markdown-preview a').forEach((link) => {

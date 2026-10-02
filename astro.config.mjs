@@ -21,6 +21,7 @@ export default defineConfig({
         "connect-src 'self'",
         "font-src 'self' data:",
         "img-src 'self' data: blob: https:",
+        "media-src 'self' https://cms-media.web.red-memorias.duckdns.org",
         'frame-src https://giscus.app',
         "object-src 'none'",
         "base-uri 'self'",

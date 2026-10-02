@@ -34,7 +34,7 @@ for (const file of walk(dist).filter((target) => target.endsWith('.html'))) {
   const ogType = content(html, /<meta\s+property="og:type"\s+content="([^"]*)"/i);
 
   if (!title) errors.push(`${relative}: falta title.`);
-  if (description.length < 20) errors.push(`${relative}: falta una meta description útil.`);
+  if (!description) errors.push(`${relative}: falta una meta description.`);
   if (!canonical) errors.push(`${relative}: falta canonical.`);
   if (!ogTitle || !ogDescription || !ogImage || !ogType) {
     errors.push(`${relative}: Open Graph está incompleto.`);

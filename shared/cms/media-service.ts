@@ -7,12 +7,12 @@ import {
   ConflictError,
   GitHubError,
   InternalError,
-  StorageError,
   ValidationError,
 } from '../observability/errors.ts';
 import { getAdminClient } from '../supabase/admin-client.ts';
 
-export const CMS_MEDIA_BUCKET = 'cms-media';
+export { CMS_MEDIA_BUCKET } from '../media/storage.ts';
+import { mediaStorage, mediaReferenceUrls } from '../media/storage.ts';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function mayUpdateReusedMedia(auth: Pick<PermissionContext, 'permissions'>): boolean {
@@ -72,13 +72,13 @@ export function mediaUploadPolicy() {
     maxHeight: policy.maxHeight,
     maxPixels: policy.maxPixels,
     allowedImageMimeTypes: policy.allowedImageMimeTypes,
-    requiredImageMetadata: ['altText_or_decorative', 'credit', 'license'],
+    requiredImageMetadata: ['altText_or_decorative'],
   };
 }
 
 async function referencesForMedia(row: any) {
   const config = getGitHubConfiguration();
-  const candidates = [row.public_url, `/images/${row.original_filename}`];
+  const candidates = [...mediaReferenceUrls(row), `/images/${row.original_filename}`];
   const found = new Set<string>();
   for (const reference of candidates) {
     const response = await githubSearchCode(
@@ -190,7 +190,12 @@ export async function updateMediaMetadata(payload: any, auth: PermissionContext)
   return toMedia(data);
 }
 
-export async function deleteMedia(input: { id: unknown }, auth: PermissionContext) {
+export async function deleteMedia(
+  input: { id: unknown },
+  auth: PermissionContext,
+  dependencies = { adminClient, mediaStorage, referencesForMedia, recordAudit }
+) {
+  const { adminClient, mediaStorage, referencesForMedia, recordAudit } = dependencies;
   const id = validateMediaId(input.id);
   const client = adminClient();
   const { data: row, error: readError } = await client
@@ -219,14 +224,15 @@ export async function deleteMedia(input: { id: unknown }, auth: PermissionContex
     .maybeSingle();
   if (markError || !marked) throw new ConflictError('El medio cambió. Actualiza la biblioteca.');
 
-  const { error: removeError } = await client.storage
-    .from(row.storage_bucket)
-    .remove([row.storage_path]);
-  if (removeError) {
-    await client.from('cms_media').update({ deleted_at: null }).eq('id', id);
-    throw new StorageError('No se pudo eliminar el objeto de Storage.', {
-      reason: removeError.message,
-    });
+  try {
+    await mediaStorage(client, row).remove(row.storage_path);
+  } catch (error) {
+    await client
+      .from('cms_media')
+      .update({ deleted_at: null })
+      .eq('id', id)
+      .eq('deleted_at', deletedAt);
+    throw error;
   }
 
   await recordAudit({

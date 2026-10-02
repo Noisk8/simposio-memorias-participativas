@@ -82,7 +82,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $$ 
 declare
   v_publication public.cms_publications%rowtype;
   v_record public.cms_content_records%rowtype;

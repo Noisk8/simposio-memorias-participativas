@@ -11,8 +11,8 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
           <p>Administración</p>
           <h1>Biblioteca de medios</h1>
           <div>
-            Administra imágenes JPEG, PNG y WebP o documentos PDF en Supabase Storage y copia sus
-            URLs estables para usarlas en el contenido.
+            Administra imágenes JPEG, PNG y WebP o documentos PDF y copia sus URLs estables para
+            usarlas en el contenido.
           </div>
         </div>
         <a href="/admin/">← Volver al panel</a>
@@ -133,7 +133,7 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
           </div>
 
           <fieldset id="image-metadata" class="cms-media-metadata hidden">
-            <legend>Metadata editorial obligatoria de la imagen</legend>
+            <legend>Información de la imagen</legend>
             <label class="cms-media-decorative">
               <input id="decorative" type="checkbox" />
               <span>La imagen es decorativa</span>
@@ -144,11 +144,11 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
               <small>Describe el contenido o marca explícitamente la imagen como decorativa.</small>
             </label>
             <label>
-              <span>Crédito</span>
+              <span>Crédito (opcional)</span>
               <input id="credit" type="text" maxlength="500" />
             </label>
             <label>
-              <span>Licencia</span>
+              <span>Licencia (opcional)</span>
               <input id="license" type="text" maxlength="255" placeholder="Ej. CC BY-SA 4.0" />
             </label>
           </fieldset>

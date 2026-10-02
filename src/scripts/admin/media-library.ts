@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { adminApi, waitForAdminAuth } from './client.ts';
+import { cardSkeletons, clearSkeleton, setSkeleton } from './skeletons.ts';
 const panel = document.getElementById('media-panel');
 const statusNode = document.getElementById('status');
 const imagesNode = document.getElementById('images');
@@ -150,6 +151,9 @@ function createImageCard(image) {
 async function loadImages() {
   refreshMedia.disabled = true;
   setStatus('Cargando biblioteca de medios…', 'loading');
+  imagesNode.classList.remove('hidden');
+  mediaEmpty.classList.add('hidden');
+  setSkeleton(imagesNode, cardSkeletons());
   try {
     const data = await api('/.netlify/functions/manage-media');
     allImages = data.media || [];
@@ -159,11 +163,14 @@ async function loadImages() {
     }
     updateStats(allImages);
     renderImages();
+    clearSkeleton(imagesNode);
     setStatus(
       allImages.length + (allImages.length === 1 ? ' medio cargado.' : ' medios cargados.'),
       'success'
     );
   } catch (error) {
+    clearSkeleton(imagesNode);
+    imagesNode.innerHTML = '';
     setStatus(error.message, 'error');
   } finally {
     refreshMedia.disabled = false;
@@ -181,10 +188,6 @@ uploadForm.addEventListener('submit', async function (event) {
   const isImage = file.type.startsWith('image/');
   if (isImage && !decorativeInput.checked && !altTextInput.value.trim()) {
     setStatus('Escribe el texto alternativo o marca la imagen como decorativa.', 'error');
-    return;
-  }
-  if (isImage && (!creditInput.value.trim() || !licenseInput.value.trim())) {
-    setStatus('El crédito y la licencia son obligatorios para imágenes.', 'error');
     return;
   }
 
@@ -232,8 +235,8 @@ fileInput.addEventListener('change', function () {
   const isImage = Boolean(file?.type.startsWith('image/'));
   imageMetadata.classList.toggle('hidden', !isImage);
   altTextInput.required = isImage && !decorativeInput.checked;
-  creditInput.required = isImage;
-  licenseInput.required = isImage;
+  creditInput.required = false;
+  licenseInput.required = false;
 });
 
 decorativeInput.addEventListener('change', function () {

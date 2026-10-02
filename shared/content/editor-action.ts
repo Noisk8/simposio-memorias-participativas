@@ -44,6 +44,15 @@ export function isMainContentListingContent(content?: EditableContent | null): b
   return isArchivedContent(content) || isPublishedListingContent(content);
 }
 
+export type ContentPublicationStatus = 'published' | 'draft' | 'archived';
+
+export function contentPublicationStatus(
+  content?: EditableContent | null
+): ContentPublicationStatus {
+  if (isArchivedContent(content)) return 'archived';
+  return hasPublishedVersion(content) ? 'published' : 'draft';
+}
+
 export function hasPendingPublishedChanges(content?: EditableContent | null): boolean {
   if (!isPublishedListingContent(content)) return false;
   const currentSha = String(content?.workflow?.current_sha || '').trim();

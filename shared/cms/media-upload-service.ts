@@ -10,13 +10,9 @@ import {
   validateOriginalFilename,
 } from '../media/validation.ts';
 import { optimizeImageUpload } from '../media/image-processor.ts';
+import { mediaStorage, verifyStoredMedia, ensureStoredMedia } from '../media/storage.ts';
 import { recordAudit } from '../observability/audit.ts';
-import {
-  ConflictError,
-  InternalError,
-  StorageError,
-  ValidationError,
-} from '../observability/errors.ts';
+import { InternalError, ValidationError } from '../observability/errors.ts';
 
 type MediaMetadataInput = {
   altText: string | null;
@@ -35,20 +31,6 @@ function storagePath(directory: string, safeFilename: string) {
   const year = String(now.getUTCFullYear());
   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
   return `${directory}/${year}/${month}/${safeFilename}`;
-}
-
-function isDuplicateStorageError(error: any) {
-  return (
-    Number(error?.statusCode || error?.status) === 409 ||
-    /duplicate|already exists|resource already exists/i.test(String(error?.message || ''))
-  );
-}
-
-async function assertStoredChecksum(client: any, path: string, checksum: string) {
-  const { data, error } = await client.storage.from(CMS_MEDIA_BUCKET).download(path);
-  if (error || !data) return false;
-  const stored = Buffer.from(await data.arrayBuffer());
-  return createHash('sha256').update(stored).digest('hex') === checksum;
 }
 
 async function activeMediaByChecksum(client: any, checksum: string) {
@@ -77,7 +59,12 @@ async function deletedMediaByChecksum(client: any, checksum: string) {
   return data;
 }
 
-export async function uploadMedia(payload: any, auth: PermissionContext) {
+export async function uploadMedia(
+  payload: any,
+  auth: PermissionContext,
+  dependencies = { adminClient, mediaStorage, recordAudit }
+) {
+  const { adminClient, mediaStorage, recordAudit } = dependencies;
   const policy = getMediaValidationPolicy();
   const originalFilename = validateOriginalFilename(payload?.name);
   const safeSlug = validateMediaFilename(originalFilename);
@@ -121,20 +108,9 @@ export async function uploadMedia(payload: any, auth: PermissionContext) {
   const client = adminClient();
   const existing = await activeMediaByChecksum(client, checksum);
   if (existing) {
-    const storedMatches = await assertStoredChecksum(client, existing.storage_path, checksum);
-    if (!storedMatches) {
-      const { error: repairError } = await client.storage
-        .from(existing.storage_bucket)
-        .upload(existing.storage_path, storedBytes, {
-          contentType: existing.mime_type,
-          cacheControl: '31536000',
-          upsert: false,
-        });
-      if (repairError) {
-        throw new StorageError('La metadata existe, pero el objeto no se pudo verificar.', {
-          reason: repairError.message,
-        });
-      }
+    const storage = mediaStorage(client, existing);
+    if (!(await verifyStoredMedia(storage, existing.storage_path, checksum))) {
+      await ensureStoredMedia(storage, existing.storage_path, storedBytes, existing.mime_type);
     }
     let enriched = existing;
     if (mayUpdateReusedMedia(auth)) {
@@ -172,20 +148,9 @@ export async function uploadMedia(payload: any, auth: PermissionContext) {
 
   const deleted = await deletedMediaByChecksum(client, checksum);
   if (deleted) {
-    const storedMatches = await assertStoredChecksum(client, deleted.storage_path, checksum);
-    if (!storedMatches) {
-      const { error: restoreObjectError } = await client.storage
-        .from(deleted.storage_bucket)
-        .upload(deleted.storage_path, storedBytes, {
-          contentType: deleted.mime_type,
-          cacheControl: '31536000',
-          upsert: false,
-        });
-      if (restoreObjectError) {
-        throw new StorageError('No se pudo restaurar el objeto eliminado.', {
-          reason: restoreObjectError.message,
-        });
-      }
+    const storage = mediaStorage(client, deleted);
+    if (!(await verifyStoredMedia(storage, deleted.storage_path, checksum))) {
+      await ensureStoredMedia(storage, deleted.storage_path, storedBytes, deleted.mime_type);
     }
     const { data: restored, error: restoreRecordError } = await client
       .from('cms_media')
@@ -204,7 +169,9 @@ export async function uploadMedia(payload: any, auth: PermissionContext) {
       .select('*')
       .single();
     if (restoreRecordError) {
-      await client.storage.from(deleted.storage_bucket).remove([deleted.storage_path]);
+      // A concurrent restore may already be using this shared path. Keep the object.
+      const raced = await activeMediaByChecksum(client, checksum);
+      if (raced) return { statusCode: 200, media: { ...toMedia(raced), existing: true } };
       throw new InternalError('El objeto se restauró, pero no se pudo activar su metadata.');
     }
     await recordAudit({
@@ -221,26 +188,9 @@ export async function uploadMedia(payload: any, auth: PermissionContext) {
 
   const safeFilename = generatedSafeFilename(storedSafeSlug);
   const objectPath = storagePath(detected.directory, safeFilename);
-  const { error: uploadError } = await client.storage
-    .from(CMS_MEDIA_BUCKET)
-    .upload(objectPath, storedBytes, {
-      contentType: detected.mimeType,
-      cacheControl: '31536000',
-      upsert: false,
-    });
-  let uploadedNow = !uploadError;
-  if (uploadError) {
-    if (!isDuplicateStorageError(uploadError)) {
-      throw new StorageError('No se pudo subir el archivo.', { reason: uploadError.message });
-    }
-    if (!(await assertStoredChecksum(client, objectPath, checksum))) {
-      throw new ConflictError('La ruta de Storage ya contiene un archivo diferente.');
-    }
-    uploadedNow = false;
-  }
-
-  const { data: publicData } = client.storage.from(CMS_MEDIA_BUCKET).getPublicUrl(objectPath);
-  const publicUrl = publicData.publicUrl;
+  const storage = mediaStorage(client);
+  const uploadedNow = await ensureStoredMedia(storage, objectPath, storedBytes, detected.mimeType);
+  const publicUrl = storage.publicUrl(objectPath);
   const record = {
     storage_bucket: CMS_MEDIA_BUCKET,
     storage_path: objectPath,
@@ -271,11 +221,11 @@ export async function uploadMedia(payload: any, auth: PermissionContext) {
     const raced = await activeMediaByChecksum(client, checksum);
     if (raced) {
       if (uploadedNow && raced.storage_path !== objectPath) {
-        await client.storage.from(CMS_MEDIA_BUCKET).remove([objectPath]);
+        await storage.remove(objectPath);
       }
       return { statusCode: 200, media: { ...toMedia(raced), existing: true } };
     }
-    if (uploadedNow) await client.storage.from(CMS_MEDIA_BUCKET).remove([objectPath]);
+    if (uploadedNow) await storage.remove(objectPath);
     throw new InternalError('El archivo se subió, pero no se pudo guardar su metadata.');
   }
 

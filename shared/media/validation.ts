@@ -176,9 +176,9 @@ export function validateEditorialMetadata(payload: any, kind: MediaKind): Editor
   }
   return {
     altText: decorative ? null : altText,
-    credit: textValue(payload?.credit, 'El crédito', 500, true),
+    credit: textValue(payload?.credit, 'El crédito', 500),
     author,
-    license: textValue(payload?.license, 'La licencia', 255, true),
+    license: textValue(payload?.license, 'La licencia', 255),
     decorative,
   };
 }
