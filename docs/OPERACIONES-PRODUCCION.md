@@ -86,6 +86,12 @@ transfieren automáticamente a GitHub):
 La validación aborta antes de exportar si falta algún secreto obligatorio. No se permite
 omitir silenciosamente PostgreSQL o el catálogo editorial.
 
+Antes de exportar PostgreSQL, `validate-backup-storage.mjs` comprueba el listado y el
+acceso a los medios de Garage y la existencia del bucket de destino. Ante un fallo
+registra únicamente la operación, el código de error y el estado HTTP, sin URLs,
+credenciales ni detalles de la petición. Los exportadores comprueban después todos los
+binarios y la subida verifica la escritura y la integridad del respaldo completo.
+
 ### Configuración del servidor Red Memorias
 
 La URL `https://ui.red-memorias.duckdns.org/buckets/<id>` es el panel administrativo,

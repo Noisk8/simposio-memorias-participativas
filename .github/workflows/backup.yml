@@ -60,6 +60,7 @@ jobs:
           if [ -f "$BACKUP_CA_FILE" ]; then
             export NODE_EXTRA_CA_CERTS="$BACKUP_CA_FILE"
           fi
+          node scripts/validate-backup-storage.mjs
           export BACKUP_OUTPUT_DIR="$backup_dir/export"
           mkdir -p "$BACKUP_OUTPUT_DIR"
           mkdir -p "$BACKUP_OUTPUT_DIR/database"
