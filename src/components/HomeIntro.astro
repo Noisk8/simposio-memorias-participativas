@@ -1,0 +1,86 @@
+---
+interface Props {
+  title: string;
+  place: string;
+  image: string;
+  networkTitle: string;
+}
+
+const { title, place, image, networkTitle } = Astro.props;
+const videoUrl = 'https://cms-media.web.red-memorias.duckdns.org/Videos/simposio.webm';
+const trailImages = [3, 4, 6, 10, 15, 18, 20, 29].map((id) => `/images/proyecto-${id}.jpg`);
+---
+
+<section class="home-hero" data-home-hero>
+  <div class="home-hero-media" aria-hidden="true">
+    <video src={videoUrl} poster={image} muted loop playsinline preload="none" data-hero-video
+    ></video>
+  </div>
+  <div class="home-hero-shade" aria-hidden="true"></div>
+  <div
+    class="home-hero-trail"
+    data-hero-trail
+    data-trail-images={JSON.stringify(trailImages)}
+    aria-hidden="true"
+  >
+  </div>
+  <div class="home-hero-copy">
+    <p class="home-eyebrow">{networkTitle}</p>
+    <h1>{title.toUpperCase()}</h1>
+    <p class="home-hero-place">{place}</p>
+  </div>
+  <div class="home-hero-bottom">
+    <a class="home-scroll-cue" href="#videoresumen">
+      <span>Desplázate para descubrir</span>
+      <svg width="20" height="26" viewBox="0 0 20 26" fill="none" aria-hidden="true">
+        <path d="M10 1v23m-7-7 7 7 7-7" stroke="currentColor" stroke-width="1.5"></path>
+      </svg>
+    </a>
+    <button class="home-media-toggle" type="button" data-hero-toggle hidden> Pausar fondo </button>
+  </div>
+</section>
+
+<script>
+  import '../scripts/hero-image-trail';
+</script>
+
+<section id="videoresumen" class="home-reel" aria-labelledby="home-reel-title">
+  <div class="home-reel-intro" data-reel-intro data-vector-section="intro">
+    <div class="home-reel-copy" data-reveal-anchor>
+      <p class="home-eyebrow" data-home-reveal>El encuentro, en imágenes</p>
+      <h2 id="home-reel-title" data-home-reveal data-reveal-kind="words">
+        Memorias que<br />nos conectan.
+      </h2>
+      <p class="home-reel-description" data-home-reveal>
+        Revive el simposio y las experiencias que compartimos.
+      </p>
+    </div>
+    <span class="home-reel-index" aria-hidden="true">01 / VIDEORESUMEN</span>
+  </div>
+
+  <div class="home-video-stage" data-video-stage data-vector-section="video">
+    <div class="home-video-sticky">
+      <div class="home-video-frame" data-video-frame>
+        <div class="home-video-markers" aria-hidden="true">
+          <span>+</span><span>+</span><span>+</span>
+        </div>
+        <div class="home-video-mask">
+          <video
+            src={videoUrl}
+            poster={image}
+            aria-label="Videoresumen del simposio"
+            muted
+            playsinline
+            controls
+            preload="none"
+            data-reel-video></video>
+        </div>
+        <div class="home-video-caption" data-reveal-anchor>
+          <span data-home-reveal>Videoresumen del simposio</span><span data-home-reveal
+            >{place}</span
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
