@@ -84,12 +84,35 @@ jobs:
           tar -tzf "$backup_dir/verify.tar.gz" >/dev/null
           echo "verified=true" >> "$GITHUB_OUTPUT"
           node scripts/upload-backup-to-garage.mjs "production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
+          echo "garage_verified=true" >> "$GITHUB_OUTPUT"
 
       - name: Store verified independent copy
-        if: ${{ !cancelled() && steps.export.outputs.verified == 'true' }}
+        id: independent_copy
+        if: ${{ !cancelled() && steps.export.outputs.verified == 'true' && (vars.BACKUP_GITHUB_ARTIFACT_ENABLED != 'false' || steps.export.outputs.garage_verified != 'true') }}
+        continue-on-error: ${{ steps.export.outputs.garage_verified == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: production-backup-${{ github.run_id }}
           path: production-backup-${{ github.run_id }}.tar.gz.enc
           retention-days: 30
           if-no-files-found: error
+
+      - name: Report backup destinations
+        if: ${{ !cancelled() && steps.export.outputs.verified == 'true' }}
+        env:
+          GARAGE_VERIFIED: ${{ steps.export.outputs.garage_verified }}
+          COPY_OUTCOME: ${{ steps.independent_copy.outcome }}
+        run: |
+          if [ "$GARAGE_VERIFIED" = 'true' ]; then
+            echo 'Respaldo cifrado subido y verificado por SHA-256 en Garage.' >> "$GITHUB_STEP_SUMMARY"
+            if [ "$COPY_OUTCOME" = 'failure' ]; then
+              echo '::warning::La copia adicional de GitHub falló. Revisar su cuota y el paso de artefactos; el respaldo de Garage está verificado.'
+              echo 'GitHub: copia adicional fallida. Consultar el paso de artefactos para identificar la causa.' >> "$GITHUB_STEP_SUMMARY"
+            elif [ "$COPY_OUTCOME" = 'skipped' ]; then
+              echo 'GitHub: copia adicional desactivada mediante BACKUP_GITHUB_ARTIFACT_ENABLED=false.' >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo 'GitHub: copia adicional guardada durante 30 días.' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo 'Garage: subida o verificación fallida. La ejecución conserva el estado de fallo aunque GitHub guarde una copia adicional.' >> "$GITHUB_STEP_SUMMARY"
+          fi
