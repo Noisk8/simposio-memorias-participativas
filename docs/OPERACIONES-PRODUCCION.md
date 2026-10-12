@@ -110,6 +110,24 @@ Usar el alias S3 del bucket como `S3_BACKUP_BUCKET`; el ID hexadecimal del panel
 identifica por sí solo su alias ni sus permisos. No guardar respaldos de PostgreSQL en
 el bucket público `cms-media`. Los archivos cifrados se almacenan bajo `backups/YYYY-MM-DD/`.
 
+Si el catálogo conserva URLs de un dominio anterior de Garage, configurar la variable
+`BACKUP_GARAGE_LEGACY_PUBLIC_BASE_URLS` en `production-backup` (bases HTTPS separadas por
+comas; para la comprobación local, usar la misma variable en `.env`). El backup admite
+únicamente URLs que coincidan exactamente con una base permitida y con `storage_path`.
+Lee los bytes por el endpoint S3 actual y verifica el SHA-256 del catálogo; nunca visita
+el dominio anterior ni modifica la URL de la fila. Este ajuste es exclusivo del backup
+y no modifica las URLs del sitio ni la resolución de medios del CMS.
+
+Por defecto, un archivo ausente o un checksum incorrecto bloquea el respaldo. Si el
+propietario autoriza respaldar lo disponible mientras se recuperan originales perdidos,
+`BACKUP_ALLOWED_MISSING_MEDIA_IDS` admite exclusivamente los UUID de esas filas, separados
+por comas. La excepción solo admite archivos no encontrados: los errores de lectura,
+de configuración o de checksum siguen bloqueando la ejecución. No borra ni modifica filas.
+El archivo cifrado incluye `missing-media.json` y el manifiesto conserva todas las filas,
+`complete: false`, el número exportado y los faltantes. GitHub muestra una advertencia y
+el resumen identifica la limitación: esos archivos no se pueden restaurar. Eliminar los
+UUID de la variable después de recuperar y verificar los originales.
+
 Los secretos de Supabase y la clave de cifrado también deben estar en el Environment de
 GitHub, aunque ya existan en `.env` o Netlify. Guardar la clave de cifrado fuera de GitHub
 y de Garage antes de ejecutar el primer respaldo. No regenerarla si ya hay respaldos:
@@ -152,6 +170,9 @@ La restauración siempre se ensaya primero en un proyecto Supabase vacío de rec
 2. Descifrarlo con `openssl enc -d -aes-256-cbc -pbkdf2` y extraerlo.
 3. Aplicar `database/schema.sql` y después `database/data.sql` con `psql` sobre el proyecto de recuperación.
 4. Restaurar los objetos de `garage/cms-media/` en Garage según `garage-manifest.json`.
+   Revisar primero `missing-media.json`: sus archivos no están en la copia y deben recuperarse aparte.
+   Las entradas con `directoryMarker: true` representan objetos vacíos cuya clave termina
+   en `/`: recrearlas con cuerpo vacío y su metadata, porque no tienen un archivo de datos.
    Restaurar los de `storage/cms-media/` al proveedor identificado por `media-manifest.json`,
    conservando rutas y metadata; verificar SHA-256 y evitar duplicar objetos ya restaurados.
    Recuperar el Markdown desde `published-content/` cuando sea necesario.
