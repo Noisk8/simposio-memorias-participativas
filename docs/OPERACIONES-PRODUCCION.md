@@ -59,6 +59,17 @@ la subida se verifica descargando el objeto y comparando tamaño y SHA-256. GitH
 conserva una segunda copia verificada durante 30 días, incluso si falla la subida a Garage.
 Si falla la exportación o la comprobación local no se publica un artefacto parcial.
 
+La falta de cuota u otro fallo del artefacto de GitHub genera una advertencia y no hace
+fallar un respaldo **ya subido y verificado en Garage**. Un fallo de Garage sigue siendo
+bloqueante, aunque se consiga guardar la copia de emergencia en GitHub. El resumen de la
+ejecución indica qué destinos se completaron.
+
+Para evitar consumir espacio de artefactos, configurar la **variable** (no secreto)
+`BACKUP_GITHUB_ARTIFACT_ENABLED=false` en el Environment `production-backup`. Esto omite
+la copia de GitHub únicamente después de verificar la de Garage; ante un fallo de Garage
+todavía se intenta guardar la copia de emergencia. Sin esa variable, se intenta conservar
+ambas copias. Si se desactiva, planificar otra copia fuera del servidor de Garage.
+
 El Environment `production-backup` debe disponer de estos secretos (los de Netlify no se
 transfieren automáticamente a GitHub):
 
@@ -74,6 +85,35 @@ transfieren automáticamente a GitHub):
 
 La validación aborta antes de exportar si falta algún secreto obligatorio. No se permite
 omitir silenciosamente PostgreSQL o el catálogo editorial.
+
+Antes de exportar PostgreSQL, `validate-backup-storage.mjs` comprueba el listado y el
+acceso a los medios de Garage y la existencia del bucket de destino. Ante un fallo
+registra únicamente la operación, el código de error y el estado HTTP, sin URLs,
+credenciales ni detalles de la petición. Los exportadores comprueban después todos los
+binarios y la subida verifica la escritura y la integridad del respaldo completo.
+
+### Configuración del servidor Red Memorias
+
+La URL `https://ui.red-memorias.duckdns.org/buckets/<id>` es el panel administrativo,
+no el endpoint de subida S3. La configuración local de este repositorio utiliza:
+
+| Variable              | Valor                                            |
+| --------------------- | ------------------------------------------------ |
+| `S3_ENDPOINT`         | `https://s3.red-memorias.duckdns.org`            |
+| `S3_REGION`           | `garage`                                         |
+| `S3_BUCKET`           | `cms-media` (origen de los medios públicos)      |
+| `S3_FORCE_PATH_STYLE` | `true`                                           |
+| `S3_PUBLIC_BASE_URL`  | `https://cms-media.web.red-memorias.duckdns.org` |
+| `S3_BACKUP_BUCKET`    | `cms-backups` (destino privado de respaldos)     |
+
+Usar el alias S3 del bucket como `S3_BACKUP_BUCKET`; el ID hexadecimal del panel no
+identifica por sí solo su alias ni sus permisos. No guardar respaldos de PostgreSQL en
+el bucket público `cms-media`. Los archivos cifrados se almacenan bajo `backups/YYYY-MM-DD/`.
+
+Los secretos de Supabase y la clave de cifrado también deben estar en el Environment de
+GitHub, aunque ya existan en `.env` o Netlify. Guardar la clave de cifrado fuera de GitHub
+y de Garage antes de ejecutar el primer respaldo. No regenerarla si ya hay respaldos:
+una nueva clave no permite descifrar los anteriores.
 
 ### Certificado TLS de Garage
 
