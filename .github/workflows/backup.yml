@@ -51,6 +51,7 @@ jobs:
           S3_PUBLIC_BASE_URL: ${{ secrets.S3_PUBLIC_BASE_URL }}
           S3_BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
           S3_CA_CERT_PEM: ${{ secrets.S3_CA_CERT_PEM }}
+          BACKUP_GARAGE_LEGACY_PUBLIC_BASE_URLS: ${{ vars.BACKUP_GARAGE_LEGACY_PUBLIC_BASE_URLS }}
         run: |
           set -euo pipefail
           backup_dir="$(mktemp -d)"

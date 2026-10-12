@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { mediaStorage, checksum } from '../shared/media/storage.ts';
+import { createGarageStorage, createSupabaseStorage, checksum } from '../shared/media/storage.ts';
+import { backupMediaProvider } from './lib/backup-media-provider.mjs';
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,7 +29,9 @@ for (let offset = 0; ; offset += pageSize) {
 }
 
 for (const row of rows) {
-  const data = await mediaStorage(client, row).read(row.storage_path);
+  const storage =
+    backupMediaProvider(row) === 'garage' ? createGarageStorage() : createSupabaseStorage(client);
+  const data = await storage.read(row.storage_path);
   if (!data || checksum(data) !== row.checksum_sha256)
     throw new Error(`No se pudo verificar ${row.storage_path}.`);
   const destination = path.join(outputRoot, 'storage', row.storage_bucket, row.storage_path);
