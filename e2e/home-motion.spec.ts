@@ -99,7 +99,7 @@ test('el home se adapta al móvil sin desbordamiento horizontal', async ({ page 
   await expect(page.locator('.home-video-sticky')).toHaveCSS('position', 'relative');
 });
 
-test('el vector continúa por Cartel Oficial, Explora e Instagram y se recoge al subir', async ({
+test('el vector continúa por Agenda, Explora e Instagram y se recoge al subir', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -108,7 +108,7 @@ test('el vector continúa por Cartel Oficial, Explora e Instagram y se recoge al
   const path = page.locator('[data-vector-path]');
   const tip = page.locator('[data-vector-tip]');
   let previousOffset = Number(await path.getAttribute('stroke-dashoffset'));
-  for (const name of ['poster', 'explore', 'instagram']) {
+  for (const name of ['agenda', 'explore', 'instagram']) {
     const section = page.locator(`[data-vector-section="${name}"]`);
     await section.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
@@ -123,11 +123,14 @@ test('el vector continúa por Cartel Oficial, Explora e Instagram y se recoge al
     const content = section.locator('[data-home-reveal]').first();
     await expect(content).toHaveAttribute('data-home-reveal', 'visible');
     await expect(content).toHaveCSS('clip-path', 'inset(-24px)');
-    if (name === 'poster') {
+    if (name === 'agenda' && (await section.locator('img').count())) {
       await expect
         .poll(
           async () =>
-            await section.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth)
+            await section
+              .locator('img')
+              .first()
+              .evaluate((image: HTMLImageElement) => image.naturalWidth)
         )
         .toBeGreaterThan(0);
     }
@@ -140,7 +143,7 @@ test('el vector continúa por Cartel Oficial, Explora e Instagram y se recoge al
   }
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect.poll(async () => Number(await path.getAttribute('stroke-dashoffset'))).toBe(0);
-  await page.locator('[data-vector-section="poster"]').evaluate((element) => {
+  await page.locator('[data-vector-section="agenda"]').evaluate((element) => {
     window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - 150);
   });
   await expect
@@ -148,7 +151,7 @@ test('el vector continúa por Cartel Oficial, Explora e Instagram y se recoge al
     .toBeGreaterThan(previousOffset);
 });
 
-test('el recorrido se recalcula al cambiar a móvil y al variar la altura del cartel', async ({
+test('el recorrido se recalcula al cambiar a móvil y al variar la altura del bloque de eventos', async ({
   page,
 }) => {
   await page.goto('/', { waitUntil: 'networkidle' });
@@ -157,11 +160,11 @@ test('el recorrido se recalcula al cambiar a móvil y al variar la altura del ca
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(async () => await vector.getAttribute('viewBox')).not.toBe(originalViewBox);
   const mobileViewBox = await vector.getAttribute('viewBox');
-  await page.locator('[data-vector-section="poster"]').evaluate((section) => {
+  await page.locator('[data-vector-section="agenda"]').evaluate((section) => {
     (section as HTMLElement).style.paddingBottom = '400px';
   });
   await expect.poll(async () => await vector.getAttribute('viewBox')).not.toBe(mobileViewBox);
-  for (const name of ['poster', 'explore', 'instagram']) {
+  for (const name of ['agenda', 'explore', 'instagram']) {
     await page.locator(`[data-vector-section="${name}"]`).evaluate((element) => {
       const bounds = element.getBoundingClientRect();
       window.scrollTo(

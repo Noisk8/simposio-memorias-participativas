@@ -8,12 +8,18 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
 });
 
-test('el título y el cartel entran por separado y el cartel termina completo', async ({ page }) => {
-  const title = page.locator('[data-vector-section="poster"] h2');
-  const poster = page.locator('.home-poster-frame');
+test('el título y el bloque de eventos entran por separado y el bloque de eventos termina completo', async ({
+  page,
+}) => {
+  const title = page.locator('[data-vector-section="agenda"] h2');
+  const card = page.locator('.home-agenda-card').first();
+  test.skip(
+    (await card.count()) === 0,
+    'No hay eventos publicados para comprobar la animación de tarjetas.'
+  );
   await expect(title).toHaveAttribute('data-home-reveal', 'pending');
-  await expect(poster).toHaveAttribute('data-home-reveal', 'pending');
-  await expect(title).toHaveAccessibleName('Cartel Oficial');
+  await expect(card).toHaveAttribute('data-home-reveal', 'pending');
+  await expect(title).toHaveAccessibleName('Agenda');
   await expect(title.locator('.home-word').first()).toHaveCSS('opacity', '0');
   await title.evaluate((element) =>
     window.scrollTo(
@@ -22,9 +28,9 @@ test('el título y el cartel entran por separado y el cartel termina completo', 
     )
   );
   await expect(title).toHaveAttribute('data-home-reveal', 'visible');
-  await expect(poster).toHaveAttribute('data-home-reveal', 'pending');
+  await expect(card).toHaveAttribute('data-home-reveal', 'pending');
   await expect(title.locator('.home-word').last()).toHaveCSS('transform', 'none');
-  await poster
+  await card
     .locator('..')
     .evaluate((element) =>
       window.scrollTo(
@@ -32,12 +38,12 @@ test('el título y el cartel entran por separado y el cartel termina completo', 
         window.scrollY + element.getBoundingClientRect().top - window.innerHeight * 0.55
       )
     );
-  await expect(poster).toHaveAttribute('data-home-reveal', 'visible');
-  await expect(poster).toHaveCSS('opacity', '1');
-  await expect(poster).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(poster).toHaveCSS('clip-path', 'inset(-24px)');
+  await expect(card).toHaveAttribute('data-home-reveal', 'visible');
+  await expect(card).toHaveCSS('opacity', '1');
+  await expect(card).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  await expect(card).toHaveCSS('clip-path', 'inset(-24px)');
   await expect
-    .poll(() => poster.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .poll(() => card.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
 });
 
@@ -106,7 +112,7 @@ test('el foco muestra inmediatamente Instagram y el movimiento reducido deja tod
   await expect(page.locator('[data-home]')).toHaveAttribute('data-motion', 'off');
   await expect(page.locator('[data-home-reveal="pending"]')).toHaveCount(0);
   for (const selector of [
-    '.home-poster-frame',
+    '.home-agenda-card',
     '.home-explore-card',
     '.home-social-card',
     '.home-word',
