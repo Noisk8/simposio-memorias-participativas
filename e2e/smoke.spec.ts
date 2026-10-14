@@ -1,10 +1,28 @@
 import { expect, test } from '@playwright/test';
 
-test('home: carga con título y encabezado del simposio', async ({ page }) => {
+test('home: muestra la Red, los accesos y los eventos publicados', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
   await expect(page).toHaveTitle(/Simposio/i);
-  await expect(page.locator('main h1')).toBeVisible();
+  await expect(page.locator('main h1')).toHaveText('RED INTERNACIONAL DE MEMORIAS COLECTIVAS');
+  await expect(page.locator('.home-hero-cta')).toHaveText('Conoce la Red');
+  await expect(page.locator('.home-hero-cta')).toHaveAttribute('href', '/acerca-de');
+  await expect(page.locator('.home-reel-cta')).toHaveAttribute('href', '/museo-memorias');
+  const agenda = page.locator('[data-vector-section="agenda"]');
+  await expect(agenda.locator('h2')).toHaveText('Agenda');
+  const eventLinks = agenda.locator('article a[href^="/agenda/"]');
+  if (await eventLinks.count()) {
+    await expect(eventLinks.first()).toHaveAttribute('href', /^\/agenda\/.+\/$/);
+  } else {
+    await expect(agenda).toContainText('Pronto compartiremos nuevos eventos');
+  }
+  await expect(agenda.getByRole('link', { name: 'Ver toda la agenda' })).toHaveAttribute(
+    'href',
+    '/agenda/'
+  );
+  await expect(
+    page.locator('.home-explore-card').filter({ hasText: 'El Simposio' })
+  ).toHaveAttribute('href', /^\/ediciones\/.+\/$/);
 });
 
 test('entradas: el listado muestra artículos y el detalle navega', async ({ page }) => {

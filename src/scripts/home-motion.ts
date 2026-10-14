@@ -40,7 +40,7 @@ if (home) {
     homeTop = bounds.top + window.scrollY;
     const left = mobile.matches ? 0.025 : 0.075;
     const right = 1 - left;
-    // Cada tramo se adapta a la altura real de su sección, incluido el cartel.
+    // Cada tramo se adapta a la altura real de su sección, incluida la agenda.
     const anchors: Record<string, [number, number][]> = {
       intro: [
         [0.15, 0.08],
@@ -50,7 +50,7 @@ if (home) {
         [right, 0.12],
         [left, 0.76],
       ],
-      poster: [
+      agenda: [
         [right, 0.2],
         [right, 0.78],
         [left, 0.97],

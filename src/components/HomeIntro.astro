@@ -3,10 +3,9 @@ interface Props {
   title: string;
   place: string;
   image: string;
-  networkTitle: string;
 }
 
-const { title, place, image, networkTitle } = Astro.props;
+const { title, place, image } = Astro.props;
 const videoUrl = 'https://cms-media.web.red-memorias.duckdns.org/Videos/simposio.webm';
 const trailImages = [3, 4, 6, 10, 15, 18, 20, 29].map((id) => `/images/proyecto-${id}.jpg`);
 ---
@@ -25,9 +24,15 @@ const trailImages = [3, 4, 6, 10, 15, 18, 20, 29].map((id) => `/images/proyecto-
   >
   </div>
   <div class="home-hero-copy">
-    <p class="home-eyebrow">{networkTitle}</p>
+    <p class="home-eyebrow">Encuentros, territorios y comunidad</p>
     <h1>{title.toUpperCase()}</h1>
-    <p class="home-hero-place">{place}</p>
+    <p class="home-hero-place">Experiencias que conectan colectivos, agentes y comunidades.</p>
+    <a href="/acerca-de" class="home-hero-cta">
+      Conoce la Red
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.5"></path>
+      </svg>
+    </a>
   </div>
   <div class="home-hero-bottom">
     <a class="home-scroll-cue" href="#videoresumen">
@@ -54,6 +59,14 @@ const trailImages = [3, 4, 6, 10, 15, 18, 20, 29].map((id) => `/images/proyecto-
       <p class="home-reel-description" data-home-reveal>
         Revive el simposio y las experiencias que compartimos.
       </p>
+      <a
+        href="/museo-memorias"
+        class="home-reel-cta btn-green"
+        data-home-reveal
+        data-reveal-kind="cta"
+      >
+        Explora el Museo de Memorias Vivas →
+      </a>
     </div>
     <span class="home-reel-index" aria-hidden="true">01 / VIDEORESUMEN</span>
   </div>

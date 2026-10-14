@@ -18,10 +18,12 @@ La inspección del JavaScript público de Lusion confirma estos mecanismos:
 
 ## Adaptación al simposio
 
-`HomeIntro.astro` conserva el título, la sede, la imagen y el video del simposio.
+`HomeIntro.astro` presenta «Red Internacional de Memorias Colectivas» y el botón
+«Conoce la Red». El bloque «Memorias que nos conectan» enlaza al Museo de Memorias
+Vivas; la imagen y el video conservan la referencia al simposio.
 `HomeVector.astro` aporta un único SVG en los verdes del proyecto que empieza en
 la segunda sección, «Memorias que nos conectan», y continúa por el video,
-Cartel Oficial, Explora e Instagram. Se dibuja al bajar y se
+Agenda, Explora e Instagram. Se dibuja al bajar y se
 recoge al subir. Las curvas se calculan con la altura y posición reales de cada
 sección; un mapa de longitud y altura mantiene el extremo cerca del 82 % de la
 pantalla. El dibujo pasa detrás de textos, imágenes, tarjetas y controles, sin
@@ -40,7 +42,7 @@ los shaders, las interacciones 3D de la portada ni la transición cromática ori
 con `requestAnimationFrame`. Solo mantiene cuadros adicionales mientras termina
 la interpolación de la escala. Las medidas se recalculan al cambiar el tamaño,
 cargar las fuentes o cambiar la altura del encabezado o del home, incluyendo
-la carga del cartel y los cambios de disposición. No añade dependencias.
+la carga de las imágenes de los eventos y los cambios de disposición. No añade dependencias.
 
 Las entradas de los objetos toman como referencia `HomeFeaturedSection` y
 `ProjectItem`: Lusion anima los caracteres del título con desplazamiento vertical,
@@ -48,20 +50,20 @@ giro y retrasos; las imágenes entran desde lados alternados con giro y revelado
 `GoalSection` transforma un marco de fondo y varía su radio durante la transición.
 
 `home-reveals.ts` adapta esas entradas con palabras en máscaras individuales,
-conservando espacios, saltos de línea y nombres accesibles. El cartel se revela
-con escala, inclinación y una máscara que termina mostrando la imagen completa.
+conservando espacios, saltos de línea y nombres accesibles. Las tarjetas de la Agenda se revelan
+con perspectiva y una máscara que termina mostrando su contenido completo.
 Explora combina entradas desde lados alternados, perspectiva y retrasos sucesivos;
 al pasar el mouse o enfocar, la tarjeta se eleva y su flecha avanza. Instagram
 presenta primero el título, después el panel, el icono, el nombre y el botón.
 También se separan las entradas del título, la descripción y los pies del video.
 
-Los bordes superiores de Cartel Oficial, Explora e Instagram se despliegan y
+Los bordes superiores de Agenda, Explora e Instagram se despliegan y
 reducen su curvatura según el scroll, sin transformar la sección ni modificar
 el recorrido del vector. Las medidas se reutilizan entre cuadros. En móvil las
 entradas de los objetos tienen menos giro y desplazamiento.
 
 Contenedores sin máscara activan cada grupo de objetos mediante
-`IntersectionObserver`; el cartel conserva espacio y carga diferida. Las entradas
+`IntersectionObserver`; las tarjetas de eventos conservan espacio y sus imágenes usan carga diferida. Las entradas
 ocurren una vez y el contenido permanece visible después. El foco revela de
 inmediato el grupo completo, y el movimiento reducido elimina las transformaciones,
 las máscaras y los bordes animados. No se reproducen los shaders de profundidad,
@@ -110,3 +112,9 @@ se activa la estela ni se descargan sus imágenes.
 `e2e/hero-image-trail.spec.ts` verifica la aparición simultánea de varias imágenes,
 su desaparición, la reutilización de tarjetas, el título y los enlaces disponibles,
 y la desactivación de la estela en pantallas táctiles y con movimiento reducido.
+
+La portada muestra hasta tres eventos publicados, con prioridad para los próximos
+y después los anteriores más recientes. El botón «Ver toda la agenda» abre el
+listado completo. Las tarjetas reutilizan `EventCard.astro`, compartido con la
+página de Agenda; los borradores y las publicaciones programadas se filtran en
+ambos lugares. En «Explora», «El Simposio» enlaza a la edición predeterminada.

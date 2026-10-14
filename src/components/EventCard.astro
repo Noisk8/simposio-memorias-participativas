@@ -1,0 +1,47 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { resolvePublicImageUrl } from '../lib/public-image';
+import { formatEventDate } from '../../shared/content/events';
+
+interface Props {
+  event: CollectionEntry<'eventos'>;
+}
+
+const { event } = Astro.props;
+---
+
+<article class="card-shadow bg-white rounded-xl overflow-hidden flex flex-col h-full">
+  <img
+    src={resolvePublicImageUrl(event.data.image)}
+    alt={event.data.title}
+    class="w-full aspect-[4/3] object-cover"
+    loading="lazy"
+    decoding="async"
+  />
+  <div class="p-6 flex flex-col flex-1">
+    <time datetime={event.data.date} class="text-sm font-semibold text-ugr-green">
+      {formatEventDate(event.data.date)}
+    </time>
+    <h3 class="text-xl font-bold text-ugr-green-dark mt-2 mb-3">
+      <a href={`/agenda/${event.id}/`} class="hover:underline">
+        {event.data.title}
+      </a>
+    </h3>
+    <p class="text-ugr-text-light mb-5 whitespace-pre-line">
+      {event.data.description}
+    </p>
+    <dl class="mt-auto text-sm space-y-3 text-ugr-text">
+      <div>
+        <dt class="font-semibold">Dirección</dt>
+        <dd>{event.data.address}</dd>
+      </div>
+      <div>
+        <dt class="font-semibold">Organiza</dt>
+        <dd>{event.data.organizer}</dd>
+      </div>
+    </dl>
+    <a href={`/agenda/${event.id}/`} class="text-ugr-green font-semibold mt-5 hover:underline">
+      Ver evento<span class="sr-only">: {event.data.title}</span> →
+    </a>
+  </div>
+</article>

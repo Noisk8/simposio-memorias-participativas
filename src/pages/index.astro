@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import HomeIntro from '../components/HomeIntro.astro';
 import HomeVector from '../components/HomeVector.astro';
+import HomeAgenda from '../components/HomeAgenda.astro';
 import '../styles/home-motion.css';
 import { getSimposioDefault } from '../lib/simposios';
 import { NETWORK_TITLE, NETWORK_INSTAGRAM } from '../consts';
@@ -9,16 +10,16 @@ import { NETWORK_TITLE, NETWORK_INSTAGRAM } from '../consts';
 const simposio = await getSimposioDefault();
 const simposioTitle = simposio?.data.title || 'I Simposio sobre Memorias Participativas';
 const simposioPlace = simposio?.data.place || 'Universidad de Granada';
-const simposioPoster = simposio?.data.poster || '/images/cartel-oficial.jpg';
 const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
+const heroTitle = 'Red Internacional de Memorias Colectivas';
 const exploreLinks = [
   { href: '/acerca-de', title: 'Acerca de', description: 'La Red Internacional' },
   { href: '/simposios', title: 'Simposios', description: 'Ediciones y encuentros' },
   { href: '/museo-memorias', title: 'Museo', description: 'Memorias Vivas' },
   {
     href: `/ediciones/${simposio?.data.slug || '2026'}/`,
-    title: 'Edición actual',
-    description: 'Página del simposio',
+    title: 'El Simposio',
+    description: simposioTitle,
   },
 ];
 ---
@@ -26,37 +27,32 @@ const exploreLinks = [
 <Layout title={`${simposioTitle} · ${NETWORK_TITLE}`} image={simposioImage}>
   <div data-home>
     <HomeVector />
-    <HomeIntro
-      title={simposioTitle}
-      place={simposioPlace}
-      image={simposioImage}
-      networkTitle={NETWORK_TITLE}
-    />
+    <HomeIntro title={heroTitle} place={simposioPlace} image={simposioImage} />
 
-    <!-- Cartel Oficial -->
-    <section class="home-section py-16 bg-white" data-vector-section="poster" data-home-surface>
-      <div class="max-w-4xl mx-auto px-4 text-center">
+    <!-- Agenda de la Red -->
+    <section
+      class="home-section py-16 bg-white"
+      data-vector-section="agenda"
+      data-home-surface
+      aria-labelledby="home-agenda-title"
+    >
+      <div class="max-w-6xl mx-auto px-4">
         <h2
-          class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+          id="home-agenda-title"
+          class="text-3xl font-bold mb-4 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center"
           data-home-reveal
           data-reveal-kind="words"
         >
-          Cartel Oficial
+          Agenda
         </h2>
-        <div class="home-reveal-anchor max-w-2xl mx-auto" data-reveal-anchor>
-          <div
-            class="home-poster-frame card-shadow rounded-xl overflow-hidden"
-            data-home-reveal
-            data-reveal-kind="media"
-          >
-            <img
-              src={simposioPoster}
-              alt={`Cartel Oficial del ${simposioTitle}`}
-              class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
+        <p class="text-center text-ugr-text-light mb-10" data-home-reveal>
+          Encuentros y actividades de los colectivos y agentes de la Red.
+        </p>
+        <HomeAgenda />
+        <div class="text-center mt-10" data-reveal-anchor>
+          <a href="/agenda/" class="btn-green" data-home-reveal data-reveal-kind="cta">
+            Ver toda la agenda →
+          </a>
         </div>
       </div>
     </section>

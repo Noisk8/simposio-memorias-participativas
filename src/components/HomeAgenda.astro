@@ -1,0 +1,28 @@
+---
+import { getCollection } from 'astro:content';
+import EventCard from './EventCard.astro';
+import { filterPublished } from '../lib/taxonomies';
+import { groupEvents } from '../../shared/content/events';
+
+const published = filterPublished(await getCollection('eventos'));
+const { upcoming, past } = groupEvents(published);
+const events = [...upcoming, ...past].slice(0, 3);
+---
+
+{
+  events.length ? (
+    <div class="home-agenda-grid grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {events.map((event) => (
+        <div class="home-reveal-anchor" data-reveal-anchor>
+          <div class="home-agenda-card h-full" data-home-reveal data-reveal-kind="card">
+            <EventCard event={event} />
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p class="text-center text-ugr-text-light py-8" data-home-reveal>
+      Pronto compartiremos nuevos eventos y actividades de la Red.
+    </p>
+  )
+}
