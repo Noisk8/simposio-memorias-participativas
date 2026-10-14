@@ -54,6 +54,16 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
             </li>
             {/* “Añadir memoria” queda oculto temporalmente a petición editorial. */}
             <li>
+              <a href="/admin/contenidos?collection=eventos&new=1" class="cms-action-card">
+                <span class="cms-card-icon" aria-hidden="true">◷</span>
+                <span class="cms-card-copy">
+                  <strong>Crear evento</strong>
+                  <small>Añade una actividad de la Red a la Agenda.</small>
+                </span>
+                <span class="cms-card-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li>
               <a href="/admin/contenidos?collection=entradas&drafts=1" class="cms-action-card">
                 <span class="cms-card-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -86,7 +96,9 @@ import SupabaseAuth from '../../components/SupabaseAuth.astro';
             </span>
             <span class="cms-card-copy">
               <strong>Gestionar contenidos</strong>
-              <small>Edita entradas, memorias, páginas, simposios, categorías y etiquetas.</small>
+              <small
+                >Edita eventos, entradas, memorias, páginas, simposios, categorías y etiquetas.</small
+              >
             </span>
             <span class="cms-feature-cta">Abrir gestor <span aria-hidden="true">→</span></span>
           </a>

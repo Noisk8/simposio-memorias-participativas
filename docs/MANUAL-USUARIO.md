@@ -2,7 +2,24 @@
 
 El panel propio está disponible en `/admin/` y usa exclusivamente Supabase Auth. Las acciones se autorizan nuevamente en Netlify Functions mediante los permisos almacenados en Supabase.
 
-## Acceso
+## Eventos de la Agenda
+
+Entra en **Eventos** desde el menú del panel, o utiliza **Crear evento** en el
+dashboard. Completa nombre, fecha del evento, descripción, imagen, dirección o
+lugar de encuentro y quién lo organiza. El campo de imagen permite seleccionar
+un recurso de la biblioteca o subir uno nuevo. Puedes añadir más información en
+el editor de contenido.
+
+Guarda el borrador mientras lo preparas. Al publicar deben estar completos los
+seis campos. La publicación sigue las mismas comprobaciones y confirmación del
+despliegue que las entradas. Después aparecerá en `/agenda/` y tendrá su propia
+página de detalle. Archivar lo retira del sitio conservando su historial.
+
+La **fecha del evento** informa cuándo ocurre. La **fecha de publicación** permite
+programar cuándo se hace visible. La agenda muestra primero los próximos eventos
+y conserva los anteriores. Cambiar de día se refleja tras reconstruir el sitio.
+
+## Iniciar sesión
 
 1. Abre `/admin/`.
 2. Si no hay sesión, el navegador redirige a `/admin/login`.
@@ -93,7 +110,14 @@ cp .env.example .env
 npm run dev:netlify
 ```
 
-Abre `http://localhost:8888/admin/`. Ejecutar solo Astro no habilita las Functions.
+Abre `http://localhost:8888/admin/`. Ejecutar solo Astro no habilita las Functions;
+los puertos 4321 y 4322 sirven únicamente el frontend. Para crear eventos, guardar
+borradores o publicar, utiliza el panel a través del puerto 8888.
+
+Netlify inicia Astro en segundo plano y mantiene sus logs abiertos para conservar
+el proxy administrativo activo. Puedes gestionar Astro con `astro dev status`,
+`astro dev logs` y `astro dev stop`. Al cerrar Netlify Dev, detén también Astro si
+ya no necesitas el sitio local.
 
 ## Seguridad para personas editoras
 

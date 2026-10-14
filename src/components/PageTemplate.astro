@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import PageEntries from './PageEntries.astro';
+import AgendaEvents from './AgendaEvents.astro';
 import { resolvePublicImageUrl } from '../lib/public-image';
 
 interface Crumb {
@@ -68,6 +69,19 @@ const organizadores = data.organizadores.map((o: string) => {
     </h1>
   </div>
 </section>
+
+{
+  data.template === 'agenda' && (
+    <>
+      <section class="py-12 bg-white">
+        <div class="max-w-4xl mx-auto px-4 prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
+          <slot />
+        </div>
+      </section>
+      <AgendaEvents />
+    </>
+  )
+}
 
 {
   data.template === 'el-simposio' && (

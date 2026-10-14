@@ -40,7 +40,7 @@ export function getCorsHeaders(event: any, methods: string, requestId?: string) 
 export function isSafeContentPath(filePath: unknown): filePath is string {
   return (
     typeof filePath === 'string' &&
-    /^src\/content\/(entradas|memorias|paginas|simposios|categorias|etiquetas)\/[a-z0-9][a-z0-9._-]*\.md$/i.test(
+    /^src\/content\/(entradas|eventos|memorias|paginas|simposios|categorias|etiquetas)\/[a-z0-9][a-z0-9._-]*\.md$/i.test(
       filePath
     )
   );

@@ -76,6 +76,7 @@ function getPublicUrl(collectionName, path, data = {}) {
     .replace(/\.md$/i, '');
   if (!stem) return '';
   if (collectionName === 'entradas') return origin + '/entradas/' + stem;
+  if (collectionName === 'eventos') return origin + '/agenda/' + stem;
   if (collectionName === 'memorias') {
     const number = String(data.number || stem.split('-')[0] || '').trim();
     return number ? origin + '/museo-memorias/' + number : '';
@@ -115,7 +116,7 @@ async function api(url, options) {
   const type = response.headers.get('content-type') || '';
   if (!type.includes('application/json'))
     throw new Error(
-      'Las funciones administrativas no están disponibles. Usa netlify dev o el sitio publicado.'
+      'Las funciones administrativas no están disponibles en este servidor. Para trabajar localmente, inicia Netlify Dev y abre http://localhost:8888/admin/.'
     );
   const data = await response.json();
   if (!response.ok) {
@@ -508,17 +509,19 @@ async function loadItems() {
   collectionDescription.textContent = descriptions[collection.value];
   document.getElementById('header-new-button').textContent =
     '＋ ' +
-    (collection.value === 'simposios'
-      ? 'Edición de simposio'
-      : collection.value === 'memorias'
-        ? 'Memoria'
-        : collection.value === 'paginas'
-          ? 'Página'
-          : collection.value === 'categorias'
-            ? 'Categoría'
-            : collection.value === 'etiquetas'
-              ? 'Etiqueta'
-              : 'Entrada');
+    (collection.value === 'eventos'
+      ? 'Evento'
+      : collection.value === 'simposios'
+        ? 'Edición de simposio'
+        : collection.value === 'memorias'
+          ? 'Memoria'
+          : collection.value === 'paginas'
+            ? 'Página'
+            : collection.value === 'categorias'
+              ? 'Categoría'
+              : collection.value === 'etiquetas'
+                ? 'Etiqueta'
+                : 'Entrada');
   const group = document.getElementById('group');
   group.innerHTML = '<option value="">Group by</option>';
   groupFields[collection.value].forEach(([value, label]) => {
@@ -546,6 +549,7 @@ async function loadItems() {
   }
 }
 function permissionBase() {
+  if (collection.value === 'eventos') return 'evento';
   return collection.value === 'entradas'
     ? 'entrada'
     : collection.value === 'memorias'
@@ -572,7 +576,9 @@ function renderItems() {
     ? globalItems
     : items.map((item) => ({ ...item, collection: collection.value }));
   const filtered = source.filter((item) => {
-    const usesEditorialLists = ['entradas', 'memorias', 'paginas'].includes(item.collection);
+    const usesEditorialLists = ['entradas', 'eventos', 'memorias', 'paginas'].includes(
+      item.collection
+    );
     const matchesList = usesEditorialLists
       ? draftsOnly.checked
         ? isUnpublishedDraft(item)
@@ -1181,7 +1187,7 @@ function updatePreview() {
         '</span>'
     )
     .join(' ');
-  const meta = [data.date, data.author, data.place, data.collective]
+  const meta = [data.date, data.author, data.place, data.collective, data.address, data.organizer]
     .filter(Boolean)
     .map(esc)
     .join(' · ');
