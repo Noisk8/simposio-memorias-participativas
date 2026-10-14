@@ -5,6 +5,9 @@ on:
     - cron: '17 3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: production-backup
   cancel-in-progress: false
@@ -19,7 +22,7 @@ jobs:
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: '22.12.0'
+          node-version: '22.19.0'
           cache: npm
 
       - name: Install dependencies
@@ -31,6 +34,7 @@ jobs:
           version: 2.113.0
 
       - name: Export database and media
+        id: export
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -46,44 +50,76 @@ jobs:
           S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE }}
           S3_PUBLIC_BASE_URL: ${{ secrets.S3_PUBLIC_BASE_URL }}
           S3_BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
+          S3_CA_CERT_PEM: ${{ secrets.S3_CA_CERT_PEM }}
+          BACKUP_GARAGE_LEGACY_PUBLIC_BASE_URLS: ${{ vars.BACKUP_GARAGE_LEGACY_PUBLIC_BASE_URLS }}
+          BACKUP_ALLOWED_MISSING_MEDIA_IDS: ${{ vars.BACKUP_ALLOWED_MISSING_MEDIA_IDS }}
         run: |
           set -euo pipefail
-          required_secrets=(
-            SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
-            SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_ENCRYPTION_KEY
-            S3_ENDPOINT S3_REGION S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY
-            S3_FORCE_PATH_STYLE S3_BACKUP_BUCKET
-          )
-          missing=0
-          for name in "${required_secrets[@]}"; do
-            if [ -z "${!name:-}" ]; then
-              echo "::error::Falta el secreto ${name} en el entorno production-backup."
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
           backup_dir="$(mktemp -d)"
           trap 'rm -rf "$backup_dir"' EXIT
+          export BACKUP_CA_FILE="$backup_dir/s3-ca.pem"
+          node scripts/validate-backup-config.mjs
+          if [ -f "$BACKUP_CA_FILE" ]; then
+            export NODE_EXTRA_CA_CERTS="$BACKUP_CA_FILE"
+          fi
+          node scripts/validate-backup-storage.mjs
           export BACKUP_OUTPUT_DIR="$backup_dir/export"
           mkdir -p "$BACKUP_OUTPUT_DIR"
           mkdir -p "$BACKUP_OUTPUT_DIR/database"
           supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
           supabase db dump --linked --file "$BACKUP_OUTPUT_DIR/database/schema.sql"
           supabase db dump --linked --data-only --use-copy --file "$BACKUP_OUTPUT_DIR/database/data.sql"
+          test -s "$BACKUP_OUTPUT_DIR/database/schema.sql"
+          test -s "$BACKUP_OUTPUT_DIR/database/data.sql"
           node --experimental-strip-types scripts/backup-supabase-media.mjs
           node scripts/backup-garage-media.mjs
           cp -R src/content "$BACKUP_OUTPUT_DIR/published-content"
           tar -C "$BACKUP_OUTPUT_DIR" -czf "$backup_dir/backup.tar.gz" .
           openssl enc -aes-256-cbc -pbkdf2 -salt \
             -in "$backup_dir/backup.tar.gz" \
-            -out "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
+            -out "production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
             -pass env:BACKUP_ENCRYPTION_KEY
-          test -s "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
+          test -s "production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
           openssl enc -d -aes-256-cbc -pbkdf2 \
-            -in "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
+            -in "production-backup-${GITHUB_RUN_ID}.tar.gz.enc" \
             -out "$backup_dir/verify.tar.gz" \
             -pass env:BACKUP_ENCRYPTION_KEY
           tar -tzf "$backup_dir/verify.tar.gz" >/dev/null
-          node scripts/upload-backup-to-garage.mjs "$backup_dir/production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+          node scripts/upload-backup-to-garage.mjs "production-backup-${GITHUB_RUN_ID}.tar.gz.enc"
+          echo "garage_verified=true" >> "$GITHUB_OUTPUT"
+
+      - name: Store verified independent copy
+        id: independent_copy
+        if: ${{ !cancelled() && steps.export.outputs.verified == 'true' && (vars.BACKUP_GITHUB_ARTIFACT_ENABLED != 'false' || steps.export.outputs.garage_verified != 'true') }}
+        continue-on-error: ${{ steps.export.outputs.garage_verified == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-backup-${{ github.run_id }}
+          path: production-backup-${{ github.run_id }}.tar.gz.enc
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Report backup destinations
+        if: ${{ !cancelled() && steps.export.outputs.verified == 'true' }}
+        env:
+          GARAGE_VERIFIED: ${{ steps.export.outputs.garage_verified }}
+          COPY_OUTCOME: ${{ steps.independent_copy.outcome }}
+          MISSING_MEDIA_COUNT: ${{ steps.export.outputs.missing_media_count }}
+        run: |
+          if [ "${MISSING_MEDIA_COUNT:-0}" != '0' ]; then
+            echo "Advertencia: faltan $MISSING_MEDIA_COUNT archivos expresamente autorizados. El respaldo conserva sus registros y el informe missing-media.json, pero no sus bytes; esas imágenes no podrán restaurarse." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$GARAGE_VERIFIED" = 'true' ]; then
+            echo 'Respaldo cifrado subido y verificado por SHA-256 en Garage.' >> "$GITHUB_STEP_SUMMARY"
+            if [ "$COPY_OUTCOME" = 'failure' ]; then
+              echo '::warning::La copia adicional de GitHub falló. Revisar su cuota y el paso de artefactos; el respaldo de Garage está verificado.'
+              echo 'GitHub: copia adicional fallida. Consultar el paso de artefactos para identificar la causa.' >> "$GITHUB_STEP_SUMMARY"
+            elif [ "$COPY_OUTCOME" = 'skipped' ]; then
+              echo 'GitHub: copia adicional desactivada mediante BACKUP_GITHUB_ARTIFACT_ENABLED=false.' >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo 'GitHub: copia adicional guardada durante 30 días.' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo 'Garage: subida o verificación fallida. La ejecución conserva el estado de fallo aunque GitHub guarde una copia adicional.' >> "$GITHUB_STEP_SUMMARY"
+          fi

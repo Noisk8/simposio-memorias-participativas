@@ -1,159 +1,166 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import HomeIntro from '../components/HomeIntro.astro';
+import HomeVector from '../components/HomeVector.astro';
+import HomeAgenda from '../components/HomeAgenda.astro';
+import '../styles/home-motion.css';
 import { getSimposioDefault } from '../lib/simposios';
 import { NETWORK_TITLE, NETWORK_INSTAGRAM } from '../consts';
 
 const simposio = await getSimposioDefault();
 const simposioTitle = simposio?.data.title || 'I Simposio sobre Memorias Participativas';
 const simposioPlace = simposio?.data.place || 'Universidad de Granada';
-const simposioPoster = simposio?.data.poster || '/images/cartel-oficial.jpg';
 const simposioImage = simposio?.data.image || '/images/hero-bg.jpg';
+const heroTitle = 'Red Internacional de Memorias Colectivas';
+const exploreLinks = [
+  { href: '/acerca-de', title: 'Acerca de', description: 'La Red Internacional' },
+  { href: '/simposios', title: 'Simposios', description: 'Ediciones y encuentros' },
+  { href: '/museo-memorias', title: 'Museo', description: 'Memorias Vivas' },
+  {
+    href: `/ediciones/${simposio?.data.slug || '2026'}/`,
+    title: 'El Simposio',
+    description: simposioTitle,
+  },
+];
 ---
 
 <Layout title={`${simposioTitle} · ${NETWORK_TITLE}`} image={simposioImage}>
-  <!-- Hero Section -->
-  <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
-    <div class="absolute inset-0">
-      <img
-        src={simposioImage}
-        alt={simposioTitle}
-        class="w-full h-full object-cover"
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
-      />
-      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
-    </div>
-    <div class="relative z-10 text-center px-4">
-      <p class="text-sm md:text-base text-white/80 uppercase tracking-widest mb-3">
-        {NETWORK_TITLE}
-      </p>
-      <h1
-        class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 font-[family-name:var(--font-heading)] drop-shadow-lg"
-      >
-        {simposioTitle.toUpperCase()}
-      </h1>
-      <p class="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto drop-shadow-md">
-        {simposioPlace}
-      </p>
-    </div>
-  </section>
+  <div data-home>
+    <HomeVector />
+    <HomeIntro title={heroTitle} place={simposioPlace} image={simposioImage} />
 
-  <!-- Cartel Oficial -->
-  <section class="py-16 bg-white">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-      <h2
-        class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)]"
-      >
-        Cartel Oficial
-      </h2>
-      <div class="card-shadow rounded-xl overflow-hidden inline-block">
-        <img
-          src={simposioPoster}
-          alt={`Cartel Oficial del ${simposioTitle}`}
-          class="w-full max-w-2xl mx-auto hover:scale-[1.02] transition-transform duration-500"
-          loading="lazy"
-          decoding="async"
-        />
+    <!-- Agenda de la Red -->
+    <section
+      class="home-section py-16 bg-white"
+      data-vector-section="agenda"
+      data-home-surface
+      aria-labelledby="home-agenda-title"
+    >
+      <div class="max-w-6xl mx-auto px-4">
+        <h2
+          id="home-agenda-title"
+          class="text-3xl font-bold mb-4 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center"
+          data-home-reveal
+          data-reveal-kind="words"
+        >
+          Agenda
+        </h2>
+        <p class="text-center text-ugr-text-light mb-10" data-home-reveal>
+          Encuentros y actividades de los colectivos y agentes de la Red.
+        </p>
+        <HomeAgenda />
+        <div class="text-center mt-10" data-reveal-anchor>
+          <a href="/agenda/" class="btn-green" data-home-reveal data-reveal-kind="cta">
+            Ver toda la agenda →
+          </a>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Enlaces principales -->
-  <section class="py-16 bg-ugr-cream">
-    <div class="max-w-5xl mx-auto px-4">
-      <h2
-        class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center"
-      >
-        Explora
-      </h2>
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <a
-          href="/acerca-de"
-          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
+    <!-- Enlaces principales -->
+    <section
+      class="home-section home-section-cream py-16 bg-ugr-cream"
+      data-vector-section="explore"
+      data-home-surface
+    >
+      <div class="max-w-5xl mx-auto px-4">
+        <h2
+          class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)] text-center"
+          data-home-reveal
+          data-reveal-kind="words"
         >
-          <h3
-            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
-          >
-            Acerca de
-          </h3>
-          <p class="text-sm text-ugr-text-light">La Red Internacional</p>
-        </a>
-        <a
-          href="/simposios"
-          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
-        >
-          <h3
-            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
-          >
-            Simposios
-          </h3>
-          <p class="text-sm text-ugr-text-light">Ediciones y encuentros</p>
-        </a>
-        <a
-          href="/museo-memorias"
-          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
-        >
-          <h3
-            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
-          >
-            Museo
-          </h3>
-          <p class="text-sm text-ugr-text-light">Memorias Vivas</p>
-        </a>
-        <a
-          href={`/ediciones/${simposio?.data.slug || '2026'}/`}
-          class="card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent transition-all"
-        >
-          <h3
-            class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]"
-          >
-            Edición actual
-          </h3>
-          <p class="text-sm text-ugr-text-light">Página del simposio</p>
-        </a>
+          Explora
+        </h2>
+        <div class="home-explore-grid grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {
+            exploreLinks.map((link) => (
+              <div class="home-reveal-anchor" data-reveal-anchor>
+                <a
+                  href={link.href}
+                  class="home-explore-card card-shadow bg-white rounded-xl p-6 text-center hover:border-ugr-green border border-transparent"
+                  data-home-reveal
+                  data-reveal-kind="card"
+                >
+                  <h3 class="text-lg font-bold text-ugr-green-dark mb-2 font-[family-name:var(--font-heading)]">
+                    {link.title}
+                  </h3>
+                  <p class="text-sm text-ugr-text-light">{link.description}</p>
+                  <svg
+                    class="home-card-arrow"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.5" />
+                  </svg>
+                </a>
+              </div>
+            ))
+          }
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Enlace Instagram -->
-  <section class="py-16 bg-white">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-      <h2
-        class="text-3xl font-bold mb-8 text-ugr-green-dark font-[family-name:var(--font-heading)]"
-      >
-        Síguenos en Instagram
-      </h2>
+    <!-- Enlace Instagram -->
+    <section class="home-section py-16 bg-white" data-vector-section="instagram" data-home-surface>
+      <div class="max-w-4xl mx-auto px-4 text-center">
+        <h2
+          class="text-3xl font-bold mb-8 text-ugr-green-dark font-[family-name:var(--font-heading)]"
+          data-home-reveal
+          data-reveal-kind="words"
+        >
+          Síguenos en Instagram
+        </h2>
 
-      <div class="card-shadow bg-white rounded-xl p-8 max-w-md mx-auto">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden shadow-lg">
-          <img
-            src="/images/instagram-icon.jpg"
-            alt="Instagram @memoriasparticipativas"
-            class="w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
+        <div class="home-reveal-anchor max-w-md mx-auto" data-reveal-anchor>
+          <div
+            class="home-social-card card-shadow bg-white rounded-xl p-8"
+            data-home-reveal
+            data-reveal-kind="panel"
+          >
+            <div
+              class="home-social-icon w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden shadow-lg"
+              data-home-reveal
+              data-reveal-kind="icon"
+            >
+              <img
+                src="/images/instagram-icon.jpg"
+                alt="Instagram @memoriasparticipativas"
+                class="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <p class="home-social-handle text-ugr-text-light mb-6 font-semibold" data-home-reveal>
+              @memoriasparticipativas
+            </p>
+
+            <a
+              href={NETWORK_INSTAGRAM}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="home-social-cta btn-green inline-flex items-center gap-2"
+              data-home-reveal
+              data-reveal-kind="cta"
+            >
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+                ></path>
+              </svg>
+              Seguir en Instagram
+            </a>
+          </div>
         </div>
 
-        <p class="text-ugr-text-light mb-6 font-semibold">@memoriasparticipativas</p>
-
-        <a
-          href={NETWORK_INSTAGRAM}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn-green inline-flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
-            ></path>
-          </svg>
-          Seguir en Instagram
-        </a>
+        <p class="home-social-description mt-6 text-ugr-text-light text-sm" data-home-reveal>
+          Actualizaciones, fotos y vídeos del simposio
+        </p>
       </div>
-
-      <p class="mt-6 text-ugr-text-light text-sm">Actualizaciones, fotos y vídeos del simposio</p>
-    </div>
-  </section>
+    </section>
+  </div>
+  <script src="../scripts/home-motion.ts"></script>
 </Layout>

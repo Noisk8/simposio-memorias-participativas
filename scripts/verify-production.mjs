@@ -25,7 +25,7 @@ function routeFor(file) {
 }
 
 const IDENTIFIABLE =
-  /^\/(?:entradas|categorias|etiquetas|paginas|noticias|museo-memorias|ediciones)/;
+  /^\/(?:agenda|entradas|categorias|etiquetas|paginas|noticias|museo-memorias|ediciones)/;
 
 async function headStatus(url, attempt = 0) {
   const controller = new AbortController();

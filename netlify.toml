@@ -31,6 +31,8 @@
 # Los headers de seguridad viven en public/_headers (fuente única).
 
 [dev]
-  command = "astro dev"
-  targetPort = 4321
+  # Astro permanece en segundo plano; seguir sus logs mantiene el comando de
+  # framework activo para que Netlify Dev no cierre el proxy y las Functions.
+  command = "astro dev --background --port 4322 && astro dev logs --follow"
+  targetPort = 4322
   port = 8888

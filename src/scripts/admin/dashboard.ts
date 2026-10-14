@@ -27,7 +27,7 @@ window.addEventListener('supabase-auth', showDashboard);
 const steps = [
   [
     'Bienvenido/a al CMS',
-    'Este panel administra los contenidos de la Red Internacional de Memorias Participativas. Trabajarás con entradas, memorias, páginas, ediciones, categorías, etiquetas e imágenes. Cada operación se valida con tu sesión y tus permisos de Supabase.',
+    'Este panel administra los contenidos de la Red Internacional de Memorias Participativas. Trabajarás con eventos de la Agenda, entradas, memorias, páginas, ediciones, categorías, etiquetas e imágenes. Cada operación se valida con tu sesión y tus permisos de Supabase.',
   ],
   [
     'La pantalla de bienvenida',

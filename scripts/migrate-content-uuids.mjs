@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const CANONICAL_COLLECTIONS = [
   'entradas',
+  'eventos',
   'memorias',
   'paginas',
   'simposios',

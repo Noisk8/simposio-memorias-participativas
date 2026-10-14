@@ -17,6 +17,7 @@ export const WORKFLOW_TRANSITIONS = {
 export type WorkflowTransition = keyof typeof WORKFLOW_TRANSITIONS;
 
 function collectionPermissionBase(collection: string) {
+  if (collection === 'eventos') return 'evento';
   return collection === 'entradas'
     ? 'entrada'
     : collection === 'memorias'
@@ -33,7 +34,7 @@ function collectionPermissionBase(collection: string) {
 export function validateWorkflowPath(value: unknown): string {
   if (
     typeof value !== 'string' ||
-    !/^src\/content\/(entradas|memorias|paginas|simposios|categorias|etiquetas)\/[a-z0-9][a-z0-9._-]*\.md$/i.test(
+    !/^src\/content\/(entradas|eventos|memorias|paginas|simposios|categorias|etiquetas)\/[a-z0-9][a-z0-9._-]*\.md$/i.test(
       value
     )
   ) {

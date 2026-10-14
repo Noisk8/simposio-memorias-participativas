@@ -46,13 +46,121 @@ Una respuesta no 2xx o una variable ausente genera un error operativo y una aler
 
 ## Respaldo
 
-El workflow `Encrypted production backup` se ejecuta diariamente y exporta:
+El workflow `Encrypted production backup` se ejecuta diariamente y exige un respaldo completo:
 
-- esquema y datos PostgreSQL;
-- metadata de `cms_media`;
-- todos los objetos activos de Supabase Storage.
+- esquema y datos exportados por Supabase CLI;
+- catálogo de `cms_media` activo y sus binarios, comprobados por checksum;
+- objetos de Garage/S3 con manifiesto de rutas, tamaños, SHA-256 y metadata;
+- Markdown publicado de `src/content`.
 
-El artefacto se cifra antes de salir del runner y se conserva 30 días. El Environment `production-backup` necesita `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `BACKUP_ENCRYPTION_KEY`.
+El destino principal es un **bucket privado de Garage**, configurado mediante
+`S3_BACKUP_BUCKET`, distinto de `cms-media`. Después del cifrado y la comprobación local,
+la subida se verifica descargando el objeto y comparando tamaño y SHA-256. GitHub Actions
+conserva una segunda copia verificada durante 30 días, incluso si falla la subida a Garage.
+Si falla la exportación o la comprobación local no se publica un artefacto parcial.
+
+La falta de cuota u otro fallo del artefacto de GitHub genera una advertencia y no hace
+fallar un respaldo **ya subido y verificado en Garage**. Un fallo de Garage sigue siendo
+bloqueante, aunque se consiga guardar la copia de emergencia en GitHub. El resumen de la
+ejecución indica qué destinos se completaron.
+
+Para evitar consumir espacio de artefactos, configurar la **variable** (no secreto)
+`BACKUP_GITHUB_ARTIFACT_ENABLED=false` en el Environment `production-backup`. Esto omite
+la copia de GitHub únicamente después de verificar la de Garage; ante un fallo de Garage
+todavía se intenta guardar la copia de emergencia. Sin esa variable, se intenta conservar
+ambas copias. Si se desactiva, planificar otra copia fuera del servidor de Garage.
+
+El Environment `production-backup` debe disponer de estos secretos (los de Netlify no se
+transfieren automáticamente a GitHub):
+
+- `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`;
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`;
+- `BACKUP_ENCRYPTION_KEY`: al menos 32 caracteres generados aleatoriamente; conservar una
+  copia segura fuera del servidor de medios para poder restaurar;
+- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET=cms-media`, `S3_ACCESS_KEY_ID`,
+  `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE=true`, `S3_PUBLIC_BASE_URL`;
+- `S3_BACKUP_BUCKET`: bucket privado existente, con permisos de lectura y escritura para
+  la credencial S3. El script comprueba que sea distinto del bucket público, pero la
+  privacidad debe verificarse en Garage y en su proxy.
+
+La validación aborta antes de exportar si falta algún secreto obligatorio. No se permite
+omitir silenciosamente PostgreSQL o el catálogo editorial.
+
+Antes de exportar PostgreSQL, `validate-backup-storage.mjs` comprueba el listado y el
+acceso a los medios de Garage y la existencia del bucket de destino. Ante un fallo
+registra únicamente la operación, el código de error y el estado HTTP, sin URLs,
+credenciales ni detalles de la petición. Los exportadores comprueban después todos los
+binarios y la subida verifica la escritura y la integridad del respaldo completo.
+
+### Configuración del servidor Red Memorias
+
+La URL `https://ui.red-memorias.duckdns.org/buckets/<id>` es el panel administrativo,
+no el endpoint de subida S3. La configuración local de este repositorio utiliza:
+
+| Variable              | Valor                                            |
+| --------------------- | ------------------------------------------------ |
+| `S3_ENDPOINT`         | `https://s3.red-memorias.duckdns.org`            |
+| `S3_REGION`           | `garage`                                         |
+| `S3_BUCKET`           | `cms-media` (origen de los medios públicos)      |
+| `S3_FORCE_PATH_STYLE` | `true`                                           |
+| `S3_PUBLIC_BASE_URL`  | `https://cms-media.web.red-memorias.duckdns.org` |
+| `S3_BACKUP_BUCKET`    | `cms-backups` (destino privado de respaldos)     |
+
+Usar el alias S3 del bucket como `S3_BACKUP_BUCKET`; el ID hexadecimal del panel no
+identifica por sí solo su alias ni sus permisos. No guardar respaldos de PostgreSQL en
+el bucket público `cms-media`. Los archivos cifrados se almacenan bajo `backups/YYYY-MM-DD/`.
+
+Si el catálogo conserva URLs de un dominio anterior de Garage, configurar la variable
+`BACKUP_GARAGE_LEGACY_PUBLIC_BASE_URLS` en `production-backup` (bases HTTPS separadas por
+comas; para la comprobación local, usar la misma variable en `.env`). El backup admite
+únicamente URLs que coincidan exactamente con una base permitida y con `storage_path`.
+Lee los bytes por el endpoint S3 actual y verifica el SHA-256 del catálogo; nunca visita
+el dominio anterior ni modifica la URL de la fila. Este ajuste es exclusivo del backup
+y no modifica las URLs del sitio ni la resolución de medios del CMS.
+
+Por defecto, un archivo ausente o un checksum incorrecto bloquea el respaldo. Si el
+propietario autoriza respaldar lo disponible mientras se recuperan originales perdidos,
+`BACKUP_ALLOWED_MISSING_MEDIA_IDS` admite exclusivamente los UUID de esas filas, separados
+por comas. La excepción solo admite archivos no encontrados: los errores de lectura,
+de configuración o de checksum siguen bloqueando la ejecución. No borra ni modifica filas.
+El archivo cifrado incluye `missing-media.json` y el manifiesto conserva todas las filas,
+`complete: false`, el número exportado y los faltantes. GitHub muestra una advertencia y
+el resumen identifica la limitación: esos archivos no se pueden restaurar. Eliminar los
+UUID de la variable después de recuperar y verificar los originales.
+
+Los secretos de Supabase y la clave de cifrado también deben estar en el Environment de
+GitHub, aunque ya existan en `.env` o Netlify. Guardar la clave de cifrado fuera de GitHub
+y de Garage antes de ejecutar el primer respaldo. No regenerarla si ya hay respaldos:
+una nueva clave no permite descifrar los anteriores.
+
+### Certificado TLS de Garage
+
+Preferir un certificado HTTPS válido para el hostname de `S3_ENDPOINT`, con su cadena
+completa. Si el servidor usa deliberadamente una CA privada, añadir `S3_CA_CERT_PEM` al
+Environment: certificados de confianza en formato PEM obtenidos del administrador por un
+canal confiable, **sin claves privadas**. El workflow valida formato y vigencia, crea un
+archivo temporal con permisos 0600 y configura `NODE_EXTRA_CA_CERTS` antes de iniciar los
+exportadores y la subida. El archivo se elimina al terminar el paso.
+
+No usar `NODE_TLS_REJECT_UNAUTHORIZED=0` ni desactivar la comprobación del certificado.
+La CA adicional no corrige un hostname incorrecto, un certificado vencido o una cadena
+mal configurada. El soporte es exclusivo del backup; no cambia TLS del sitio ni del CMS.
+
+### Capacidad y alcance
+
+Los 30 días de retención aplican a GitHub, no a Garage: configurar y verificar por separado
+la retención del bucket privado. El script actual admite archivos cifrados de hasta 5 GiB.
+La copia de Garage comparte el riesgo del servidor que contiene los originales; conservar
+la copia independiente y comprobar periódicamente que puede descargarse y restaurarse.
+Los exportadores pueden incluir dos copias de medios Garage registrados en el catálogo;
+considerar ese espacio al dimensionar el runner y el bucket.
+
+La exportación de Supabase CLI no equivale por sí sola a una copia integral del servicio
+Auth y su configuración. Verificar el alcance de los esquemas exportados y documentar la
+recuperación de usuarios, roles, secretos y configuración antes de asumir recuperación total.
+
+Para verificar el cambio: ejecutar manualmente el workflow, confirmar la descarga verificada
+en Garage y el artefacto de GitHub, y ensayar la restauración en un entorno aislado.
 
 ## Restauración
 
@@ -61,7 +169,13 @@ La restauración siempre se ensaya primero en un proyecto Supabase vacío de rec
 1. Descargar el artefacto y verificar su checksum desde GitHub Actions.
 2. Descifrarlo con `openssl enc -d -aes-256-cbc -pbkdf2` y extraerlo.
 3. Aplicar `database/schema.sql` y después `database/data.sql` con `psql` sobre el proyecto de recuperación.
-4. Subir los objetos de `storage/cms-media/` conservando exactamente sus rutas.
+4. Restaurar los objetos de `garage/cms-media/` en Garage según `garage-manifest.json`.
+   Revisar primero `missing-media.json`: sus archivos no están en la copia y deben recuperarse aparte.
+   Las entradas con `directoryMarker: true` representan objetos vacíos cuya clave termina
+   en `/`: recrearlas con cuerpo vacío y su metadata, porque no tienen un archivo de datos.
+   Restaurar los de `storage/cms-media/` al proveedor identificado por `media-manifest.json`,
+   conservando rutas y metadata; verificar SHA-256 y evitar duplicar objetos ya restaurados.
+   Recuperar el Markdown desde `published-content/` cuando sea necesario.
 5. Comparar los conteos de `cms_content_records`, `cms_content_versions`, `cms_media` y `audit_log`.
 6. Ejecutar `npm run check`, el E2E autenticado contra recuperación y una descarga por checksum de una muestra de medios.
 7. Documentar fecha, duración, responsable y diferencias. El objetivo de recuperación es RPO 24 horas y RTO 4 horas.

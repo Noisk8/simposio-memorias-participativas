@@ -88,6 +88,28 @@ longitud mínima; el cuerpo tampoco impone un mínimo de caracteres.
 
 ## Funciones activas
 
+### Agenda y eventos
+
+La página `/agenda/` sustituye a `/programa/`, que redirige a la agenda. Su texto
+introductorio vive en `src/content/paginas/2026-programa.md`; se conserva su UUID y
+path editorial. La plantilla `agenda` muestra los eventos publicados de toda la
+Red, con próximos eventos en orden ascendente y anteriores en orden descendente.
+Cada evento tiene una ruta `/agenda/:slug/`.
+
+La colección `eventos` utiliza `title`, `date`, `description`, `image`, `address`
+y `organizer`, además de identidad y metadatos editoriales compartidos. El panel
+ofrece «Eventos», sus borradores y un acceso «Crear evento». Usa el mismo autosave,
+historial, revisión optimista, publicación y archivo que las entradas. La fecha del
+evento no programa su publicación: esa función sigue usando `publish_date`.
+Antes de publicar son obligatorios los seis campos; los borradores pueden estar
+incompletos. Las fechas se muestran sin desplazarlas por la zona horaria.
+
+Antes de usar Eventos en un entorno existente, aplicar
+`supabase/migrations/202610140001_events_collection.sql`. La migración amplía la
+restricción de colecciones y la RPC de guardado, e incorpora permisos `evento.*`
+según los permisos efectivos de entradas de cada rol. El servidor conserva la
+validación de sesión, permisos y propiedad del contenido.
+
 | Function               | Responsabilidad                                                                               |
 | ---------------------- | --------------------------------------------------------------------------------------------- |
 | `manage-content`       | CRUD de borradores Supabase, UUID canónico, validación, autosave y concurrencia por revisión  |

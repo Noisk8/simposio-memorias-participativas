@@ -4,6 +4,7 @@ import type { PermissionContext } from '../auth/require-permission.ts';
 import {
   categoriaSchema,
   entradaSchema,
+  eventoSchema,
   etiquetaSchema,
   memoriaSchema,
   paginaSchema,
@@ -28,6 +29,7 @@ import { getAdminClient } from '../supabase/admin-client.ts';
 
 export const CONTENT_COLLECTIONS = {
   entradas: { permission: 'entrada', schema: entradaSchema },
+  eventos: { permission: 'evento', schema: eventoSchema },
   memorias: { permission: 'memoria', schema: memoriaSchema },
   paginas: { permission: 'pagina', schema: paginaSchema },
   simposios: { permission: 'simposio', schema: simposioSchema },
@@ -63,7 +65,7 @@ export function contentAction(method: string, payload?: unknown): ContentAction 
 export function isManagedContentPath(value: unknown): value is string {
   return (
     typeof value === 'string' &&
-    /^src\/content\/(entradas|memorias|paginas|simposios|categorias|etiquetas)\/[a-z0-9][a-z0-9._-]*\.md$/i.test(
+    /^src\/content\/(entradas|eventos|memorias|paginas|simposios|categorias|etiquetas)\/[a-z0-9][a-z0-9._-]*\.md$/i.test(
       value
     )
   );

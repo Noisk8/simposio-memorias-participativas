@@ -3,6 +3,7 @@ import { glob } from 'astro/loaders';
 import {
   categoriaSchema,
   entradaSchema,
+  eventoSchema,
   etiquetaSchema,
   genericContentSchema,
   memoriaSchema,
@@ -44,4 +45,17 @@ const entradas = defineCollection({
   schema: entradaSchema,
 });
 
-export const collections = { simposios, categorias, etiquetas, paginas, memorias, entradas };
+const eventos = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/eventos' }),
+  schema: eventoSchema,
+});
+
+export const collections = {
+  simposios,
+  categorias,
+  etiquetas,
+  paginas,
+  memorias,
+  entradas,
+  eventos,
+};

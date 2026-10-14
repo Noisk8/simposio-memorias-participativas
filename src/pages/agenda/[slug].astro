@@ -1,0 +1,72 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { filterPublished } from '../../lib/taxonomies';
+import { resolvePublicImageUrl } from '../../lib/public-image';
+import { formatEventDate } from '../../../shared/content/events';
+
+interface Props {
+  entry: CollectionEntry<'eventos'>;
+}
+
+export const getStaticPaths: GetStaticPaths = async () =>
+  filterPublished(await getCollection('eventos')).map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const event = entry.data;
+---
+
+<Layout
+  title={`${event.title} - Agenda`}
+  description={event.description}
+  image={event.image}
+  canonical={`/agenda/${entry.id}/`}
+>
+  <section class="bg-ugr-green py-14 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <nav aria-label="Ruta de navegación" class="text-white/80 text-sm mb-4">
+        <a href="/" class="hover:underline">Inicio</a>
+        <span class="mx-2">/</span>
+        <a href="/agenda/" class="hover:underline">Agenda</a>
+      </nav>
+      <h1 class="text-3xl md:text-4xl font-bold text-white font-[family-name:var(--font-heading)]">
+        {event.title}
+      </h1>
+      <time datetime={event.date} class="block mt-4 text-white">{formatEventDate(event.date)}</time>
+    </div>
+  </section>
+  <section class="py-12 bg-white">
+    <div class="max-w-4xl mx-auto px-4">
+      <img
+        src={resolvePublicImageUrl(event.image)}
+        alt={event.title}
+        class="w-full rounded-xl mb-8"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
+      <p class="text-lg text-ugr-text mb-8 whitespace-pre-line">{event.description}</p>
+      <dl class="grid gap-6 md:grid-cols-2 rounded-xl bg-ugr-cream p-6 mb-8 text-ugr-text">
+        <div>
+          <dt class="font-bold text-ugr-green-dark">Dirección</dt><dd class="mt-1">
+            {event.address}
+          </dd>
+        </div>
+        <div>
+          <dt class="font-bold text-ugr-green-dark">Organiza</dt><dd class="mt-1">
+            {event.organizer}
+          </dd>
+        </div>
+      </dl>
+      <div class="prose prose-lg max-w-none text-ugr-text"><Content /></div>
+      <a href="/agenda/" class="inline-block mt-8 text-ugr-green font-semibold hover:underline"
+        >← Volver a la agenda</a
+      >
+    </div>
+  </section>
+</Layout>

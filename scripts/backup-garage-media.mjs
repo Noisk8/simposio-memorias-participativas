@@ -5,6 +5,7 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { backupObjectPath } from './lib/backup-object-path.mjs';
 
 const root = process.env.BACKUP_OUTPUT_DIR;
 const bucket = process.env.S3_BUCKET;
@@ -35,18 +36,28 @@ do {
   );
   for (const object of page.Contents || []) {
     const key = object.Key;
-    if (
-      !key ||
-      key.startsWith('/') ||
-      key.includes('\\') ||
-      key.split('/').some((s) => !s || s === '..' || s === '.')
-    )
-      throw new Error('Ruta de objeto no segura.');
+    const { relativePath, directoryMarker } = backupObjectPath(key, object.Size);
     const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }), {
       abortSignal: AbortSignal.timeout(120_000),
     });
     if (!result.Body) throw new Error('Objeto sin contenido.');
-    const destination = path.join(root, 'garage', bucket, key);
+    const destination = path.join(root, 'garage', bucket, relativePath);
+    if (directoryMarker) {
+      const data = await result.Body.transformToByteArray();
+      if (data.length !== 0 || result.ContentLength !== 0)
+        throw new Error('Un marcador de carpeta debe estar vacío.');
+      await mkdir(destination, { recursive: true });
+      objects.push({
+        key,
+        size: 0,
+        sha256: createHash('sha256').update(data).digest('hex'),
+        contentType: result.ContentType,
+        cacheControl: result.CacheControl,
+        metadata: result.Metadata,
+        directoryMarker: true,
+      });
+      continue;
+    }
     await mkdir(path.dirname(destination), { recursive: true });
     const hash = createHash('sha256');
     let size = 0;

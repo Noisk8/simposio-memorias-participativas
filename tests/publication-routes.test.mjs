@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const ROUTES = [
+  'src/pages/agenda/[slug].astro',
+  'src/components/AgendaEvents.astro',
   'src/pages/[pagina].astro',
   'src/pages/categorias/index.astro',
   'src/pages/categorias/[slug].astro',
