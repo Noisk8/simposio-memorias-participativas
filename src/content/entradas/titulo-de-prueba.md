@@ -1,21 +1,21 @@
 ---
-id: "9faa06ea-8156-4ff5-86bd-2295e0c3e372"
-date: "2026-10-14"
+id: '9faa06ea-8156-4ff5-86bd-2295e0c3e372'
+date: '2026-10-14'
 tags:
-  - "museo-memorias"
+  - 'museo-memorias'
 draft: false
-image: "https://cms-media.web.red-memorias.duckdns.org/images/2026/10/2976dc4b-8216-4f50-b788-3c45efaee9c2-screenshot-2026-09-01_22-32-58.webp"
-title: "titulo de prueba"
-author: "juan"
-page_id: ""
-simposio: "2026"
+image: 'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/2976dc4b-8216-4f50-b788-3c45efaee9c2-screenshot-2026-09-01_22-32-58.webp'
+title: 'titulo de prueba'
+author: 'juan'
+page_id: ''
+simposio: '2026'
 categories:
-  - "politica"
-description: "una descripción"
-publish_date: "2026-10-14"
+  - 'politica'
+description: 'una descripción'
+publish_date: '2026-10-14'
 ---
 
-este es el contenido 
+este es el contenido
 
 ```cms-image
 {
