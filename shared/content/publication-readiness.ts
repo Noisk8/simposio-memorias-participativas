@@ -21,8 +21,28 @@ export function publicationReadinessErrors(
   ) {
     errors.push('La memoria debe declarar una persona autora o un colectivo responsable.');
   }
-  if (['entradas', 'memorias'].includes(collection) && String(data.image || '').trim().length < 4) {
+  if (
+    ['entradas', 'memorias', 'eventos'].includes(collection) &&
+    String(data.image || '').trim().length < 4
+  ) {
     errors.push('El contenido debe declarar una imagen social y editorial.');
+  }
+  if (collection === 'eventos') {
+    const date = String(data.date || '').trim();
+    const parsed = new Date(`${date}T00:00:00.000Z`);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      Number.isNaN(parsed.getTime()) ||
+      parsed.toISOString().slice(0, 10) !== date
+    ) {
+      errors.push('El evento debe tener una fecha de calendario válida.');
+    }
+    if (!String(data.description || '').trim())
+      errors.push('El evento debe tener una descripción.');
+    if (!String(data.address || '').trim())
+      errors.push('El evento debe indicar su dirección o lugar de encuentro.');
+    if (!String(data.organizer || '').trim())
+      errors.push('El evento debe indicar quién lo organiza.');
   }
   if (slug && (slug !== safeContentSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))) {
     errors.push('El slug debe estar normalizado en minúsculas y separado por guiones.');

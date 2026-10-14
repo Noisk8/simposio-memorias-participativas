@@ -18,7 +18,7 @@ export const paginaSchema = z.object({
   is_home: z.boolean().optional().default(false),
   order: z.number().optional().default(0),
   template: z
-    .enum(['el-simposio', 'organizacion', 'programa', 'contacto', 'default', 'custom'])
+    .enum(['el-simposio', 'organizacion', 'agenda', 'programa', 'contacto', 'default', 'custom'])
     .default('default'),
   title: z.string(),
   description: z.string().optional().default(''),

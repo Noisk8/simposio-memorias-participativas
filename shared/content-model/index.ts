@@ -1,5 +1,6 @@
 export * from './base.ts';
 export * from './entrada.ts';
+export * from './evento.ts';
 export * from './memoria.ts';
 export * from './pagina.ts';
 export * from './simposio.ts';

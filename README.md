@@ -61,6 +61,7 @@ Las Content Collections activas son:
 ```text
 src/content/
 ├── entradas/
+├── eventos/
 ├── memorias/
 ├── paginas/
 ├── simposios/
@@ -68,9 +69,11 @@ src/content/
 └── etiquetas/
 ```
 
-`manage-content` soporta las seis colecciones. La navegación principal se define de forma estática en `src/components/Header.astro`; no es contenido editorial.
+`manage-content` soporta las siete colecciones. La navegación principal se define de forma estática en `src/components/Header.astro`; no es contenido editorial.
 
 Rutas públicas principales:
+
+- `/agenda/` y `/agenda/:slug/` para eventos de los colectivos y agentes de la Red. `/programa` redirige a `/agenda`.
 
 - `/entradas/` y `/entradas/:slug` para la edición predeterminada.
 - `/museo-memorias/` y `/museo-memorias/:number`.

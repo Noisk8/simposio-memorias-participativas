@@ -1,4 +1,13 @@
 export const schemas = {
+  eventos: [
+    ['title', 'Nombre del evento', 'text', 'required'],
+    ['date', 'Fecha del evento', 'date', 'required'],
+    ['description', 'Descripción', 'textarea', 'required'],
+    ['image', 'Imagen', 'text', 'required'],
+    ['address', 'Dirección o lugar de encuentro', 'text', 'required'],
+    ['organizer', 'Quién lo organiza', 'text', 'required'],
+    ['publish_date', 'Fecha de publicación (programa si es futura)', 'date'],
+  ],
   entradas: [
     ['simposio', 'Simposio', 'relation:simposios'],
     ['page_id', 'Página donde aparecerá', 'relation:paginas'],
@@ -30,7 +39,11 @@ export const schemas = {
     ['parent', 'Página superior', 'relation:paginas'],
     ['is_home', 'Es portada', 'boolean'],
     ['order', 'Orden', 'number'],
-    ['template', 'Plantilla', 'select:default|el-simposio|organizacion|programa|contacto|custom'],
+    [
+      'template',
+      'Plantilla',
+      'select:default|el-simposio|organizacion|agenda|programa|contacto|custom',
+    ],
     ['title', 'Título', 'text', 'required'],
     ['description', 'Descripción', 'textarea'],
     ['image', 'Imagen', 'text'],
@@ -79,6 +92,7 @@ export const defaults = {
   organizadores: [],
 };
 export const labels = {
+  eventos: 'Eventos',
   entradas: 'Entradas',
   memorias: 'Memorias',
   paginas: 'Páginas',
@@ -87,18 +101,24 @@ export const labels = {
   etiquetas: 'Etiquetas',
 };
 export const descriptions = {
+  eventos:
+    'Eventos, encuentros y actividades organizados por los colectivos y agentes de la Red. Los eventos publicados aparecen en la Agenda; guarda borradores mientras preparas sus datos.',
   entradas:
     'Entradas o noticias del sitio (equivalente a Posts de WordPress). Se listan las publicadas y las archivadas; los borradores están en la sección Borradores.',
   memorias:
     'Proyectos del Museo de Memorias Vivas, organizados por número, lugar, autoría y colectivo.',
   paginas:
-    'Páginas informativas de cada simposio: El Simposio, Organización, Programa, Contacto y otras.',
+    'Páginas informativas de cada simposio: El Simposio, Organización, Agenda, Contacto y otras.',
   simposios:
     'Cada edición de la Red Internacional de Memorias Participativas. Una edición puede ser la activa por defecto.',
   categorias: 'Taxonomía jerárquica para clasificar entradas y memorias.',
   etiquetas: 'Taxonomía plana de palabras clave para entradas y memorias.',
 };
 export const groupFields = {
+  eventos: [
+    ['organizer', 'Organizador'],
+    ['date', 'Mes del evento'],
+  ],
   entradas: [
     ['author', 'Autor/a'],
     ['date', 'Mes de publicación'],

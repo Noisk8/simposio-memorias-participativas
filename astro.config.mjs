@@ -47,6 +47,7 @@ export default defineConfig({
     react(),
   ],
   redirects: {
+    '/programa': '/agenda',
     '/noticias': '/entradas',
     '/noticias/[slug]': '/entradas/[slug]',
     '/admin/crear-proyecto': '/admin/crear-memoria',

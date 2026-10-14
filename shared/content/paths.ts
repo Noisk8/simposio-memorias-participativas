@@ -1,7 +1,7 @@
 import { ValidationError } from '../observability/errors.ts';
 
 export type EditorialCollection =
-  'entradas' | 'memorias' | 'paginas' | 'simposios' | 'categorias' | 'etiquetas';
+  'entradas' | 'eventos' | 'memorias' | 'paginas' | 'simposios' | 'categorias' | 'etiquetas';
 
 export function safeContentSlug(value: unknown): string {
   return String(value || '')
@@ -33,6 +33,7 @@ export function publicUrlForContent(
   const stem = String(filePath.split('/').pop() || '').replace(/\.md$/i, '');
   if (!stem) return null;
   if (collection === 'entradas') return `/entradas/${stem}`;
+  if (collection === 'eventos') return `/agenda/${stem}`;
   if (collection === 'memorias') {
     const number = String(data.number || stem.split('-')[0] || '').trim();
     return number ? `/museo-memorias/${number}` : null;

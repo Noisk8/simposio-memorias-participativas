@@ -7,6 +7,7 @@ import { getAdminClient } from '../../shared/supabase/admin-client.ts';
 
 const READ_PERMISSIONS: Record<string, string> = {
   entradas: 'entrada.read',
+  eventos: 'evento.read',
   memorias: 'memoria.read',
   paginas: 'pagina.read',
   simposios: 'simposio.read',
