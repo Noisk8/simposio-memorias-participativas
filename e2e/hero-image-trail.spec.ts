@@ -1,7 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+const trailPhotoPattern =
+  /^https:\/\/cms-media\.web\.red-memorias\.duckdns\.org\/images\/2026\/10\/[^/]+\.webp$/;
+const imageFixture = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j6n8AAAAASUVORK5CYII=',
+  'base64'
+);
+
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cms-media.web.red-memorias.duckdns.org/**', (route) => route.abort());
+  await page.route('https://cms-media.web.red-memorias.duckdns.org/**', (route) =>
+    trailPhotoPattern.test(route.request().url())
+      ? route.fulfill({ contentType: 'image/png', body: imageFixture })
+      : route.abort()
+  );
 });
 
 const visibleCards = async (page: import('@playwright/test').Page) =>
@@ -74,7 +85,7 @@ test('el movimiento reducido evita cargar la estela y cancela imágenes ya activ
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const requests: string[] = [];
   page.on('request', (request) => {
-    if (/\/images\/proyecto-\d+\.jpg/.test(request.url())) requests.push(request.url());
+    if (trailPhotoPattern.test(request.url())) requests.push(request.url());
   });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   const hero = (await page.locator('[data-home-hero]').boundingBox())!;
@@ -99,7 +110,7 @@ test.describe('estela en pantalla táctil', () => {
   }) => {
     const requests: string[] = [];
     page.on('request', (request) => {
-      if (/\/images\/proyecto-\d+\.jpg/.test(request.url())) requests.push(request.url());
+      if (trailPhotoPattern.test(request.url())) requests.push(request.url());
     });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-home-hero]').dispatchEvent('pointermove', {

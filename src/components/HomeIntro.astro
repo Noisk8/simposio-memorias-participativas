@@ -7,7 +7,25 @@ interface Props {
 
 const { title, place, image } = Astro.props;
 const videoUrl = 'https://cms-media.web.red-memorias.duckdns.org/Videos/simposio.webm';
-const trailImages = [3, 4, 6, 10, 15, 18, 20, 29].map((id) => `/images/proyecto-${id}.jpg`);
+// Selección del I Simposio: diálogo, creación colectiva, exposiciones y encuentro.
+const trailImages = [
+  // Diálogo en la inauguración · IMG_3597.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/490a03c8-2900-4d11-bd81-79ff52f1959e-img_3597.webp',
+  // Intercambio en grupo · _FFF2298.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/7af1aaad-8223-4a1f-ab0f-9cd502117a76-fff2298.webp',
+  // Memorias textiles · _FFF2246.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/b420a196-04a8-49dd-ac58-97bd91aacecf-fff2246.webp',
+  // Encuentro al atardecer · _FFF2363.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/0c80cbda-b8ca-4d65-ba01-93239c077557-fff2363.webp',
+  // Memoria y realidad virtual · Imagen(2)2.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/2b0a7508-46fa-484d-858a-8d2bca1946af-imagen-2-2.webp',
+  // Construcción colectiva · _FFF2282.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/5d2fab7c-4416-40b9-a865-f80c06d57f2f-fff2282.webp',
+  // Creación escénica · _FFF2442.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/253c7a39-9e6d-4fa5-8c03-a027ca10a0c1-fff2442.webp',
+  // Escucha entre participantes · _FFF2327.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/0eebc5b0-160b-466a-9d56-bf1d4c96d81f-fff2327.webp',
+];
 ---
 
 <section class="home-hero" data-home-hero>
