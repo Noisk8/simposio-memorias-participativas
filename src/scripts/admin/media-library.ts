@@ -177,67 +177,120 @@ async function loadImages() {
   }
 }
 
-uploadForm.addEventListener('submit', async function (event) {
-  event.preventDefault();
-  const file = fileInput.files[0];
-  if (!file) return;
-  if (file.size > maxMediaBytes) {
-    setStatus('El archivo debe pesar máximo ' + formatBytes(maxMediaBytes) + '.', 'error');
-    return;
-  }
-  const isImage = file.type.startsWith('image/');
-  if (isImage && !decorativeInput.checked && !altTextInput.value.trim()) {
-    setStatus('Escribe el texto alternativo o marca la imagen como decorativa.', 'error');
-    return;
-  }
-
-  uploadButton.disabled = true;
-  setStatus('Subiendo ' + file.name + '…', 'loading');
-  const reader = new FileReader();
-  reader.onload = async function () {
-    try {
-      const content = String(reader.result).split(',')[1];
-      await api('/.netlify/functions/upload-media', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: file.name,
-          mimeType: file.type,
-          content,
-          ...(isImage
-            ? {
-                altText: altTextInput.value.trim(),
-                credit: creditInput.value.trim(),
-                license: licenseInput.value.trim(),
-                decorative: decorativeInput.checked,
-              }
-            : {}),
-        }),
-      });
-      uploadForm.reset();
-      fileName.textContent = 'Seleccionar archivo';
-      await loadImages();
-    } catch (error) {
-      setStatus(error.message, 'error');
-    } finally {
-      uploadButton.disabled = false;
-    }
-  };
-  reader.onerror = function () {
-    uploadButton.disabled = false;
-    setStatus('No se pudo leer el archivo seleccionado.', 'error');
-  };
-  reader.readAsDataURL(file);
-});
-
-fileInput.addEventListener('change', function () {
-  const file = fileInput.files[0];
-  fileName.textContent = file ? file.name + ' · ' + formatBytes(file.size) : 'Seleccionar archivo';
-  const isImage = Boolean(file?.type.startsWith('image/'));
-  imageMetadata.classList.toggle('hidden', !isImage);
-  altTextInput.required = isImage && !decorativeInput.checked;
+function updateFileSelection() {
+  const files = Array.from(fileInput.files || []);
+  fileName.textContent =
+    files.length === 1
+      ? files[0].name + ' · ' + formatBytes(files[0].size)
+      : files.length
+        ? files.length + ' archivos seleccionados'
+        : 'Seleccionar archivos';
+  const hasImages = files.some((file) => file.type.startsWith('image/'));
+  imageMetadata.classList.toggle('hidden', !hasImages);
+  altTextInput.disabled = decorativeInput.checked;
+  altTextInput.required = hasImages && !decorativeInput.checked;
   creditInput.required = false;
   licenseInput.required = false;
+}
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+    reader.onabort = () => reject(new Error('Se canceló la lectura del archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+uploadForm.addEventListener('submit', async function (event) {
+  event.preventDefault();
+  if (uploadButton.disabled) return;
+  const files = Array.from(fileInput.files || []);
+  if (!files.length) return;
+  const oversized = files.filter((file) => file.size > maxMediaBytes);
+  if (oversized.length) {
+    setStatus(
+      'Máximo por archivo: ' +
+        formatBytes(maxMediaBytes) +
+        '. Revisa: ' +
+        oversized.map((file) => file.name).join(', '),
+      'error'
+    );
+    return;
+  }
+  if (
+    files.some((file) => file.type.startsWith('image/')) &&
+    !decorativeInput.checked &&
+    !altTextInput.value.trim()
+  ) {
+    setStatus('Escribe el texto alternativo o marca las imágenes como decorativas.', 'error');
+    return;
+  }
+  const metadata = {
+    altText: altTextInput.value.trim(),
+    credit: creditInput.value.trim(),
+    license: licenseInput.value.trim(),
+    decorative: decorativeInput.checked,
+  };
+  const controls = Array.from(uploadForm.querySelectorAll('input, textarea, button'));
+  const disabledStates = controls.map((control) => control.disabled);
+  controls.forEach((control) => {
+    control.disabled = true;
+  });
+  const failed = [];
+  let uploaded = 0;
+  try {
+    for (const [index, file] of files.entries()) {
+      setStatus(
+        'Subiendo ' + (index + 1) + ' de ' + files.length + ': ' + file.name + '…',
+        'loading'
+      );
+      try {
+        const content = await readFile(file);
+        await api('/.netlify/functions/upload-media', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: file.name,
+            mimeType: file.type,
+            content,
+            ...(file.type.startsWith('image/') ? metadata : {}),
+          }),
+        });
+        uploaded++;
+      } catch (error) {
+        failed.push({ file, message: error.message });
+      }
+    }
+    if (uploaded) await loadImages();
+    if (!failed.length) {
+      uploadForm.reset();
+    } else {
+      const remaining = new window.DataTransfer();
+      failed.forEach(({ file }) => remaining.items.add(file));
+      fileInput.files = remaining.files;
+    }
+    setStatus(
+      uploaded +
+        ' de ' +
+        files.length +
+        ' archivos subidos.' +
+        (failed.length
+          ? ' No se pudieron subir: ' +
+            failed.map(({ file, message }) => file.name + ' (' + message + ')').join('; ') +
+            '. Puedes reintentar los pendientes.'
+          : ''),
+      failed.length ? 'error' : 'success'
+    );
+  } finally {
+    controls.forEach((control, index) => {
+      control.disabled = disabledStates[index];
+    });
+    updateFileSelection();
+  }
 });
+
+fileInput.addEventListener('change', updateFileSelection);
 
 decorativeInput.addEventListener('change', function () {
   altTextInput.disabled = decorativeInput.checked;

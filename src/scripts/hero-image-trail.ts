@@ -7,8 +7,23 @@ const layer = hero?.querySelector<HTMLElement>('[data-hero-trail]');
 if (hero && layer) {
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const sources: string[] = JSON.parse(layer.dataset.trailImages || '[]');
-  const cards: { element: HTMLDivElement; ready: boolean; animation?: Animation }[] = [];
+  const sources: string[] = [...new Set<string>(JSON.parse(layer.dataset.trailImages || '[]'))];
+  const cards: { element: HTMLDivElement; animation?: Animation }[] = [];
+  const cache = new Map<string, { image: HTMLImageElement; ready: boolean; failed: boolean }>();
+  let remaining: string[] = [];
+  let lastSource = '';
+
+  const reshuffle = () => {
+    remaining = sources.filter((source) => !cache.get(source)?.failed);
+    for (let index = remaining.length - 1; index > 0; index--) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [remaining[index], remaining[swap]] = [remaining[swap], remaining[index]];
+    }
+    // Evita repetir la última foto al empezar una nueva vuelta.
+    if (remaining.length > 1 && remaining[0] === lastSource) {
+      [remaining[0], remaining[1]] = [remaining[1], remaining[0]];
+    }
+  };
   const allowed = () => finePointer.matches && !reducedMotion.matches && !document.hidden;
   let initialized = false;
   let inside = false;
@@ -30,37 +45,56 @@ if (hero && layer) {
   const prepareImages = () => {
     if (initialized) return;
     initialized = true;
-    sources.slice(0, 8).forEach((source) => {
+    for (let index = 0; index < Math.min(8, sources.length); index++) {
       const element = document.createElement('div');
       element.className = 'home-hero-trail-card';
-      element.hidden = true;
+      layer.append(element);
+      cards.push({ element });
+    }
+    reshuffle();
+    preloadNext();
+  };
+
+  const preloadNext = () => {
+    if (!remaining.length) reshuffle();
+    // Descarga progresiva: prepara las próximas cuatro, no todo el banco al entrar.
+    remaining.slice(0, 4).forEach((source) => {
+      if (cache.has(source)) return;
       const image = document.createElement('img');
       image.alt = '';
       image.draggable = false;
       image.decoding = 'async';
       image.src = source;
-      element.append(image);
-      layer.append(element);
-      const card = { element, ready: false, animation: undefined as Animation | undefined };
-      cards.push(card);
+      const entry = { image, ready: false, failed: false };
+      cache.set(source, entry);
       void image
         .decode()
         .then(() => {
           image.dataset.imageReady = 'true';
-          card.ready = true;
-          element.hidden = false;
+          entry.ready = true;
           wake();
         })
         .catch(() => {
-          // Una imagen que no carga nunca forma parte de la estela.
+          entry.failed = true;
+          wake();
         });
     });
   };
 
   const spawn = (time: number) => {
-    const available = cards.filter((card) => card.ready);
-    if (!available.length) return false;
-    const card = available[nextCard++ % available.length];
+    if (!cards.length) return false;
+    // Un archivo inaccesible no bloquea las fotos siguientes.
+    while (remaining.length && cache.get(remaining[0])?.failed) remaining.shift();
+    preloadNext();
+    const source = remaining[0];
+    const entry = cache.get(source);
+    if (!entry?.ready) return false;
+    const card = cards[nextCard++ % cards.length];
+    remaining.shift();
+    lastSource = source;
+    card.animation?.cancel();
+    card.element.replaceChildren(entry.image);
+    preloadNext();
     const dx = Math.max(-60, Math.min(60, smooth.x - lastSpawn.x));
     const dy = Math.max(-60, Math.min(60, smooth.y - lastSpawn.y));
     const rotation = [-7, 5, -3, 8, -5, 3, -8, 6][sequence++ % 8];

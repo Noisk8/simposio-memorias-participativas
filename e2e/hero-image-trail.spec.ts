@@ -25,7 +25,8 @@ const visibleCards = async (page: import('@playwright/test').Page) =>
 async function moveAcrossHero(page: import('@playwright/test').Page) {
   const bounds = (await page.locator('[data-home-hero]').boundingBox())!;
   await page.mouse.move(180, bounds.y + bounds.height * 0.4);
-  await expect(page.locator('[data-hero-trail] img')).toHaveCount(8);
+  await expect(page.locator('.home-hero-trail-card')).toHaveCount(8);
+  await expect(page.locator('[data-hero-trail] img[data-image-ready]')).not.toHaveCount(0);
   await expect
     .poll(() =>
       page
@@ -130,3 +131,55 @@ test.describe('estela en pantalla táctil', () => {
     await expect(page).toHaveURL(/#videoresumen$/);
   });
 });
+
+for (const failedImage of [false, true]) {
+  test(
+    'el banco mezcla todas las fotos sin repetir' +
+      (failedImage ? ' y omite una foto fallida' : ''),
+    async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.addInitScript(() => {
+        const shown: string[] = [];
+        Object.assign(window, { trailShown: shown });
+        const original = Element.prototype.animate;
+        Element.prototype.animate = function (...args: Parameters<typeof original>) {
+          if (this.classList.contains('home-hero-trail-card')) {
+            shown.push(this.querySelector('img')!.src);
+          }
+          return original.apply(this, args);
+        };
+      });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      const bank: string[] = await page
+        .locator('[data-hero-trail]')
+        .evaluate((element) => JSON.parse((element as HTMLElement).dataset.trailImages!));
+      expect(bank).toHaveLength(30);
+      expect(new Set(bank).size).toBe(30);
+      if (failedImage) await page.route(bank[0], (route) => route.abort());
+      const cycleSize = failedImage ? 29 : 30;
+      for (let step = 0; step < 70; step++) {
+        await page.mouse.move(step % 2 ? 1100 : 200, 360);
+        await page.waitForTimeout(100);
+        const count = await page.evaluate(
+          () => (window as unknown as { trailShown: string[] }).trailShown.length
+        );
+        if (count >= cycleSize * 2 + 1) break;
+      }
+      const shown = await page.evaluate(
+        () => (window as unknown as { trailShown: string[] }).trailShown
+      );
+      expect(shown.length).toBeGreaterThanOrEqual(cycleSize * 2 + 1);
+      for (const start of [0, cycleSize]) {
+        const cycle = shown.slice(start, start + cycleSize);
+        expect(new Set(cycle).size).toBe(cycleSize);
+        expect([...cycle].sort()).toEqual(
+          bank.filter((src) => !failedImage || src !== bank[0]).sort()
+        );
+      }
+      expect(shown[cycleSize]).not.toBe(shown[cycleSize - 1]);
+      expect(shown.slice(0, cycleSize)).not.toEqual(shown.slice(cycleSize, cycleSize * 2));
+      await expect(page.locator('.home-hero-trail-card')).toHaveCount(8);
+      expect(await page.locator('[data-hero-trail] img').count()).toBeLessThanOrEqual(8);
+    }
+  );
+}
