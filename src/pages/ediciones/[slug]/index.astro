@@ -19,6 +19,7 @@ if (!simposio) {
 }
 
 const data = simposio.data;
+const EditionContent = simposio.body?.trim() ? (await render(simposio)).Content : null;
 const editionBase = data.is_default ? '' : `/ediciones/${data.slug}`;
 const paginas = filterPublished(await getCollection('paginas')).filter(
   ({ data }) => data.simposio === (slug || '2026')
@@ -92,6 +93,18 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           </h2>
           <div class="prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green bg-white rounded-xl p-8 card-shadow">
             <InfoContent />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    EditionContent && (
+      <section class="py-16 bg-white" aria-label="Memorias de esta edición">
+        <div class="max-w-6xl mx-auto px-4">
+          <div class="prose prose-lg max-w-none text-ugr-text prose-headings:text-ugr-green-dark prose-a:text-ugr-green">
+            <EditionContent />
           </div>
         </div>
       </section>
