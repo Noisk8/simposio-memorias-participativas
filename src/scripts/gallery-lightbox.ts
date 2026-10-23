@@ -131,7 +131,10 @@ class GalleryLightbox {
     this.fullscreenBtn = this.overlay.querySelector('.cms-lightbox-fs');
   }
 
-  private getGroupInfo(galleryEl: HTMLElement, defaultIndex: number): { id: string; title: string } {
+  private getGroupInfo(
+    galleryEl: HTMLElement,
+    defaultIndex: number
+  ): { id: string; title: string } {
     let prev = galleryEl.previousElementSibling;
     while (prev) {
       if (/^H[1-6]$/i.test(prev.tagName)) {
@@ -226,7 +229,9 @@ class GalleryLightbox {
     });
 
     // Standalone single-image lightboxes
-    const singleTriggers = Array.from(document.querySelectorAll<HTMLElement>('[data-lightbox-single]'));
+    const singleTriggers = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-lightbox-single]')
+    );
     singleTriggers.forEach((trigger, idx) => {
       const img = trigger.querySelector<HTMLImageElement>('img');
       if (!img) return;
@@ -385,25 +390,33 @@ class GalleryLightbox {
     // Touch swipe gestures
     const stage = this.overlay.querySelector('.cms-lightbox-stage');
     if (stage) {
-      stage.addEventListener('touchstart', (e: TouchEvent) => {
-        this.touchStartX = e.touches[0].clientX;
-        this.touchStartY = e.touches[0].clientY;
-      }, { passive: true });
+      stage.addEventListener(
+        'touchstart',
+        (e: TouchEvent) => {
+          this.touchStartX = e.touches[0].clientX;
+          this.touchStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
 
-      stage.addEventListener('touchend', (e: TouchEvent) => {
-        const deltaX = e.changedTouches[0].clientX - this.touchStartX;
-        const deltaY = e.changedTouches[0].clientY - this.touchStartY;
+      stage.addEventListener(
+        'touchend',
+        (e: TouchEvent) => {
+          const deltaX = e.changedTouches[0].clientX - this.touchStartX;
+          const deltaY = e.changedTouches[0].clientY - this.touchStartY;
 
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
-          if (deltaX > 0) {
-            this.prev();
-          } else {
-            this.next();
+          if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+            if (deltaX > 0) {
+              this.prev();
+            } else {
+              this.next();
+            }
+          } else if (deltaY > 80 && Math.abs(deltaX) < 60) {
+            this.close();
           }
-        } else if (deltaY > 80 && Math.abs(deltaX) < 60) {
-          this.close();
-        }
-      }, { passive: true });
+        },
+        { passive: true }
+      );
     }
   }
 
@@ -465,7 +478,9 @@ class GalleryLightbox {
 
   private updateActiveThumbnail() {
     if (!this.thumbnailsTrack) return;
-    const thumbs = Array.from(this.thumbnailsTrack.querySelectorAll<HTMLElement>('.cms-lightbox-thumb'));
+    const thumbs = Array.from(
+      this.thumbnailsTrack.querySelectorAll<HTMLElement>('.cms-lightbox-thumb')
+    );
     thumbs.forEach((thumb, idx) => {
       if (idx === this.currentIndex) {
         thumb.classList.add('is-active');
@@ -501,7 +516,8 @@ class GalleryLightbox {
 
   private prev() {
     if (!this.currentGroup || this.currentGroup.items.length <= 1) return;
-    this.currentIndex = (this.currentIndex - 1 + this.currentGroup.items.length) % this.currentGroup.items.length;
+    this.currentIndex =
+      (this.currentIndex - 1 + this.currentGroup.items.length) % this.currentGroup.items.length;
     this.renderCurrent();
   }
 
