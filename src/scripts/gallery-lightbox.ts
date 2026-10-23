@@ -35,10 +35,8 @@ class GalleryLightbox {
   }
 
   private init() {
-    this.createLightboxDOM();
     this.bindGalleries();
     this.injectLayoutSwitchers();
-    this.bindEvents();
   }
 
   private createLightboxDOM() {
@@ -82,7 +80,7 @@ class GalleryLightbox {
           </div>
         </header>
 
-        <main class="cms-lightbox-stage">
+        <div class="cms-lightbox-stage">
           <button type="button" class="cms-lightbox-btn cms-lightbox-nav cms-lightbox-prev" data-action="prev" aria-label="Imagen anterior (Flecha izquierda)" title="Anterior (←)">
             <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="15 18 9 12 15 6"></polyline>
@@ -92,7 +90,7 @@ class GalleryLightbox {
           <div class="cms-lightbox-figure-wrap" data-action="backdrop-close">
             <figure class="cms-lightbox-figure">
               <div class="cms-lightbox-img-box">
-                <img class="cms-lightbox-img" src="" alt="" />
+                <img class="cms-lightbox-img" alt="" data-image-ready="true" />
               </div>
               <figcaption class="cms-lightbox-caption"></figcaption>
             </figure>
@@ -103,7 +101,7 @@ class GalleryLightbox {
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
-        </main>
+        </div>
 
         <footer class="cms-lightbox-footer">
           <div class="cms-lightbox-thumbs-container">
@@ -427,6 +425,10 @@ class GalleryLightbox {
   }
 
   private open(group: GalleryGroup, index: number) {
+    if (!this.overlay) {
+      this.createLightboxDOM();
+      this.bindEvents();
+    }
     if (!this.overlay || !group.items.length) return;
     this.currentGroup = group;
     this.currentIndex = Math.max(0, Math.min(index, group.items.length - 1));
@@ -499,7 +501,7 @@ class GalleryLightbox {
     document.body.classList.remove('cms-lightbox-active');
 
     if (this.imgElement) {
-      this.imgElement.src = '';
+      this.imgElement.removeAttribute('src');
     }
 
     if (this.triggerElement) {
