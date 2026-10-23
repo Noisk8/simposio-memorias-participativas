@@ -25,7 +25,6 @@ class GalleryLightbox {
   private thumbnailsTrack: HTMLElement | null = null;
   private prevBtn: HTMLButtonElement | null = null;
   private nextBtn: HTMLButtonElement | null = null;
-  private fullscreenBtn: HTMLButtonElement | null = null;
   private triggerElement: HTMLElement | null = null;
   private touchStartX = 0;
   private touchStartY = 0;
@@ -128,7 +127,6 @@ class GalleryLightbox {
     this.thumbnailsTrack = this.overlay.querySelector('.cms-lightbox-thumbs-track');
     this.prevBtn = this.overlay.querySelector('.cms-lightbox-prev');
     this.nextBtn = this.overlay.querySelector('.cms-lightbox-next');
-    this.fullscreenBtn = this.overlay.querySelector('.cms-lightbox-fs');
   }
 
   private getGroupInfo(
@@ -388,7 +386,7 @@ class GalleryLightbox {
     });
 
     // Touch swipe gestures
-    const stage = this.overlay.querySelector('.cms-lightbox-stage');
+    const stage = this.overlay.querySelector<HTMLElement>('.cms-lightbox-stage');
     if (stage) {
       stage.addEventListener(
         'touchstart',
