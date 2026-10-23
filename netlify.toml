@@ -4,7 +4,7 @@
   ignore = "node scripts/netlify-ignore-build.mjs"
 
 [build.environment]
-  NODE_VERSION = "22.12.0"
+  NODE_VERSION = "22.23.4"
 
 [functions]
   directory = "netlify/functions"

@@ -108,7 +108,7 @@ El panel expone un flujo minimalista de borrador, publicación y archivo. Los es
 
 ## Desarrollo local
 
-Requisitos: Node.js 22.12.0 (también fijado en `.nvmrc`) y las variables de `.env.example`.
+Requisitos: Node.js 22.23.4 (también fijado en `.nvmrc`) y las variables de `.env.example`.
 
 Para el CMS y las Functions:
 

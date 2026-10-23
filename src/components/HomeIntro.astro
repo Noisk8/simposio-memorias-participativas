@@ -7,24 +7,68 @@ interface Props {
 
 const { title, place, image } = Astro.props;
 const videoUrl = 'https://cms-media.web.red-memorias.duckdns.org/Videos/simposio.webm';
-// Selección del I Simposio: diálogo, creación colectiva, exposiciones y encuentro.
+// Banco del I Simposio: inauguración, exposiciones, trabajo colectivo y encuentro.
 const trailImages = [
-  // Diálogo en la inauguración · IMG_3597.jpg
+  // inauguracion · IMG_3597.jpg
   'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/490a03c8-2900-4d11-bd81-79ff52f1959e-img_3597.webp',
-  // Intercambio en grupo · _FFF2298.jpg
-  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/7af1aaad-8223-4a1f-ab0f-9cd502117a76-fff2298.webp',
-  // Memorias textiles · _FFF2246.jpg
-  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/b420a196-04a8-49dd-ac58-97bd91aacecf-fff2246.webp',
-  // Encuentro al atardecer · _FFF2363.jpg
-  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/0c80cbda-b8ca-4d65-ba01-93239c077557-fff2363.webp',
-  // Memoria y realidad virtual · Imagen(2)2.jpg
+  // inauguracion · IMG_3555.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/bab76655-b607-4b78-9da4-f7645b632157-img_3555.webp',
+  // inauguracion · IMG_3569.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/25d43ff6-07f4-4558-94f2-580642694370-img_3569.webp',
+  // inauguracion · IMG_3609.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/a70561fe-de9b-4ddc-b430-3d45038a8d4d-img_3609.webp',
+  // inauguracion · IMG_3641.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/4d8aecf3-818e-4df3-82fe-a6c693d69b0d-img_3641.webp',
+  // exposiciones · Imagen(1).jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/30625658-85a5-47c6-bc45-5626373b4c1c-imagen-1.webp',
+  // exposiciones · Imagen(2)2.jpg
   'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/2b0a7508-46fa-484d-858a-8d2bca1946af-imagen-2-2.webp',
-  // Construcción colectiva · _FFF2282.jpg
+  // exposiciones · Imagen(5).jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/326e2088-77cc-4db9-94b2-7efed923d4d6-imagen-5.webp',
+  // exposiciones · Imagen.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/f59ca716-24bc-487d-90e2-9a262ec356ed-imagen.webp',
+  // exposiciones · _FFF2202.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/80dcb58d-3fce-4426-b038-fa1c7ee3c7c9-fff2202.webp',
+  // exposiciones · _FFF2207.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/aedf3059-01d7-4187-8ed3-5b4953fb067f-fff2207.webp',
+  // exposiciones · _FFF2246.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/b420a196-04a8-49dd-ac58-97bd91aacecf-fff2246.webp',
+  // exposiciones · _FFF2250.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/fa7897ad-2153-4c91-aa4c-76c8a329b9b1-fff2250.webp',
+  // trabajo-grupal · _FFF2258.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/c737a2f0-1756-4b27-adb7-693206d64f7d-fff2258.webp',
+  // trabajo-grupal · _FFF2262.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/7b255ea9-d7dd-4513-a1bd-c245ffc72db3-fff2262.webp',
+  // trabajo-grupal · _FFF2268.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/a5476e0b-08b6-4186-b9a5-e64627814ddb-fff2268.webp',
+  // trabajo-grupal · _FFF2282.jpg
   'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/5d2fab7c-4416-40b9-a865-f80c06d57f2f-fff2282.webp',
-  // Creación escénica · _FFF2442.jpg
-  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/253c7a39-9e6d-4fa5-8c03-a027ca10a0c1-fff2442.webp',
-  // Escucha entre participantes · _FFF2327.jpg
+  // trabajo-grupal · _FFF2286.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/ae1c55c9-280a-48d0-9cce-b28372b61729-fff2286.webp',
+  // trabajo-grupal · _FFF2295.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/81ac11e2-2438-4374-9649-05791c0dac5b-fff2295.webp',
+  // trabajo-grupal · _FFF2298.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/7af1aaad-8223-4a1f-ab0f-9cd502117a76-fff2298.webp',
+  // trabajo-grupal · _FFF2327.jpg
   'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/0eebc5b0-160b-466a-9d56-bf1d4c96d81f-fff2327.webp',
+  // trabajo-grupal · _FFF2337.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/27050c1a-19ef-4c91-86bf-11ed9de1de2a-fff2337.webp',
+  // rumbeando · _FFF2342.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/074839b3-aa36-4eec-a355-75620f515321-fff2342.webp',
+  // rumbeando · _FFF2348.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/e1f0386e-6e86-4ff9-800c-468b63ded434-fff2348.webp',
+  // rumbeando · _FFF2353.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/f608ac99-0537-47dc-91ed-03d5bcd73809-fff2353.webp',
+  // rumbeando · _FFF2363.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/0c80cbda-b8ca-4d65-ba01-93239c077557-fff2363.webp',
+  // rumbeando · _FFF2380.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/fa8b9ef4-6cbc-41d5-9fd2-bd9c30fd0ff8-fff2380.webp',
+  // rumbeando · _FFF2398.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/7dc4940e-d2bf-41eb-be53-f4c01e701184-fff2398.webp',
+  // rumbeando · _FFF2442.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/253c7a39-9e6d-4fa5-8c03-a027ca10a0c1-fff2442.webp',
+  // rumbeando · _FFF2551.jpg
+  'https://cms-media.web.red-memorias.duckdns.org/images/2026/10/f555ff28-21ae-40c7-9add-d1fbcccc8437-fff2551.webp',
 ];
 ---
 

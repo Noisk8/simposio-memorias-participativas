@@ -201,18 +201,616 @@ img {
   line-height: 1.45;
 }
 
-.cms-rich-gallery-track,
-.cms-rich-entries-track {
+/* ==========================================================================
+   Galerías creativas & Mosaicos editoriales
+   ========================================================================== */
+
+/* Barra de control de diseño de galería (Mosaico / Muro / Cuadrícula) */
+.cms-gallery-toolbar {
+  margin: 2.5rem 0 1.75rem;
+  display: flex;
+  justify-content: center;
+}
+
+.cms-gallery-toolbar-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: #f8faf9;
+  border: 1px solid #e2e8e4;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.cms-gallery-toolbar-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ugr-green-dark);
+  padding-left: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cms-gallery-toolbar-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cms-layout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ugr-text);
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cms-layout-btn:hover {
+  background: #edf3ee;
+  color: var(--ugr-green-dark);
+}
+
+.cms-layout-btn.is-active {
+  background: var(--ugr-green);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(41, 91, 11, 0.25);
+}
+
+@media (max-width: 640px) {
+  .cms-gallery-toolbar-inner {
+    flex-direction: column;
+    width: 100%;
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+  .cms-gallery-toolbar-btns {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cms-layout-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.72rem;
+  }
+}
+
+/* 1. Mosaico Asimétrico Editorial (Por defecto: data-creative-layout="mosaic") */
+.cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+  .cms-rich-gallery-track,
+.cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-gallery-track {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  grid-auto-rows: 240px;
+  grid-auto-flow: dense;
+  gap: 1.25rem;
 }
 
-.cms-rich-gallery[data-layout='grid'] .cms-rich-gallery-track {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 640px) {
+  .cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+    .cms-rich-gallery-track,
+  .cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-gallery-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 230px;
+  }
 }
 
-.cms-rich-gallery[data-layout='grid'] .cms-rich-image img {
-  height: 260px;
+@media (min-width: 1024px) {
+  .cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+    .cms-rich-gallery-track,
+  .cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-gallery-track {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: 210px;
+  }
+
+  /* Ritmo editorial asimétrico (Hero 2x2, panorámicas 2x1 y verticales 1x2) */
+  .cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+    .cms-rich-image:nth-child(11n + 1),
+  .cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-image:nth-child(11n + 1) {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+    .cms-rich-image:nth-child(11n + 5),
+  .cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-image:nth-child(11n + 5) {
+    grid-column: span 2;
+  }
+
+  .cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+    .cms-rich-image:nth-child(11n + 7),
+  .cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-image:nth-child(11n + 7) {
+    grid-row: span 2;
+  }
+
+  .cms-rich-gallery:not([data-creative-layout='masonry']):not([data-creative-layout='grid'])
+    .cms-rich-image:nth-child(11n + 10),
+  .cms-rich-gallery[data-creative-layout='mosaic'] .cms-rich-image:nth-child(11n + 10) {
+    grid-column: span 2;
+  }
+}
+
+.cms-rich-gallery:not([data-creative-layout='masonry']) .cms-rich-image {
+  height: 100%;
+}
+
+.cms-rich-gallery:not([data-creative-layout='masonry']) .cms-rich-image img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* 2. Muro Masonry Libre (Respetando proporciones originales) */
+.cms-rich-gallery[data-creative-layout='masonry'] .cms-rich-gallery-track {
+  display: block;
+  column-count: 1;
+  column-gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .cms-rich-gallery[data-creative-layout='masonry'] .cms-rich-gallery-track {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cms-rich-gallery[data-creative-layout='masonry'] .cms-rich-gallery-track {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 1280px) {
+  .cms-rich-gallery[data-creative-layout='masonry'] .cms-rich-gallery-track {
+    column-count: 4;
+  }
+}
+
+.cms-rich-gallery[data-creative-layout='masonry'] .cms-rich-image {
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  break-inside: avoid;
+}
+
+.cms-rich-gallery[data-creative-layout='masonry'] .cms-rich-image img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* 3. Cuadrícula Clásica */
+.cms-rich-gallery[data-creative-layout='grid'] .cms-rich-gallery-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.cms-rich-gallery[data-creative-layout='grid'] .cms-rich-image {
+  height: auto;
+}
+
+.cms-rich-gallery[data-creative-layout='grid'] .cms-rich-image img {
+  height: 220px;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* Tarjeta y micro-interacciones de la imagen */
+.cms-rich-gallery .cms-rich-image {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  background-color: #f3f4f6;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition:
+    transform 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 0.3s ease;
+}
+
+.cms-rich-gallery .cms-rich-image:hover {
+  transform: translateY(-4px) scale(1.008);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.18);
+}
+
+.cms-rich-gallery .cms-rich-image:focus-visible {
+  outline: 3px solid var(--ugr-green);
+  outline-offset: 3px;
+}
+
+.cms-rich-gallery .cms-rich-image img {
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: block;
+}
+
+.cms-rich-gallery .cms-rich-image:hover img {
+  transform: scale(1.05);
+}
+
+/* Sello editorial con número de foto (01, 02...) */
+.cms-gallery-index-stamp {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(15, 23, 18, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Overlay cinematográfico con gradiente y texto al hacer hover */
+.cms-gallery-hover-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(10, 22, 14, 0.9) 0%,
+    rgba(10, 22, 14, 0.35) 45%,
+    transparent 70%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.1rem;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.cms-rich-gallery .cms-rich-image:hover .cms-gallery-hover-overlay,
+.cms-rich-gallery .cms-rich-image:focus-visible .cms-gallery-hover-overlay {
+  opacity: 1;
+}
+
+.cms-gallery-hover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transform: translateY(6px);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cms-rich-gallery .cms-rich-image:hover .cms-gallery-hover-content,
+.cms-rich-gallery .cms-rich-image:focus-visible .cms-gallery-hover-content {
+  transform: translateY(0);
+}
+
+.cms-gallery-hover-cta {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a3e635; /* Lime-400 */
+}
+
+.cms-gallery-hover-caption {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================================================
+   Visor Lightbox de Galería de Arte
+   ========================================================================== */
+
+body.cms-lightbox-active {
+  overflow: hidden !important;
+}
+
+.cms-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cms-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 12, 8, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.cms-lightbox-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cms-lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.75rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
+  color: #fff;
+}
+
+.cms-lightbox-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.cms-lightbox-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a3e635;
+  background: rgba(163, 230, 53, 0.12);
+  border: 1px solid rgba(163, 230, 53, 0.25);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.cms-lightbox-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cms-lightbox-counter {
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+.cms-lightbox-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cms-lightbox-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  min-height: 0;
+  position: relative;
+}
+
+.cms-lightbox-figure-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.cms-lightbox-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+  cursor: default;
+}
+
+.cms-lightbox-img-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: calc(75vh - 4rem);
+}
+
+.cms-lightbox-img {
+  max-width: 100%;
+  max-height: calc(75vh - 4rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+}
+
+.cms-lightbox-caption {
+  margin-top: 0.75rem;
+  max-width: 48rem;
+  padding: 0.45rem 1.1rem;
+  background: rgba(12, 20, 15, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.88rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Tira inferior de miniaturas (Thumbnail Scrubber) */
+.cms-lightbox-footer {
+  padding: 0.75rem 1.5rem 1.25rem;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
+}
+
+.cms-lightbox-thumbs-container {
+  max-width: 54rem;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.cms-lightbox-thumbs-track {
+  display: inline-flex;
+  gap: 0.6rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.cms-lightbox-thumb {
+  width: 3.5rem;
+  height: 2.5rem;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: #111;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cms-lightbox-thumb:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.cms-lightbox-thumb.is-active {
+  opacity: 1;
+  border-color: #a3e635;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(163, 230, 53, 0.5);
+}
+
+.cms-lightbox-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cms-lightbox-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.cms-lightbox-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.08);
+}
+
+.cms-lightbox-btn:focus-visible {
+  outline: 2px solid #a3e635;
+  outline-offset: 2px;
+}
+
+.cms-lightbox-btn:active {
+  transform: scale(0.95);
+}
+
+.cms-lightbox-nav {
+  z-index: 20;
+}
+
+@media (max-width: 768px) {
+  .cms-lightbox-header {
+    padding: 0.75rem 1rem;
+  }
+  .cms-lightbox-title {
+    font-size: 0.9rem;
+    max-width: 160px;
+  }
+  .cms-lightbox-badge {
+    display: none;
+  }
+  .cms-lightbox-stage {
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  .cms-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.5rem;
+    height: 2.5rem;
+    background: rgba(0, 0, 0, 0.65);
+  }
+
+  .cms-lightbox-prev {
+    left: 0.5rem;
+  }
+
+  .cms-lightbox-next {
+    right: 0.5rem;
+  }
+
+  .cms-lightbox-img-box {
+    max-height: calc(65vh - 2rem);
+  }
+
+  .cms-lightbox-img {
+    max-height: calc(65vh - 2rem);
+  }
+
+  .cms-lightbox-caption {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+  }
+
+  .cms-lightbox-footer {
+    padding: 0.5rem 0.75rem;
+  }
+  .cms-lightbox-thumb {
+    width: 2.75rem;
+    height: 2rem;
+  }
 }
 
 .cms-rich-gallery[data-layout='carousel'] .cms-rich-gallery-track,

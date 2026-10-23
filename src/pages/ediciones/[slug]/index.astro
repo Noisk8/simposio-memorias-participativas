@@ -69,7 +69,12 @@ const InfoContent = paginaInfo ? (await render(paginaInfo)).Content : null;
           <h2 class="text-3xl font-bold mb-10 text-ugr-green-dark font-[family-name:var(--font-heading)]">
             Cartel Oficial
           </h2>
-          <div class="card-shadow rounded-xl overflow-hidden inline-block">
+          <div
+            class="card-shadow rounded-xl overflow-hidden inline-block"
+            data-lightbox-single
+            data-title="Cartel Oficial"
+            data-caption={`Cartel Oficial del ${data.title}`}
+          >
             <img
               src={resolvePublicImageUrl(data.poster)}
               alt={`Cartel Oficial del ${data.title}`}
