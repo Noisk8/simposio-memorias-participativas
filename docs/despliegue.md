@@ -21,7 +21,7 @@ Consulta la creación, permisos mínimos y retirada del token legacy en `docs/GI
 | Build                   | `npm run build`              |
 | Directorio publicado    | `dist`                       |
 | Directorio de Functions | `netlify/functions`          |
-| Node                    | `22.12.0`                    |
+| Node                    | `22.23.4`                    |
 | Netlify Dev             | Astro en 4322, proxy en 8888 |
 
 `npm run build` comprueba la estructura de colecciones, construye Astro y genera el índice Pagefind.

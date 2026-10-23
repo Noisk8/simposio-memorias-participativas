@@ -1,7 +1,7 @@
 import eslintPluginAstro from 'eslint-plugin-astro';
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
-import astroParser from 'astro-eslint-parser';
+import * as astroParser from 'astro-eslint-parser';
 
 const nodeGlobals = {
   console: 'readonly',
@@ -52,6 +52,9 @@ const browserGlobals = {
   Window: 'readonly',
   MutationObserver: 'readonly',
   getComputedStyle: 'readonly',
+  KeyboardEvent: 'readonly',
+  TouchEvent: 'readonly',
+  Image: 'readonly',
 };
 
 export default [
